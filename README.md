@@ -18,8 +18,8 @@ Controls :
 * A          - Left
 * S          - Backward
 * D          - Right
-* LeftArrow  - Turret Left  (Hold Ctrl for finer control)
-* RightArrow - Turret Right (Hold Ctrl for finer control)
+* LeftArrow  - Turret Left  (Hold Ctrl for finer sensitivity)
+* RightArrow - Turret Right (Hold Ctrl for finer sensitivity)
 * T          - Tank Reset (If you are upside-down)
 * R          - Turret Reset
 * V          - Switch to FPP

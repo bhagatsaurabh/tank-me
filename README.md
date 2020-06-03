@@ -15,11 +15,11 @@ Play the game [here](https://tank-me.herokuapp.com/)
 Controls :
 
 * W          - Forward
-* A          - Left
+* A          - Left (Hold Shift for finer sensitivity)
 * S          - Backward
-* D          - Right
-* LeftArrow  - Turret Left  (Hold Ctrl for finer sensitivity)
-* RightArrow - Turret Right (Hold Ctrl for finer sensitivity)
+* D          - Right (Hold Shift for finer sensitivity)
+* LeftArrow  - Turret Left  (Hold Shift for finer sensitivity)
+* RightArrow - Turret Right (Hold Shift for finer sensitivity)
 * T          - Tank Reset (If you are upside-down)
 * R          - Turret Reset
 * V          - Switch to FPP

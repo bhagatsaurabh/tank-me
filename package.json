@@ -1,19 +1,22 @@
 {
   "name": "tank-me",
-  "version": "1.0.0",
-  "description": "Online multiplayer tank battle",
-  "main": "server.js",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
   },
-  "author": "Saurabh Bhagat",
-  "license": "ISC",
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.17.1",
-    "firebase-admin": "^8.12.1",
-    "nodemon": "^2.0.4",
-    "socket.io": "^2.3.0"
+    "vue": "^3.3.11"
+  },
+  "devDependencies": {
+    "@babylonjs/core": "^6.40.0",
+    "@babylonjs/inspector": "^6.40.0",
+    "@vitejs/plugin-vue": "^4.5.2",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8",
+    "vue-tsc": "^1.8.25"
   }
 }

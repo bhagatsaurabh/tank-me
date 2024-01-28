@@ -9,14 +9,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.3.11"
+    "firebase": "^10.7.2",
+    "pinia": "^2.1.7",
+    "vue": "^3.3.11",
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@babylonjs/core": "^6.40.0",
     "@babylonjs/inspector": "^6.40.0",
     "@vitejs/plugin-vue": "^4.5.2",
+    "cheerio": "^1.0.0-rc.12",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
+    "vite-plugin-pwa": "^0.17.5",
     "vue-tsc": "^1.8.25"
   }
 }

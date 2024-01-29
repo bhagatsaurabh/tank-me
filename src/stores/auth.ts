@@ -5,11 +5,11 @@ import {
   onAuthStateChanged,
   signInAnonymously,
   getAdditionalUserInfo,
-  User,
-  Unsubscribe,
+  type User,
+  type Unsubscribe,
   isSignInWithEmailLink,
   signInWithEmailLink,
-  UserCredential,
+  type UserCredential,
   EmailAuthProvider
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -18,8 +18,8 @@ import { sendSignInLinkToEmail, linkWithCredential } from 'firebase/auth';
 import { useRemoteDBStore } from './remote';
 import * as local from '@/database/driver';
 import { app, remoteDB } from '@/config/firebase';
-import { Profile } from '@/interfaces/auth';
-import { AuthStatus, AuthType, Null } from '@/interfaces/types';
+import { type Profile } from '@/interfaces/auth';
+import type { AuthStatus, AuthType, Null } from '@/interfaces/types';
 
 const auth = getAuth(app);
 auth.useDeviceLanguage();

@@ -1,4 +1,4 @@
-import { NavigationGuard } from 'vue-router';
+import type { NavigationGuard } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
 import { useLobbyStore } from '@/stores/lobby';

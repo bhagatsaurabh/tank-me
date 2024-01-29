@@ -12,7 +12,7 @@ import {
 import { remoteDB } from '@/config/firebase';
 import { useAuthStore } from './auth';
 import * as local from '@/database/driver';
-import { Profile } from '@/interfaces/auth';
+import type { Profile } from '@/interfaces/auth';
 
 export const useRemoteDBStore = defineStore('remote', () => {
   const auth = useAuthStore();

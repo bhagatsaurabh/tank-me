@@ -13,6 +13,7 @@ const router = useRouter();
 const email = ref<string>('');
 const username = ref<string>('');
 const busy = ref(false);
+// eslint-disable-next-line no-useless-escape
 const isValid = computed<boolean>(() => /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(email.value));
 
 const handleSignIn = async (provider: 'email' | 'guest') => {

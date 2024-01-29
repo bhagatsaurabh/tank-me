@@ -1,4 +1,4 @@
-import { Null } from '@/interfaces/types';
+import type { Null } from '@/interfaces/types';
 
 let localDB: Null<IDBDatabase> = null;
 
@@ -45,8 +45,10 @@ const getSingleton = async <T>(objStoreName: 'users'): Promise<Null<T>> => {
     if (!localDB) resolve(null);
     else
       try {
-        let request: IDBRequest<T>;
-        request = localDB.transaction(objStoreName).objectStore(objStoreName).get('default');
+        const request: IDBRequest<T> = localDB
+          .transaction(objStoreName)
+          .objectStore(objStoreName)
+          .get('default');
         request.onsuccess = (event) => resolve((event.target as unknown as { result: T }).result);
         request.onerror = (event) => reject((event.target as any).error);
       } catch (error) {
@@ -76,8 +78,7 @@ const getObject = async <T>(objStoreName: 'users', key: string): Promise<Null<T>
     if (!localDB) resolve(null);
     else
       try {
-        let request: IDBRequest<T>;
-        request = localDB.transaction(objStoreName).objectStore(objStoreName).get(key);
+        const request: IDBRequest<T> = localDB.transaction(objStoreName).objectStore(objStoreName).get(key);
         request.onsuccess = (event) => resolve((event.target as unknown as { result: T }).result);
         request.onerror = (event) => reject((event.target as any).error);
       } catch (error) {
@@ -106,10 +107,7 @@ const deleteObject = async (objStoreName: 'users', key: string) => {
     if (!localDB) resolve(false);
     else
       try {
-        const request = localDB
-          .transaction(objStoreName, 'readwrite')
-          .objectStore(objStoreName)
-          .delete(key);
+        const request = localDB.transaction(objStoreName, 'readwrite').objectStore(objStoreName).delete(key);
         request.onsuccess = () => resolve(true);
         request.onerror = (event) => reject((event.target as any).error);
       } catch (error) {
@@ -122,8 +120,7 @@ const getAll = async <T>(objStoreName: 'users'): Promise<T[]> => {
     if (!localDB) resolve([]);
     else {
       try {
-        let request: IDBRequest;
-        request = localDB.transaction(objStoreName).objectStore(objStoreName).getAll();
+        const request: IDBRequest = localDB.transaction(objStoreName).objectStore(objStoreName).getAll();
         request.onsuccess = (event) => resolve((event.target as unknown as { result: T[] }).result);
         request.onerror = (event) => reject((event.target as any).error);
       } catch (error) {
@@ -137,8 +134,7 @@ const getCount = async (objStoreName: 'users'): Promise<number> => {
     if (!localDB) resolve(-1);
     else
       try {
-        let request: IDBRequest;
-        request = localDB.transaction(objStoreName).objectStore(objStoreName).count();
+        const request: IDBRequest = localDB.transaction(objStoreName).objectStore(objStoreName).count();
         request.onsuccess = () => resolve(request.result as number);
         request.onerror = (event) => reject((event.target as any).error);
       } catch (error) {

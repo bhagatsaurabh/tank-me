@@ -1,5 +1,5 @@
 <script setup lang="ts"></script>
 
-<template></template>
+<template>The Game component</template>
 
 <style scoped></style>

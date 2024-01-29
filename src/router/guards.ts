@@ -9,16 +9,16 @@ export const authGuard: NavigationGuard = async (_to, _from, next) => {
   if (auth.user) {
     next();
   } else {
-    next('/auth');
+    next('/');
   }
 };
 
 export const lobbyGuard: NavigationGuard = async (_to, _from, next) => {
   const auth = useAuthStore();
-  if (auth.profile?.username && !window.location.href.includes('type=upgrade')) {
+  if (auth.profile?.username && !window.location.href.includes('tankSignIntype=upgrade')) {
     next();
   } else {
-    next('/auth');
+    next('/');
   }
 };
 
@@ -28,11 +28,11 @@ export const gameGuard: NavigationGuard = async (_to, _from, next) => {
   if (auth.profile?.username && lobby.status === 'playing') {
     next();
   } else {
-    next(auth.profile?.username ? '/lobby' : '/auth');
+    next(auth.profile?.username ? '/lobby' : '/');
   }
 };
 
 export const noAuthGuard = async () => {
   const auth = useAuthStore();
-  return !auth.user || !auth.profile?.username || window.location.href.includes('type=upgrade');
+  return !auth.user || !auth.profile?.username || window.location.href.includes('tankSignIntype=upgrade');
 };

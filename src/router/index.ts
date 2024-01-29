@@ -10,8 +10,8 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      component: Game,
-      beforeEnter: [authGuard, gameGuard]
+      component: Auth,
+      beforeEnter: noAuthGuard
     },
     {
       path: '/lobby',
@@ -19,9 +19,9 @@ const router = createRouter({
       beforeEnter: [authGuard, lobbyGuard]
     },
     {
-      path: '/auth',
-      component: Auth,
-      beforeEnter: noAuthGuard
+      path: '/game',
+      component: Game,
+      beforeEnter: [authGuard, gameGuard]
     }
   ]
 });

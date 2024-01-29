@@ -42,7 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
           status.value = 'signed-in';
         }
       } else {
-        status.value = 'signed-out';
+        if (status.value !== 'blocked') status.value = 'signed-out';
       }
     });
     unsubFn.value = unsubscribe;
@@ -75,31 +75,42 @@ export const useAuthStore = defineStore('auth', () => {
     email: string | null,
     link?: string,
     isUpgrade: boolean = false
-  ) {
+  ): Promise<boolean> {
     status.value = 'pending';
     try {
       if (type === 'email' && email) {
         window.localStorage.setItem('email', email);
         await sendSignInLinkToEmail(auth, email, {
-          url: `https://${window.location.hostname}auth?type=${isUpgrade ? 'upgrade' : 'init'}`,
+          url: `${window.location.protocol}//${window.location.host}?tankSignIntype=${isUpgrade ? 'upgrade' : 'init'}`,
           handleCodeInApp: true
         });
       } else if (type === 'verify') {
         if (link && isSignInWithEmailLink(auth, link)) {
           if (!email) {
             status.value = 'blocked';
+            return false;
           } else {
             await handleSignInWithEmailLink(email, link);
+            status.value = 'verified';
           }
-        }
+        } else return false;
       } else if (type === 'guest') {
         await handleSignInWithAnonymous();
-      } else if (type === 'guest-verify' && email && link && user.value) {
-        const credential = EmailAuthProvider.credentialWithLink(email, link);
-        const { user: usr } = await linkWithCredential(user.value, credential);
-        user.value = usr;
-        await handleNewUser(usr, profile.value?.username);
+      } else if (type === 'guest-verify') {
+        if (link && isSignInWithEmailLink(auth, link)) {
+          if (!email || !user.value) {
+            status.value = 'blocked';
+            return false;
+          } else {
+            const credential = EmailAuthProvider.credentialWithLink(email, link);
+            const { user: usr } = await linkWithCredential(user.value, credential);
+            user.value = usr;
+            await handleNewUser(usr, profile.value?.username);
+            status.value = 'verified';
+          }
+        } else return false;
       }
+      return true;
     } catch (error) {
       console.log(error);
       // TODO: Notify
@@ -109,6 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
           message: 'Something went wrong, please try again'
         }); */
     }
+    return false;
   }
   async function handleSignInWithEmailLink(email: string, link: string) {
     window.localStorage.removeItem('email');

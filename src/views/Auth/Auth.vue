@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
@@ -44,22 +44,20 @@ watch(
   }
 );
 watch(email, () => (showErr.value = false));
-
-onMounted(async () => {
-  const link = window.location.href;
-  if (auth.isVerificationLink(link)) {
-    const storedEmail = window.localStorage.getItem('email');
-    let result: boolean;
-    if (link.includes('tankSignIntype=upgrade')) {
-      result = await auth.signIn('guest-verify', storedEmail, link);
-    } else {
-      result = await auth.signIn('verify', storedEmail, link);
-    }
-    if (result) {
-      window.close();
+watch(
+  () => auth.stateCheck,
+  async () => {
+    const link = window.location.href;
+    if (auth.isVerificationLink(link)) {
+      const storedEmail = window.localStorage.getItem('email');
+      if (link.includes('tankSignIntype=upgrade')) {
+        await auth.signIn('guest-verify', storedEmail, link);
+      } else {
+        await auth.signIn('verify', storedEmail, link);
+      }
     }
   }
-});
+);
 </script>
 
 <template>

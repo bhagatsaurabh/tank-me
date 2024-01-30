@@ -2,9 +2,9 @@ import type { Null } from '@/interfaces/types';
 
 let localDB: Null<IDBDatabase> = null;
 
-const openDB = async (version: number) => {
+const openDB = async () => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('tankmedb', version);
+    const request = indexedDB.open('tankmedb', 1);
 
     request.addEventListener('upgradeneeded', (e) => {
       const database = (e.target as unknown as { result: IDBDatabase }).result;

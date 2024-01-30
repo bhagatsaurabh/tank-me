@@ -5,3 +5,8 @@ export interface Profile {
   // To make Firestore types happy...
   [path: `${string}.${string}`]: any;
 }
+
+export interface BroadcastMessage {
+  type: 'auth';
+  value: any;
+}

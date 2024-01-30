@@ -15,18 +15,18 @@ const handleUpgrade = async () => {
     showErr.value = true;
     return;
   }
-  await auth.signIn('email', email.value, null, true);
+  await auth.signIn('email', email.value, '', true);
 };
 </script>
 
 <template>
   <div>The Lobby component</div>
-  <input v-model="email" type="email" spellcheck="false" />
-  <template v-if="auth.status !== 'pending'">
+  <template v-if="auth.status !== 'pending' && !auth.profile?.email">
+    <input v-model="email" type="email" spellcheck="false" />
     <span v-if="showErr">Provide a valid e-mail</span>
     <button @click="handleUpgrade">Verify</button>
   </template>
-  <template v-else>Wait...</template>
+  <template v-if="auth.status === 'pending'">Wait...</template>
 </template>
 
 <style scoped></style>

@@ -16,6 +16,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { sendSignInLinkToEmail, linkWithCredential } from 'firebase/auth';
 
 import { useRemoteDBStore } from './remote';
+import { useBroadcastStore } from './broadcast';
 import * as local from '@/database/driver';
 import { app, remoteDB } from '@/config/firebase';
 import { type Profile } from '@/interfaces/auth';
@@ -26,10 +27,12 @@ auth.useDeviceLanguage();
 
 export const useAuthStore = defineStore('auth', () => {
   const remote = useRemoteDBStore();
+  const broadcast = useBroadcastStore();
   const user = ref<Null<User>>(null);
   const profile = ref<Null<Profile>>(null);
   const status = ref<AuthStatus>('pending');
   const unsubFn = ref<Null<Unsubscribe>>(null);
+  const stateCheck = ref(false);
 
   function registerAuthListener() {
     if (unsubFn.value) return;
@@ -39,11 +42,14 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = usr;
         if (status.value !== 'signed-in') {
           await handleExistingUser(user.value);
-          status.value = 'signed-in';
+          if (!window.location.href.includes('tankSignIntype=upgrade')) {
+            status.value = 'signed-in';
+          }
         }
       } else {
         if (status.value !== 'blocked') status.value = 'signed-out';
       }
+      stateCheck.value = true;
     });
     unsubFn.value = unsubscribe;
   }
@@ -107,6 +113,7 @@ export const useAuthStore = defineStore('auth', () => {
             user.value = usr;
             await handleNewUser(usr, profile.value?.username);
             status.value = 'verified';
+            broadcast.sendBroadcast({ type: 'auth', value: 'guest-verified' });
           }
         } else return false;
       }
@@ -166,11 +173,13 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     status,
     profile,
+    stateCheck,
     registerAuthListener,
     deRegisterAuthListener,
     signIn,
     signOut,
     updateUserProfile,
-    isVerificationLink
+    isVerificationLink,
+    loadUserProfile
   };
 });

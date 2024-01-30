@@ -1,13 +1,5 @@
 import { defineStore } from 'pinia';
-import {
-  collection,
-  doc,
-  getCountFromServer,
-  query,
-  setDoc,
-  updateDoc,
-  where
-} from 'firebase/firestore';
+import { collection, doc, getCountFromServer, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 import { remoteDB } from '@/config/firebase';
 import { useAuthStore } from './auth';
@@ -34,7 +26,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
     try {
       await updateDoc(doc(remoteDB, 'users', auth.user.uid), profile);
       auth.profile = { ...auth.profile, ...profile };
-      await local.updateProfile(auth.profile);
+      await local.updateProfile({ ...auth.profile });
       return true;
     } catch (error) {
       console.log(error);

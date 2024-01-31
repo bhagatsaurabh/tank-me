@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
+import { useLobbyStore } from '@/stores/lobby';
 
 const auth = useAuthStore();
+const lobby = useLobbyStore();
+const router = useRouter();
 
 const email = ref<string>('');
 const showErr = ref(false);
@@ -17,6 +21,15 @@ const handleUpgrade = async () => {
   }
   await auth.signIn('email', email.value, '', true);
 };
+const handleStart = () => {
+  lobby.status = 'playing';
+  router.push('/game');
+};
+
+onMounted(() => {
+  // TODO: Load game assets
+  // TODO: Connect to colyseus
+});
 </script>
 
 <template>
@@ -27,6 +40,9 @@ const handleUpgrade = async () => {
     <button @click="handleUpgrade">Verify</button>
   </template>
   <template v-if="auth.status === 'pending'">Wait...</template>
+  <template v-if="auth.status === 'signed-in'">
+    <button @click="handleStart">Start</button>
+  </template>
 </template>
 
 <style scoped></style>

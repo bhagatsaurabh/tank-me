@@ -4,4 +4,4 @@ export type AuthStatus = 'pending' | 'blocked' | 'verified' | 'signed-in' | 'sig
 
 export type AuthType = 'email' | 'verify' | 'guest' | 'guest-verify';
 
-export type LobbyStatus = 'idle' | 'matchmaking' | 'playing';
+export type LobbyStatus = 'connecting' | 'failed' | 'idle' | 'matchmaking' | 'playing';

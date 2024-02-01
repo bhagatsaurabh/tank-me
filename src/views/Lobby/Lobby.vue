@@ -26,9 +26,9 @@ const handleStart = () => {
   router.push('/game');
 };
 
-onMounted(() => {
+onMounted(async () => {
   // TODO: Load game assets
-  // TODO: Connect to colyseus
+  await lobby.connect();
 });
 </script>
 
@@ -42,6 +42,9 @@ onMounted(() => {
   <template v-if="auth.status === 'pending'">Wait...</template>
   <template v-if="auth.status === 'signed-in'">
     <button @click="handleStart">Start</button>
+  </template>
+  <template>
+    <span>{{ lobby.status }}</span>
   </template>
 </template>
 

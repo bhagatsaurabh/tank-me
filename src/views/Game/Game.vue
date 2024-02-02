@@ -25,7 +25,7 @@ onMounted(() => {
     canvasEl.value.width = window.innerWidth;
     canvasEl.value.height = window.innerHeight;
 
-    // Initialize the game
+    // Initialize and load the game
     game.value = new TankMe(canvasEl.value);
   }
 });

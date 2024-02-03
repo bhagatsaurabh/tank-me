@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
@@ -21,10 +21,18 @@ const handleUpgrade = async () => {
   }
   await auth.signIn('email', email.value, '', true);
 };
-const handleStart = () => {
-  lobby.status = 'playing';
-  router.push('/game');
+const handleStart = async () => {
+  await lobby.match('desert');
 };
+
+watch(
+  () => lobby.status,
+  () => {
+    if (lobby.status === 'playing') {
+      router.push('/game');
+    }
+  }
+);
 
 onMounted(async () => {
   // TODO: Load game assets
@@ -43,9 +51,7 @@ onMounted(async () => {
   <template v-if="auth.status === 'signed-in'">
     <button @click="handleStart">Start</button>
   </template>
-  <template>
-    <span>{{ lobby.status }}</span>
-  </template>
+  <span>{{ lobby.status }}</span>
 </template>
 
 <style scoped></style>

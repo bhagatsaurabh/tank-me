@@ -7,7 +7,6 @@ import { TankMe } from '@/game';
 
 const containerEl = ref<Null<HTMLDivElement>>(null);
 const canvasEl = ref<Null<HTMLCanvasElement>>(null);
-const game = ref<Null<TankMe>>(null);
 
 const handleResize = () => {
   if (canvasEl.value) {
@@ -26,7 +25,7 @@ onMounted(() => {
     canvasEl.value.height = window.innerHeight;
 
     // Initialize and load the game
-    game.value = new TankMe(canvasEl.value);
+    TankMe.init(canvasEl.value);
   }
 });
 onBeforeUnmount(() => {

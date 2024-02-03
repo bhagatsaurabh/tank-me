@@ -1,30 +1,28 @@
-import { ref, type Ref, type UnwrapRef } from 'vue';
+import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import * as Colyseus from 'colyseus.js';
 
 import { useAuthStore } from './auth';
 import type { Null, LobbyStatus } from '@/interfaces/types';
 import type { RoomState } from '@/game/state';
-import { Color3, CreateSphere, Mesh, StandardMaterial, Vector3 } from '@babylonjs/core';
+import { GameClient } from '@/game/client';
 
 export const useLobbyStore = defineStore('lobby', () => {
   const auth = useAuthStore();
   const status = ref<LobbyStatus>('connecting');
   // Because of weird typescript bug...
-  const client: Ref<UnwrapRef<Null<Colyseus.Client>>> = ref<Null<Colyseus.Client>>(null);
+
+  const client = ref<GameClient | undefined>(undefined);
   const lobbyRoom = ref<Null<Colyseus.Room>>(null);
   const allRooms = ref<Colyseus.RoomAvailable[]>([]);
-  const gameRoom: Ref<UnwrapRef<Null<Colyseus.Room<RoomState>>>> = ref<Null<Colyseus.Room<RoomState>>>(null);
-  const playerEntities = ref<Record<string, Mesh>>({});
-  const playerNextPosition = ref<Record<string, Vector3>>({});
+  const gameRoom = ref<Null<Colyseus.Room<RoomState>>>(null);
 
   async function connect() {
-    client.value = new Colyseus.Client(import.meta.env.VITE_TANKME_SERVER);
-    try {
-      lobbyRoom.value = await client.value.joinOrCreate('lobby', {
-        accessToken: (auth.user as any).accessToken
-      });
+    client.value = GameClient.connect();
+    if (!client.value) return;
 
+    try {
+      lobbyRoom.value = await client.value.joinRoom('lobby', (auth.user as any).accessToken);
       lobbyRoom.value.onMessage('rooms', (rooms) => (allRooms.value = rooms));
       lobbyRoom.value.onMessage('+', ([roomId, room]) => {
         const roomIndex = allRooms.value.findIndex((room) => room.roomId === roomId);
@@ -47,40 +45,18 @@ export const useLobbyStore = defineStore('lobby', () => {
     status.value = 'failed';
     return false;
   }
-  async function match(map: string) {
+  async function match(map: 'desert') {
     if (!client.value) return false;
 
     status.value = 'matchmaking';
     try {
-      gameRoom.value = await client.value.joinOrCreate<RoomState>(map, {
-        accessToken: (auth.user as any).accessToken
+      gameRoom.value = await client.value.joinRoom(map, (auth.user as any).accessToken);
+
+      gameRoom.value.state.listen('status', (newVal) => {
+        console.log(newVal, gameRoom.value?.state.status);
+        if (newVal === 'ready') status.value = 'playing';
       });
 
-      console.log(gameRoom.value.sessionId, 'joined', gameRoom.value.name);
-
-      gameRoom.value.state.players.onAdd((player, sessionId) => {
-        const isCurrentPlayer = sessionId === gameRoom.value?.sessionId;
-        const sphere = CreateSphere(`player-${sessionId}`, {
-          segments: 8,
-          diameter: 40
-        });
-        sphere.position.set(player.x, player.y, player.z);
-        sphere.material = new StandardMaterial(`player-material-${sessionId}`);
-        (sphere.material as StandardMaterial).emissiveColor = isCurrentPlayer
-          ? Color3.FromHexString('#ff9900')
-          : Color3.Gray();
-        playerEntities.value[sessionId] = sphere;
-        playerNextPosition.value[sessionId] = sphere.position.clone();
-        player.onChange(() => {
-          playerNextPosition.value[sessionId].set(player.x, player.y, player.z);
-        });
-      });
-      gameRoom.value.state.players.onRemove((player, sessionId) => {
-        playerEntities.value[sessionId].dispose();
-        delete playerEntities.value[sessionId];
-      });
-
-      status.value = 'playing';
       return true;
     } catch (error) {
       console.log(error);
@@ -91,10 +67,6 @@ export const useLobbyStore = defineStore('lobby', () => {
 
   return {
     status,
-    client,
-    gameRoom,
-    playerEntities,
-    playerNextPosition,
     connect,
     match
   };

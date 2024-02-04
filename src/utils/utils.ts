@@ -1,3 +1,5 @@
+import { Vector3 } from '@babylonjs/core';
+
 import type { Null } from '@/interfaces/types';
 
 export const throttle = (cb: (...argmts: any) => void, delay: number) => {
@@ -17,3 +19,7 @@ export const throttle = (cb: (...argmts: any) => void, delay: number) => {
   };
   return throttled;
 };
+
+export const noop: () => void = () => {};
+
+export const gravityVector = new Vector3(0, -9.8, 0);

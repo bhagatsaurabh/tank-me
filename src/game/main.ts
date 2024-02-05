@@ -14,12 +14,7 @@ import {
   ShadowGenerator,
   CascadedShadowGenerator,
   FollowCamera,
-  MeshBuilder,
   CubeTexture,
-  Texture,
-  GroundMesh,
-  PhysicsAggregate,
-  PhysicsShapeType,
   FreeCamera,
   SceneLoader,
   AbstractMesh,
@@ -33,8 +28,8 @@ import type { RoomState } from './state';
 import type { Null } from '@/interfaces/types';
 import { gravityVector, noop, throttle } from '@/utils/utils';
 import { InputManager } from './input';
-import { AssetLoader } from './loader';
-import { Tank } from './tank';
+import { Tank } from './models/tank';
+import { Ground } from './models/ground';
 
 /**
  * Assumptions before creating a game instance:
@@ -57,7 +52,6 @@ export class TankMe {
   private tppCamera!: FollowCamera;
   private fppCamera!: FreeCamera;
   private endCamera!: ArcRotateCamera;
-  private ground!: GroundMesh;
   private playerMeshes: AbstractMesh[] = [];
   private players: Record<string, Tank> = {};
   private player!: Tank;
@@ -73,11 +67,6 @@ export class TankMe {
     this.scene = new Scene(this.engine);
     TankMe.physicsPlugin = new HavokPlugin(true, physicsEngine);
     this.scene.enablePhysics(gravityVector, TankMe.physicsPlugin);
-
-    this.initScene();
-    this.initStateListeners();
-    this.initWindowListeners();
-    this.render();
   }
   static get(): TankMe | undefined {
     return TankMe.instance;
@@ -87,6 +76,11 @@ export class TankMe {
     if (!TankMe.instance && client && client.rooms['desert']) {
       const physicsEngine = await HavokPhysics();
       TankMe.instance = new TankMe(canvas, client, client.rooms['desert'], physicsEngine, selfUID);
+
+      await TankMe.instance.initScene();
+      TankMe.instance.initStateListeners();
+      TankMe.instance.initWindowListeners();
+      TankMe.instance.render();
 
       await TankMe.importPlayerMesh(TankMe.instance.scene);
 
@@ -104,7 +98,7 @@ export class TankMe {
     TankMe.instance.playerMeshes = meshes;
   }
 
-  private initScene() {
+  private async initScene() {
     // Init input manager
     this.scene.actionManager = InputManager.init(this.scene);
 
@@ -136,20 +130,9 @@ export class TankMe {
     this.scene.createDefaultSkybox(new CubeTexture('/assets/game/skybox/bluecloud', this.scene), true, 1000);
 
     // Create Ground
-    this.ground = MeshBuilder.CreateGroundFromHeightMap(
-      'ground',
-      AssetLoader.assets['/assets/game/map/height.png'],
-      {
-        width: 500,
-        height: 500,
-        subdivisions: 500,
-        minHeight: 0,
-        maxHeight: 25,
-        updatable: false,
-        onReady: this.handleGroundCreated
-      },
-      this.scene
-    );
+    await Ground.create(this.scene);
+    this.shadowGenerator?.addShadowCaster(Ground.groundMesh);
+    this.createTanks();
 
     /* this.client.rooms['desert']?.send('updatePosition', {
       x: targetPosition.x,
@@ -234,49 +217,18 @@ export class TankMe {
         arcRotateCam.alpha += 0.007;
       } */
   }
-  private handleGroundCreated() {
-    if (!this.ground) return;
-
-    const groundMaterial = new StandardMaterial('ground', this.scene);
-    groundMaterial.diffuseTexture = new Texture(
-      AssetLoader.assets['/assets/game/map/diffuse.png'],
-      this.scene
-    );
-    groundMaterial.specularColor = new Color3(0, 0, 0);
-    groundMaterial.ambientColor = new Color3(1, 1, 1);
-    this.ground.material = groundMaterial;
-
-    /* this.ground.physicsImpostor = new PhysicsImpostor(
-      this.ground,
-      PhysicsImpostor.HeightmapImpostor,
-      { mass: 0, restitution: 0 },
-      this.scene
-    ); */
-    new PhysicsAggregate(
-      this.ground,
-      PhysicsShapeType.MESH,
-      { mass: 0, restitution: 0 },
-      this.scene
-    ).body.setCollisionCallbackEnabled(true);
-
-    this.ground.position.y = 0;
-    this.shadowGenerator?.addShadowCaster(this.ground);
-    this.ground.receiveShadows = true;
-
-    this.createTanks();
-  }
   private createTanks() {
     this.room.state.players.forEach((player) => {
       const isEnemy = this.selfUID !== player.uid;
       this.players[player.uid] = Tank.create(
         player.uid,
         this.playerMeshes,
-        this.shadowGenerator,
         new Vector3(...Object.values(player.position)),
         this.scene,
         !isEnemy ? { tpp: this.tppCamera, fpp: this.fppCamera } : null,
         isEnemy
       );
+      this.shadowGenerator.addShadowCaster(this.players[player.uid].rootMesh);
       if (!isEnemy) this.player = this.players[player.uid];
     });
   }

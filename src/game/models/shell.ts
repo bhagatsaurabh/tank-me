@@ -15,13 +15,12 @@ import {
   Sound,
   type IPhysicsCollisionEvent,
   PointLight,
-  ParticleSystem,
-  Color4
+  ParticleSystem
 } from '@babylonjs/core';
 import { v4 as uuid } from 'uuid';
 
-import { AssetLoader } from './loader';
-import { TankMe } from '.';
+import { AssetLoader } from '../loader';
+import { TankMe } from '../main';
 
 export class Shell {
   private static refShell: Mesh;
@@ -37,28 +36,22 @@ export class Shell {
     id: string,
     public scene: Scene,
     spawn: Vector3,
-    public turret: AbstractMesh
+    public absoluteRotation: Quaternion
   ) {
     this.playerId = id;
-    this.loadAndSetTransform(spawn, turret);
+    this.loadAndSetTransform(spawn, absoluteRotation);
     this.loadSound();
     this.setPhysics();
     this.setLight();
-    this.setParticleSystem();
 
     TankMe.physicsPlugin.onCollisionObservable.add((ev) => this.onCollide(ev));
     this.mesh.registerBeforeRender((mesh) => this.checkBounds(mesh));
   }
 
-  private loadAndSetTransform(spawn: Vector3, turret: AbstractMesh) {
+  private loadAndSetTransform(spawn: Vector3, absoluteRotation: Quaternion) {
     this.mesh = Shell.refShell.clone(`shell-${uuid()}`);
     this.mesh.position = new Vector3(spawn.x, spawn.y + 1.75, spawn.z);
-    this.mesh.rotationQuaternion = new Quaternion(
-      turret.absoluteRotationQuaternion.x,
-      turret.absoluteRotationQuaternion.y,
-      turret.absoluteRotationQuaternion.z,
-      turret.absoluteRotationQuaternion.w
-    );
+    this.mesh.rotationQuaternion = absoluteRotation.clone();
     this.mesh.translate(Axis.Z, 6.5, Space.LOCAL);
     this.mesh.isVisible = false;
     this.mesh.material = Shell.refShellMaterial;
@@ -112,37 +105,6 @@ export class Shell {
     this.pointLight.parent = this.mesh;
     this.pointLight.setEnabled(false);
   }
-  private setParticleSystem() {
-    this.particleSystem = new ParticleSystem('muzzle-flash', 2000, this.scene);
-
-    this.particleSystem.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/textures/fire.jpg'],
-      this.scene
-    );
-    this.particleSystem.emitter = this.turret;
-    this.particleSystem.minEmitBox = new Vector3(0, 2.2, 6.3);
-    this.particleSystem.maxEmitBox = new Vector3(0, 2.2, 6.4);
-    this.particleSystem.color1 = new Color4(0.7, 0.8, 1.0, 1.0);
-    this.particleSystem.color2 = new Color4(0.2, 0.5, 1.0, 1.0);
-    this.particleSystem.colorDead = new Color4(0, 0, 0, 1.0);
-    this.particleSystem.minSize = 0.1;
-    this.particleSystem.maxSize = 0.2;
-    this.particleSystem.minLifeTime = 0.3;
-    this.particleSystem.maxLifeTime = 1;
-    this.particleSystem.emitRate = 7000;
-    this.particleSystem.blendMode = ParticleSystem.BLENDMODE_ONEONE;
-    this.particleSystem.gravity = new Vector3(0, 0, 0);
-    this.particleSystem.direction1 = new Vector3(-0.005, 0.005, 0.05);
-    this.particleSystem.direction2 = new Vector3(0.005, -0.005, 0.05);
-    this.particleSystem.minAngularSpeed = 0;
-    this.particleSystem.maxAngularSpeed = Math.PI;
-    this.particleSystem.minEmitPower = 20;
-    this.particleSystem.maxEmitPower = 50;
-    this.particleSystem.updateSpeed = 0.1;
-    this.particleSystem.targetStopDuration = 0.4;
-    this.particleSystem.disposeOnStop = true;
-    this.particleSystem.preWarmCycles = 100;
-  }
 
   public fire() {
     this.isSpent = true;
@@ -171,8 +133,8 @@ export class Shell {
 
     Shell.refShell = MeshBuilder.CreateBox('shell', { height: 0.1, width: 0.1, depth: 1 }, scene);
   }
-  static create(id: string, scene: Scene, spawn: Vector3, turret: AbstractMesh): Shell {
+  static create(id: string, scene: Scene, spawn: Vector3, absoluteRotation: Quaternion): Shell {
     Shell.setRefShell(scene);
-    return new Shell(id, scene, spawn, turret);
+    return new Shell(id, scene, spawn, absoluteRotation);
   }
 }

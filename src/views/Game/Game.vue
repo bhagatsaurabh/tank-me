@@ -4,7 +4,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { throttle } from '@/utils/utils';
 import type { Null } from '@/interfaces/types';
-import { TankMe } from '@/game';
+import { TankMe } from '@/game/main';
 
 const auth = useAuthStore();
 const containerEl = ref<Null<HTMLDivElement>>(null);
@@ -52,3 +52,4 @@ onBeforeUnmount(() => {
   height: 100%;
 }
 </style>
+@/game/main

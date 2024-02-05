@@ -3,7 +3,6 @@ import {
   type AbstractMesh,
   Vector3,
   BoundingInfo,
-  ShadowGenerator,
   PhysicsAggregate,
   PhysicsShapeType,
   Scene,
@@ -13,10 +12,15 @@ import {
   FreeCamera,
   Axis,
   Space,
-  Quaternion
+  Quaternion,
+  ParticleSystem,
+  GPUParticleSystem
 } from '@babylonjs/core';
 
 import { Shell } from './shell';
+import { PSMuzzleFlash } from '../particle-systems/muzzle-flash';
+import { PSTankExplosion } from '../particle-systems/tank-explosion';
+import { PSFire } from '../particle-systems/fire';
 
 export class Tank {
   private turret!: AbstractMesh;
@@ -27,21 +31,21 @@ export class Tank {
   private lastCameraToggle = 0;
   private cameraToggleDelay = 1000;
   private shell!: Shell;
+  private particleSystems: Record<string, ParticleSystem | GPUParticleSystem | PSFire> = {};
 
   private constructor(
     public rootMesh: AbstractMesh,
-    public shadowGenerator: ShadowGenerator,
     public spawn: Vector3,
     public scene: Scene,
     public cameras: Nullable<{ tpp: FollowCamera; fpp: FreeCamera }>,
     public isEnemy: boolean = false
   ) {
     this.scaleBoundingBox();
-    shadowGenerator.addShadowCaster(rootMesh);
     this.setTransform();
     this.setPhysics();
     this.setSoundSources();
     this.loadCannon();
+    this.setParticleSystems();
 
     if (!isEnemy && cameras?.tpp && cameras.fpp) {
       cameras.tpp.lockedTarget = rootMesh;
@@ -103,7 +107,21 @@ export class Tank {
     this.sounds['idle'].play();
   }
   private loadCannon() {
-    this.shell = Shell.create(this.rootMesh.name, this.scene, this.rootMesh.position, this.turret);
+    this.shell = Shell.create(
+      this.rootMesh.name,
+      this.scene,
+      this.rootMesh.position,
+      this.turret.absoluteRotationQuaternion
+    );
+    this.particleSystems['muzzle-flash'] = PSMuzzleFlash.create(this.turret.position.clone(), this.scene);
+  }
+  private setParticleSystems() {
+    this.particleSystems['muzzle-flash'] = PSMuzzleFlash.create(this.turret.position.clone(), this.scene);
+    this.particleSystems['tank-explosion'] = PSTankExplosion.create(
+      this.rootMesh.position.clone(),
+      this.scene
+    );
+    this.particleSystems['fire'] = PSFire.create(this.rootMesh.position.clone(), this.scene);
   }
 
   public forward(amount: number) {
@@ -169,9 +187,18 @@ export class Tank {
     if (performance.now() - this.lastFired <= this.firingDelay) return;
 
     this.shell.fire();
-
+    this.particleSystems['muzzle-flash'].emitter = this.turret.position.clone();
+    this.particleSystems['muzzle-flash'].start();
     this.sounds['cannon'].play();
+    this.loadCannon();
+
     this.lastFired = performance.now();
+  }
+  public explode() {
+    this.particleSystems['tank-explosion'].emitter = this.rootMesh.position.clone();
+    this.particleSystems['fire'].emitter = this.rootMesh.position.clone();
+    this.particleSystems['tank-explosion'].start();
+    this.particleSystems['fire'].start();
   }
   public toggleCamera() {
     if (performance.now() - this.lastCameraToggle > this.cameraToggleDelay) {
@@ -199,13 +226,12 @@ export class Tank {
   static create(
     id: string,
     meshes: AbstractMesh[],
-    shadowGenerator: ShadowGenerator,
     spawn: Vector3,
     scene: Scene,
     cameras: Nullable<{ tpp: FollowCamera; fpp: FreeCamera }>,
     isEnemy: boolean = false
   ) {
     const cloned = meshes[0].clone(`${id}:${meshes[0].name}`, null) as AbstractMesh;
-    return new Tank(cloned, shadowGenerator, spawn, scene, cameras, isEnemy);
+    return new Tank(cloned, spawn, scene, cameras, isEnemy);
   }
 }

@@ -14,7 +14,6 @@ import {
   ShadowGenerator,
   CascadedShadowGenerator,
   FollowCamera,
-  CubeTexture,
   FreeCamera,
   SceneLoader,
   AbstractMesh,
@@ -30,6 +29,8 @@ import { gravityVector, noop, throttle } from '@/utils/utils';
 import { InputManager } from './input';
 import { Tank } from './models/tank';
 import { Ground } from './models/ground';
+import { AssetLoader } from './loader';
+import { Skybox } from './skybox';
 
 /**
  * Assumptions before creating a game instance:
@@ -74,15 +75,30 @@ export class TankMe {
   static async init(canvas: HTMLCanvasElement, selfUID: string): Promise<Null<TankMe>> {
     const client = GameClient.get();
     if (!TankMe.instance && client && client.rooms['desert']) {
-      const physicsEngine = await HavokPhysics();
-      TankMe.instance = new TankMe(canvas, client, client.rooms['desert'], physicsEngine, selfUID);
+      // Pre-load assets
+      await AssetLoader.load([
+        { path: '/assets/game/map/height.png', format: 'base64' },
+        { path: '/assets/game/map/diffuse.png', format: 'base64' },
+        { path: '/assets/game/textures/explosion.jpg', format: 'base64' },
+        { path: '/assets/game/textures/smoke.png', format: 'base64' },
+        { path: '/assets/game/textures/flare.png', format: 'base64' },
+        { path: '/assets/game/textures/fire.jpg', format: 'base64' },
+        { path: '/assets/game/audio/explosion.mp3', format: 'arraybuffer' },
+        { path: '/assets/game/audio/cannon.mp3', format: 'arraybuffer' },
+        { path: '/assets/game/audio/idle.mp3', format: 'arraybuffer' },
+        { path: '/assets/game/audio/run.mp3', format: 'arraybuffer' }
+      ]);
 
+      // Init physics engine
+      const physicsEngine = await HavokPhysics();
+
+      // Init game instance
+      TankMe.instance = new TankMe(canvas, client, client.rooms['desert'], physicsEngine, selfUID);
+      await TankMe.importPlayerMesh(TankMe.instance.scene);
       await TankMe.instance.initScene();
       TankMe.instance.initStateListeners();
       TankMe.instance.initWindowListeners();
       TankMe.instance.render();
-
-      await TankMe.importPlayerMesh(TankMe.instance.scene);
 
       return TankMe.instance;
     }
@@ -91,7 +107,7 @@ export class TankMe {
   private static async importPlayerMesh(scene: Scene) {
     const { meshes } = await SceneLoader.ImportMeshAsync(
       null,
-      '/assets/game/models/default',
+      AssetLoader.assets['/assets/game/models/default'] as string,
       'Tank.babylon',
       scene
     );
@@ -127,7 +143,7 @@ export class TankMe {
     skyboxMaterial.diffuseColor = new Color3(0, 0, 0);
     skyboxMaterial.specularColor = new Color3(0, 0, 0); */
     // this.scene.createDefaultSkybox(new CubeTexture('/assets/game/skybox/bluecloud', this.scene), false, 1000);
-    this.scene.createDefaultSkybox(new CubeTexture('/assets/game/skybox/bluecloud', this.scene), true, 1000);
+    await Skybox.create(this.scene);
 
     // Create Ground
     await Ground.create(this.scene);

@@ -21,6 +21,7 @@ import { Shell } from './shell';
 import { PSMuzzleFlash } from '../particle-systems/muzzle-flash';
 import { PSTankExplosion } from '../particle-systems/tank-explosion';
 import { PSFire } from '../particle-systems/fire';
+import { AssetLoader } from '../loader';
 
 export class Tank {
   private turret!: AbstractMesh;
@@ -77,31 +78,55 @@ export class Tank {
     ).body.setCollisionCallbackEnabled(true);
   }
   private setSoundSources() {
-    this.sounds['cannon'] = new Sound('cannon', '../assets/sounds/cannon.mp3', this.scene, null, {
-      loop: false,
-      autoplay: false,
-      spatialSound: true,
-      maxDistance: 75,
-      volume: 1
-    });
-    this.sounds['idle'] = new Sound('idle', '../assets/sounds/idle.mp3', this.scene, null, {
-      loop: true,
-      autoplay: false,
-      spatialSound: true,
-      maxDistance: 15
-    });
-    this.sounds['move'] = new Sound('move', '../assets/sounds/run.mp3', this.scene, null, {
-      loop: true,
-      autoplay: false,
-      spatialSound: true,
-      maxDistance: 20
-    });
-    this.sounds['explode'] = new Sound('explode', '../assets/sounds/blast.mp3', this.scene, null, {
-      loop: false,
-      autoplay: false,
-      spatialSound: true,
-      maxDistance: 65
-    });
+    this.sounds['cannon'] = new Sound(
+      'cannon',
+      AssetLoader.assets['/assets/game/audio/cannon.mp3'] as ArrayBuffer,
+      this.scene,
+      null,
+      {
+        loop: false,
+        autoplay: false,
+        spatialSound: true,
+        maxDistance: 75,
+        volume: 1
+      }
+    );
+    this.sounds['idle'] = new Sound(
+      'idle',
+      AssetLoader.assets['/assets/game/audio/idle.mp3'] as ArrayBuffer,
+      this.scene,
+      null,
+      {
+        loop: true,
+        autoplay: false,
+        spatialSound: true,
+        maxDistance: 15
+      }
+    );
+    this.sounds['move'] = new Sound(
+      'move',
+      AssetLoader.assets['/assets/game/audio/run.mp3'] as ArrayBuffer,
+      this.scene,
+      null,
+      {
+        loop: true,
+        autoplay: false,
+        spatialSound: true,
+        maxDistance: 20
+      }
+    );
+    this.sounds['explode'] = new Sound(
+      'explode',
+      AssetLoader.assets['/assets/game/audio/explosion.mp3'] as ArrayBuffer,
+      this.scene,
+      null,
+      {
+        loop: false,
+        autoplay: false,
+        spatialSound: true,
+        maxDistance: 65
+      }
+    );
 
     Object.values(this.sounds).forEach((sound) => sound.attachToMesh(this.rootMesh));
     this.sounds['idle'].play();

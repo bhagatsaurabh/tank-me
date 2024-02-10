@@ -8,3 +8,11 @@ export const updateProfile = async (profile: Profile) => {
 export const getProfile = async (id: string) => {
   return await getObject<Profile>('users', id);
 };
+
+export const storeFile = async (pathId: string, file: File) => {
+  return await updateObject('files', pathId, file);
+};
+
+export const getFile = async (pathId: string) => {
+  return await getObject<File>('files', pathId);
+};

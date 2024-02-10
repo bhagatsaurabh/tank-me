@@ -8,6 +8,7 @@ import {
   PhysicsAggregate,
   PhysicsShapeType
 } from '@babylonjs/core';
+
 import { AssetLoader } from '../loader';
 
 export class Ground {
@@ -18,11 +19,11 @@ export class Ground {
     return new Promise((resolve) => {
       Ground.groundMesh = MeshBuilder.CreateGroundFromHeightMap(
         'ground',
-        AssetLoader.assets['/assets/game/map/height.png'],
+        AssetLoader.assets['/assets/game/map/height.png'] as string,
         {
           width: 500,
           height: 500,
-          subdivisions: 500,
+          subdivisions: 1000,
           minHeight: 0,
           maxHeight: 25,
           updatable: false,
@@ -34,7 +35,10 @@ export class Ground {
   }
   private static onGroundCreated(scene: Scene, mesh: GroundMesh, done: (val?: unknown) => void) {
     const groundMaterial = new StandardMaterial('ground', scene);
-    groundMaterial.diffuseTexture = new Texture(AssetLoader.assets['/assets/game/map/diffuse.png'], scene);
+    groundMaterial.diffuseTexture = new Texture(
+      AssetLoader.assets['/assets/game/map/diffuse.png'] as string,
+      scene
+    );
     groundMaterial.specularColor = new Color3(0, 0, 0);
     groundMaterial.ambientColor = new Color3(1, 1, 1);
     mesh.material = groundMaterial;

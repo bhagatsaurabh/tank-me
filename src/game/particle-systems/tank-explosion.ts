@@ -23,7 +23,7 @@ export class PSTankExplosion {
     }
 
     this.particleSystem.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/textures/explosion.png'],
+      AssetLoader.assets['/assets/game/textures/explosion.png'] as string,
       this.scene
     );
     this.particleSystem.emitter = this.emitter;

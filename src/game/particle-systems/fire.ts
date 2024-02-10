@@ -24,7 +24,7 @@ export class PSFire {
     }
 
     this.smokeSystem.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/textures/smoke.png'],
+      AssetLoader.assets['/assets/game/textures/smoke.png'] as string,
       this.scene
     );
     this.smokeSystem.emitter = this.emitter;
@@ -60,7 +60,7 @@ export class PSFire {
     }
 
     this.fireSystem.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/textures/flare.png'],
+      AssetLoader.assets['/assets/game/textures/flare.png'] as string,
       this.scene
     );
     this.fireSystem.emitter = this.emitter;

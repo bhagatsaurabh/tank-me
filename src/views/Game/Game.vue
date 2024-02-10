@@ -37,6 +37,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="game-container" ref="containerEl">
+    <div class="feed-load"></div>
     <canvas ref="canvasEl"></canvas>
   </div>
 </template>
@@ -50,6 +51,16 @@ onBeforeUnmount(() => {
 .game-container canvas {
   width: 100%;
   height: 100%;
+}
+
+.game-container .feed-load {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  background-color: rgb(255, 145, 145);
 }
 </style>
 @/game/main

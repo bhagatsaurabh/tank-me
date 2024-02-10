@@ -23,7 +23,7 @@ export class PSMuzzleFlash {
     }
 
     this.particleSystem.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/textures/fire.jpg'],
+      AssetLoader.assets['/assets/game/textures/fire.jpg'] as string,
       this.scene
     );
     this.particleSystem.emitter = this.emitter;

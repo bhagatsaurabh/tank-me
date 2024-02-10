@@ -31,6 +31,9 @@ const createSchema = (database: IDBDatabase) => {
   if (!database.objectStoreNames.contains('users')) {
     database.createObjectStore('users');
   }
+  if (!database.objectStoreNames.contains('files')) {
+    database.createObjectStore('files');
+  }
 };
 const closeDB = () => {
   localDB?.removeEventListener('close', closeListener);
@@ -40,40 +43,7 @@ const closeListener = () => {
   console.log('tankmedb closed');
 };
 
-const getSingleton = async <T>(objStoreName: 'users'): Promise<Null<T>> => {
-  return new Promise((resolve, reject) => {
-    if (!localDB) resolve(null);
-    else
-      try {
-        const request: IDBRequest<T> = localDB
-          .transaction(objStoreName)
-          .objectStore(objStoreName)
-          .get('default');
-        request.onsuccess = (event) => resolve((event.target as unknown as { result: T }).result);
-        request.onerror = (event) => reject((event.target as any).error);
-      } catch (error) {
-        reject(error);
-      }
-  });
-};
-const updateSingleton = async (objStoreName: 'users', value: any): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
-    if (!localDB) resolve(false);
-    else
-      try {
-        const request = localDB
-          .transaction(objStoreName, 'readwrite')
-          .objectStore(objStoreName)
-          .put(value, 'default');
-        request.onsuccess = () => resolve(true);
-        request.onerror = (event) => reject((event.target as any).error);
-      } catch (error) {
-        reject(error);
-      }
-  });
-};
-
-const getObject = async <T>(objStoreName: 'users', key: string): Promise<Null<T>> => {
+const getObject = async <T>(objStoreName: 'users' | 'files', key: string): Promise<Null<T>> => {
   return new Promise((resolve, reject) => {
     if (!localDB) resolve(null);
     else
@@ -86,7 +56,7 @@ const getObject = async <T>(objStoreName: 'users', key: string): Promise<Null<T>
       }
   });
 };
-const updateObject = async (objStoreName: 'users', key: string, value: any): Promise<boolean> => {
+const updateObject = async (objStoreName: 'users' | 'files', key: string, value: any): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     if (!localDB) resolve(false);
     else
@@ -102,7 +72,7 @@ const updateObject = async (objStoreName: 'users', key: string, value: any): Pro
       }
   });
 };
-const deleteObject = async (objStoreName: 'users', key: string) => {
+const deleteObject = async (objStoreName: 'users' | 'files', key: string) => {
   return new Promise((resolve, reject) => {
     if (!localDB) resolve(false);
     else
@@ -115,7 +85,7 @@ const deleteObject = async (objStoreName: 'users', key: string) => {
       }
   });
 };
-const getAll = async <T>(objStoreName: 'users'): Promise<T[]> => {
+const getAll = async <T>(objStoreName: 'users' | 'files'): Promise<T[]> => {
   return new Promise((resolve, reject) => {
     if (!localDB) resolve([]);
     else {
@@ -129,7 +99,7 @@ const getAll = async <T>(objStoreName: 'users'): Promise<T[]> => {
     }
   });
 };
-const getCount = async (objStoreName: 'users'): Promise<number> => {
+const getCount = async (objStoreName: 'users' | 'files'): Promise<number> => {
   return new Promise((resolve, reject) => {
     if (!localDB) resolve(-1);
     else
@@ -143,15 +113,4 @@ const getCount = async (objStoreName: 'users'): Promise<number> => {
   });
 };
 
-export {
-  localDB,
-  openDB,
-  closeDB,
-  getSingleton,
-  updateSingleton,
-  getObject,
-  updateObject,
-  deleteObject,
-  getAll,
-  getCount
-};
+export { localDB, openDB, closeDB, getObject, updateObject, deleteObject, getAll, getCount };

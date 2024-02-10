@@ -57,12 +57,18 @@ export class Shell {
     this.mesh.material = Shell.refShellMaterial;
   }
   private loadSound() {
-    this.explosionSound = new Sound('explosion', '/assets/game/audio/explosion.mp3', this.scene, null, {
-      loop: false,
-      autoplay: true,
-      spatialSound: true,
-      maxDistance: 70
-    });
+    this.explosionSound = new Sound(
+      'explosion',
+      AssetLoader.assets['/assets/game/audio/explosion.mp3'] as ArrayBuffer,
+      this.scene,
+      null,
+      {
+        loop: false,
+        autoplay: true,
+        spatialSound: true,
+        maxDistance: 70
+      }
+    );
   }
   private setPhysics() {
     new PhysicsAggregate(
@@ -125,7 +131,7 @@ export class Shell {
     if (Shell.refShell) return;
 
     Shell.refShellMaterial = new StandardMaterial('fire', scene);
-    const texture = new Texture(AssetLoader.assets['/assets/game/textures/explosion.jpg'], scene);
+    const texture = new Texture(AssetLoader.assets['/assets/game/textures/explosion.jpg'] as string, scene);
     texture.uScale = texture.vScale = 10;
     Shell.refShellMaterial.diffuseTexture = texture;
     Shell.refShellMaterial.specularColor = Color3.Black();

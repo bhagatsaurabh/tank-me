@@ -21,12 +21,12 @@ export class InputManager {
 
   static init(scene: Scene) {
     const actionManager = new ActionManager(scene);
-    scene.actionManager.registerAction(
+    actionManager.registerAction(
       new ExecuteCodeAction(ActionManager.OnKeyDownTrigger, (ev: ActionEvent) => {
         if (this.keyInputSet.has(ev.sourceEvent.code)) InputManager.map[ev.sourceEvent.code] = true;
       })
     );
-    scene.actionManager.registerAction(
+    actionManager.registerAction(
       new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (ev: ActionEvent) => {
         if (this.keyInputSet.has(ev.sourceEvent.code)) InputManager.map[ev.sourceEvent.code] = false;
       })

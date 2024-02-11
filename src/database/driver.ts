@@ -9,7 +9,7 @@ export const getProfile = async (id: string) => {
   return await getObject<Profile>('users', id);
 };
 
-export const storeFile = async (pathId: string, file: File) => {
+export const storeFile = async (pathId: string, file: Blob) => {
   return await updateObject('files', pathId, file);
 };
 

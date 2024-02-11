@@ -5,9 +5,6 @@ import {
   Scene,
   Vector3,
   Mesh,
-  CreateSphere,
-  StandardMaterial,
-  Color3,
   HavokPlugin,
   GlowLayer,
   DirectionalLight,
@@ -20,10 +17,11 @@ import {
   ArcRotateCamera
 } from '@babylonjs/core';
 import HavokPhysics, { type HavokPhysicsWithBindings } from '@babylonjs/havok';
+import '@babylonjs/loaders/legacy/legacy-glTF';
+import type { Room } from 'colyseus.js';
 
 import { GameClient } from '@/game/client';
-import type { Room } from 'colyseus.js';
-import type { RoomState } from './state';
+import type { Player, RoomState } from './state';
 import type { Null } from '@/interfaces/types';
 import { gravityVector, noop, throttle } from '@/utils/utils';
 import { InputManager } from './input';
@@ -31,6 +29,7 @@ import { Tank } from './models/tank';
 import { Ground } from './models/ground';
 import { AssetLoader } from './loader';
 import { Skybox } from './skybox';
+import { rand } from '../utils/utils';
 
 /**
  * Assumptions before creating a game instance:
@@ -49,7 +48,7 @@ export class TankMe {
   private stateUnsubFns: (() => boolean)[] = [];
   private glowLayer!: GlowLayer;
   private directionalLight!: DirectionalLight;
-  private shadowGenerator!: ShadowGenerator;
+  private shadowGenerator!: CascadedShadowGenerator;
   private tppCamera!: FollowCamera;
   private fppCamera!: FreeCamera;
   private endCamera!: ArcRotateCamera;
@@ -77,12 +76,12 @@ export class TankMe {
     if (!TankMe.instance && client && client.rooms['desert']) {
       // Pre-load assets
       await AssetLoader.load([
-        { path: '/assets/game/map/height.png', format: 'base64' },
-        { path: '/assets/game/map/diffuse.png', format: 'base64' },
-        { path: '/assets/game/textures/explosion.jpg', format: 'base64' },
-        { path: '/assets/game/textures/smoke.png', format: 'base64' },
-        { path: '/assets/game/textures/flare.png', format: 'base64' },
-        { path: '/assets/game/textures/fire.jpg', format: 'base64' },
+        { path: '/assets/game/map/height.png' },
+        { path: '/assets/game/map/diffuse.png' },
+        { path: '/assets/game/textures/explosion.jpg' },
+        { path: '/assets/game/textures/smoke.png' },
+        { path: '/assets/game/textures/flare.png' },
+        { path: '/assets/game/textures/fire.jpg' },
         { path: '/assets/game/audio/explosion.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/cannon.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/idle.mp3', format: 'arraybuffer' },
@@ -107,10 +106,11 @@ export class TankMe {
   private static async importPlayerMesh(scene: Scene) {
     const { meshes } = await SceneLoader.ImportMeshAsync(
       null,
-      AssetLoader.assets['/assets/game/models/default'] as string,
+      '/assets/game/models/default/',
       'Tank.babylon',
       scene
     );
+    for (let i = 1; i < meshes.length; i += 1) meshes[i].parent = meshes[0];
     TankMe.instance.playerMeshes = meshes;
   }
 
@@ -124,31 +124,29 @@ export class TankMe {
 
     // Set Lights
     this.directionalLight = new DirectionalLight('DirectionalLight', new Vector3(-1, -1, 0), this.scene);
-    this.directionalLight.intensity = 1;
-    this.directionalLight.position.x = -300;
+    this.directionalLight.intensity = 1.3;
+    this.directionalLight.position = new Vector3(0, 0, 0);
+    this.directionalLight.direction = new Vector3(-1, -1.2, -1);
     this.shadowGenerator = new CascadedShadowGenerator(1024, this.directionalLight);
     this.shadowGenerator.useContactHardeningShadow = true;
+    this.shadowGenerator.lambda = 1;
+    this.shadowGenerator.cascadeBlendPercentage = 0;
+    this.shadowGenerator.bias = 0.001;
+    this.shadowGenerator.normalBias = 0.09;
+    this.shadowGenerator.darkness = 0.34;
+    this.shadowGenerator.autoCalcDepthBounds = true;
+    this.shadowGenerator.autoCalcDepthBoundsRefreshRate = 2;
 
     this.setCameras();
+    this.shadowGenerator.autoCalcDepthBounds = true;
 
     // Create SkyBox
-    /* const skybox = MeshBuilder.CreateBox('skyBox', { size: 1000.0 }, this.scene);
-    const skyboxMaterial = new StandardMaterial('skyBox', this.scene);
-    skyboxMaterial.backFaceCulling = false;
-    skybox.material = skyboxMaterial;
-    skybox.infiniteDistance = true;
-    skyboxMaterial.disableLighting = true;
-    skyboxMaterial.reflectionTexture = new CubeTexture('/assets/game/skybox/bluecloud', this.scene);
-    skyboxMaterial.reflectionTexture.coordinatesMode = Texture.SKYBOX_MODE;
-    skyboxMaterial.diffuseColor = new Color3(0, 0, 0);
-    skyboxMaterial.specularColor = new Color3(0, 0, 0); */
-    // this.scene.createDefaultSkybox(new CubeTexture('/assets/game/skybox/bluecloud', this.scene), false, 1000);
     await Skybox.create(this.scene);
 
     // Create Ground
     await Ground.create(this.scene);
     this.shadowGenerator?.addShadowCaster(Ground.groundMesh);
-    this.createTanks();
+    await this.createTanks();
 
     /* this.client.rooms['desert']?.send('updatePosition', {
       x: targetPosition.x,
@@ -157,7 +155,7 @@ export class TankMe {
     }); */
 
     // Before frame render
-    this.scene.registerBeforeRender(this.handleInput);
+    this.scene.registerBeforeRender(this.handleInput.bind(this));
   }
   private setCameras() {
     // Set TPP Camera
@@ -180,22 +178,22 @@ export class TankMe {
     let isMoving = false;
 
     if (InputManager.map['KeyW']) {
-      this.player.forward(0.2);
+      this.player.forward(5);
       isMoving = true;
     }
     if (InputManager.map['KeyS']) {
-      this.player.backward(-0.2);
+      this.player.backward(5);
       isMoving = true;
     }
     if (InputManager.map['KeyA']) {
-      this.player.left(shiftModifier ? -0.01 : -0.02);
+      this.player.left(shiftModifier ? 0.2 : 0.4);
       isMoving = true;
     }
     if (InputManager.map['KeyD']) {
-      this.player.right(shiftModifier ? 0.01 : 0.02);
+      this.player.right(shiftModifier ? 0.2 : 0.4);
       isMoving = true;
     }
-    this.player.playSounds(isMoving);
+    this.player?.playSounds(isMoving);
 
     if (InputManager.map['ArrowLeft']) {
       this.player.turretLeft(shiftModifier ? 0.01 : 0.02);
@@ -226,31 +224,36 @@ export class TankMe {
       this.player.toggleCamera();
     }
 
-    this.player.checkStuck();
+    this.player?.checkStuck();
 
     // Post-game cam
     /* if (rotateCamera) {
         arcRotateCam.alpha += 0.007;
       } */
   }
-  private createTanks() {
-    this.room.state.players.forEach((player) => {
-      const isEnemy = this.selfUID !== player.uid;
-      this.players[player.uid] = Tank.create(
-        player.uid,
-        this.playerMeshes,
-        new Vector3(...Object.values(player.position)),
-        this.scene,
-        !isEnemy ? { tpp: this.tppCamera, fpp: this.fppCamera } : null,
-        isEnemy
-      );
-      this.shadowGenerator.addShadowCaster(this.players[player.uid].rootMesh);
-      if (!isEnemy) this.player = this.players[player.uid];
-    });
+  private async createTanks() {
+    const players: Player[] = [];
+    this.room.state.players.forEach((player) => players.push(player));
+
+    return await Promise.all(
+      players.map(async (player) => {
+        const isEnemy = this.selfUID !== player.uid;
+        this.players[player.uid] = await Tank.create(
+          player.uid,
+          this.playerMeshes,
+          new Vector3(...Object.values(player.position ?? { x: rand(-240, 240), y: 26, z: rand(-240, 240) })),
+          this.scene,
+          !isEnemy ? { tpp: this.tppCamera, fpp: this.fppCamera } : null,
+          isEnemy
+        );
+        this.shadowGenerator.addShadowCaster(this.players[player.uid].rootMesh);
+        if (!isEnemy) this.player = this.players[player.uid];
+      })
+    );
   }
   private initStateListeners() {
     const unsubscribeOnAdd = this.room.state.players.onAdd((player, sessionId) => {
-      player.onChange(() => {
+      /* player.onChange(() => {
         this.playerNextPosition[sessionId].set(player.x, player.y, player.z);
       });
       const isCurrentPlayer = sessionId === this.room.sessionId;
@@ -264,11 +267,11 @@ export class TankMe {
         ? Color3.FromHexString('#ff9900')
         : Color3.Gray();
       this.playerEntities[sessionId] = sphere;
-      this.playerNextPosition[sessionId] = sphere.position.clone();
+      this.playerNextPosition[sessionId] = sphere.position.clone(); */
     });
     const unsubscribeOnRemove = this.room.state.players.onRemove((player, sessionId) => {
-      this.playerEntities[sessionId].dispose();
-      delete this.playerEntities[sessionId];
+      /* this.playerEntities[sessionId].dispose();
+      delete this.playerEntities[sessionId]; */
     });
 
     this.stateUnsubFns.push(unsubscribeOnAdd, unsubscribeOnRemove);
@@ -286,9 +289,9 @@ export class TankMe {
     this.engine.resize();
   }
   private initWindowListeners() {
-    window.addEventListener('keydown', this.toggleInspect);
+    window.addEventListener('keydown', this.toggleInspect.bind(this));
     this.throttledResizeListener = throttle(this.resize.bind(this), 200);
-    window.addEventListener('resize', this.throttledResizeListener);
+    window.addEventListener('resize', this.throttledResizeListener.bind(this));
   }
   private render() {
     this.engine.runRenderLoop(() => {

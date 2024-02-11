@@ -6,6 +6,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 import SRI from './plugins/subresource-integrity';
 
 export default defineConfig({
+  optimizeDeps: {
+    exclude: ['@babylonjs/havok']
+  },
   plugins: [
     vue(),
     VitePWA({

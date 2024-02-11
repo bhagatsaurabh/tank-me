@@ -6,7 +6,8 @@ import {
   Texture,
   Color3,
   PhysicsAggregate,
-  PhysicsShapeType
+  PhysicsShapeType,
+  PhysicsImpostor
 } from '@babylonjs/core';
 
 import { AssetLoader } from '../loader';
@@ -23,9 +24,9 @@ export class Ground {
         {
           width: 500,
           height: 500,
-          subdivisions: 1000,
+          subdivisions: 250,
           minHeight: 0,
-          maxHeight: 25,
+          maxHeight: 14,
           updatable: false,
           onReady: (mesh) => Ground.onGroundCreated(scene, mesh, resolve)
         },
@@ -43,16 +44,10 @@ export class Ground {
     groundMaterial.ambientColor = new Color3(1, 1, 1);
     mesh.material = groundMaterial;
 
-    /* this.ground.physicsImpostor = new PhysicsImpostor(
-      this.ground,
-      PhysicsImpostor.HeightmapImpostor,
-      { mass: 0, restitution: 0 },
-      this.scene
-    ); */
     new PhysicsAggregate(
       mesh,
       PhysicsShapeType.MESH,
-      { mass: 0, restitution: 0 },
+      { mass: 0, restitution: 0, friction: 10 },
       scene
     ).body.setCollisionCallbackEnabled(true);
 

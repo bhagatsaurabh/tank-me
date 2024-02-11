@@ -1,4 +1,4 @@
-import { getFile } from '@/database/driver';
+import { getFile, storeFile } from '@/database/driver';
 import { readAsArrayBuffer, readAsDataURL } from '@/utils/utils';
 
 export class AssetLoader {
@@ -50,6 +50,11 @@ export class AssetLoader {
           return res.blob();
         }
       })
+    );
+
+    // Store in cache
+    await Promise.all(
+      blobs.map((blob, idx) => (blob ? storeFile(filePaths[idx].path, blob) : Promise.resolve()))
     );
 
     // Get Object URLs

@@ -38,3 +38,12 @@ export const readAsArrayBuffer = (blob: Blob) =>
     reader.onerror = (error) => reject(error);
     reader.readAsArrayBuffer(blob);
   });
+export const denormalize = (norm: number, min: number, max: number) => {
+  return norm * (max - min) + min;
+};
+export const rand = (min: number, max: number) => {
+  const buf = new Uint32Array(1);
+  window.crypto.getRandomValues(buf);
+  return denormalize(buf[0] / (0xffffffff + 1), min, max);
+};
+export const forwardVector = new Vector3(0, 0, 1);

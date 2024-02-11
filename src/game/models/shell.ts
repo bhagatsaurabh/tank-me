@@ -64,7 +64,7 @@ export class Shell {
       null,
       {
         loop: false,
-        autoplay: true,
+        autoplay: false,
         spatialSound: true,
         maxDistance: 70
       }
@@ -79,6 +79,8 @@ export class Shell {
     ).body.setCollisionCallbackEnabled(true);
   }
   private onCollide(event: IPhysicsCollisionEvent) {
+    if (event.collider.transformNode.name !== 'shell') return;
+
     // shell.physicsImpostor.sleep();
     const explosionOrigin = this.mesh.position;
     this.mesh.dispose();

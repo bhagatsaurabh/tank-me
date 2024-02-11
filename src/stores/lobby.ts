@@ -53,7 +53,6 @@ export const useLobbyStore = defineStore('lobby', () => {
       gameRoom.value = await client.value.joinRoom(map, (auth.user as any).accessToken);
 
       gameRoom.value.state.listen('status', (newVal) => {
-        console.log(newVal, gameRoom.value?.state.status);
         if (newVal === 'ready') status.value = 'playing';
       });
 

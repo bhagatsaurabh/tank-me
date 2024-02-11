@@ -9,6 +9,7 @@ import { TankMe } from '@/game/main';
 const auth = useAuthStore();
 const containerEl = ref<Null<HTMLDivElement>>(null);
 const canvasEl = ref<Null<HTMLCanvasElement>>(null);
+const isLoading = ref(false);
 
 const handleResize = () => {
   if (canvasEl.value) {
@@ -27,7 +28,9 @@ onMounted(async () => {
     canvasEl.value.height = window.innerHeight;
 
     // Initialize the game
+    isLoading.value = true;
     await TankMe.init(canvasEl.value, auth.user?.uid as string);
+    isLoading.value = false;
   }
 });
 onBeforeUnmount(() => {
@@ -37,7 +40,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="game-container" ref="containerEl">
-    <div class="feed-load"></div>
+    <div v-if="isLoading" class="feed-load"></div>
     <canvas ref="canvasEl"></canvas>
   </div>
 </template>

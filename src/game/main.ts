@@ -14,7 +14,8 @@ import {
   FreeCamera,
   SceneLoader,
   AbstractMesh,
-  ArcRotateCamera
+  ArcRotateCamera,
+  PhysicsViewer
 } from '@babylonjs/core';
 import HavokPhysics, { type HavokPhysicsWithBindings } from '@babylonjs/havok';
 import '@babylonjs/loaders/legacy/legacy-glTF';
@@ -55,6 +56,7 @@ export class TankMe {
   private playerMeshes: AbstractMesh[] = [];
   private players: Record<string, Tank> = {};
   private player!: Tank;
+  static physicsViewer: PhysicsViewer;
 
   private constructor(
     public canvas: HTMLCanvasElement,
@@ -67,6 +69,8 @@ export class TankMe {
     this.scene = new Scene(this.engine);
     TankMe.physicsPlugin = new HavokPlugin(true, physicsEngine);
     this.scene.enablePhysics(gravityVector, TankMe.physicsPlugin);
+    this.scene.getPhysicsEngine()?.getPhysicsPlugin()?.setTimeStep(1);
+    TankMe.physicsViewer = new PhysicsViewer(this.scene);
   }
   static get(): TankMe | undefined {
     return TankMe.instance;
@@ -174,24 +178,31 @@ export class TankMe {
     this.endCamera = new ArcRotateCamera('end-cam', 0, 0, 10, new Vector3(0, 0, 0), this.scene);
   }
   private handleInput() {
+    const deltaTime = this.engine.getDeltaTime() / 100;
     const shiftModifier = InputManager.map['Shift'];
     let isMoving = false;
 
     if (InputManager.map['KeyW']) {
-      this.player.forward(5);
+      this.player.forward(deltaTime);
       isMoving = true;
     }
     if (InputManager.map['KeyS']) {
-      this.player.backward(5);
+      this.player.backward(deltaTime);
       isMoving = true;
     }
     if (InputManager.map['KeyA']) {
-      this.player.left(shiftModifier ? 0.2 : 0.4);
+      this.player.left(deltaTime);
       isMoving = true;
     }
     if (InputManager.map['KeyD']) {
-      this.player.right(shiftModifier ? 0.2 : 0.4);
+      this.player.right(deltaTime);
       isMoving = true;
+    }
+    if (InputManager.map['Space']) {
+      this.player.brake(deltaTime);
+    }
+    if (!isMoving) {
+      this.player.decelerate(deltaTime);
     }
     this.player?.playSounds(isMoving);
 
@@ -216,7 +227,7 @@ export class TankMe {
       this.player.resetTurret();
     }
 
-    if (InputManager.map['Space']) {
+    if (InputManager.map['ControlLeft'] || InputManager.map['ControlRight']) {
       this.player.fire();
     }
 
@@ -241,7 +252,7 @@ export class TankMe {
         this.players[player.uid] = await Tank.create(
           player.uid,
           this.playerMeshes,
-          new Vector3(...Object.values(player.position ?? { x: rand(-240, 240), y: 26, z: rand(-240, 240) })),
+          new Vector3(...Object.values(player.position ?? { x: rand(-240, 240), y: 14, z: rand(-240, 240) })),
           this.scene,
           !isEnemy ? { tpp: this.tppCamera, fpp: this.fppCamera } : null,
           isEnemy

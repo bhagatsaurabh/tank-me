@@ -47,3 +47,5 @@ export const rand = (min: number, max: number) => {
   return denormalize(buf[0] / (0xffffffff + 1), min, max);
 };
 export const forwardVector = new Vector3(0, 0, 1);
+export const clamp = (val: number, min: number, max: number) => Math.max(Math.min(val, max), min);
+export const avg = (vals: number[]) => vals.reduce((acc, curr) => acc + curr, 0) / vals.length;

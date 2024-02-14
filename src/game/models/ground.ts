@@ -14,11 +14,11 @@ import { AssetLoader } from '../loader';
 export class Ground {
   private static instance: Ground;
   static groundMesh: GroundMesh;
-  static groundFriction = 0.8;
+  static groundFriction = 1;
 
   private static createMesh(scene: Scene) {
     return new Promise((resolve) => {
-      /* Ground.groundMesh = MeshBuilder.CreateGroundFromHeightMap(
+      Ground.groundMesh = MeshBuilder.CreateGroundFromHeightMap(
         'ground',
         AssetLoader.assets['/assets/game/map/height.png'] as string,
         {
@@ -31,8 +31,8 @@ export class Ground {
           onReady: (mesh) => Ground.onGroundCreated(scene, mesh, resolve)
         },
         scene
-      ); */
-      Ground.groundMesh = MeshBuilder.CreateGround(
+      );
+      /* Ground.groundMesh = MeshBuilder.CreateGround(
         'ground',
         {
           width: 500,
@@ -42,7 +42,7 @@ export class Ground {
         },
         scene
       );
-      this.onGroundCreated(scene, Ground.groundMesh, resolve);
+      this.onGroundCreated(scene, Ground.groundMesh, resolve); */
     });
   }
   private static onGroundCreated(scene: Scene, mesh: GroundMesh, done: (val?: unknown) => void) {
@@ -55,12 +55,16 @@ export class Ground {
     groundMaterial.ambientColor = new Color3(1, 1, 1);
     mesh.material = groundMaterial;
 
-    new PhysicsAggregate(
+    const groundAgg = new PhysicsAggregate(
       mesh,
       PhysicsShapeType.MESH,
       { mass: 0, restitution: 0, friction: Ground.groundFriction },
       scene
-    ).body.setCollisionCallbackEnabled(true);
+    );
+    groundAgg.body.setCollisionCallbackEnabled(true);
+    Ground.groundMesh.collisionRetryCount = 5;
+    /* groundAgg.body.shape!.filterMembershipMask = 12;
+    groundAgg.body.shape!.filterCollideMask = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11; */
 
     mesh.position.y = 0;
     mesh.receiveShadows = true;

@@ -8,7 +8,6 @@ import {
   HavokPlugin,
   GlowLayer,
   DirectionalLight,
-  ShadowGenerator,
   CascadedShadowGenerator,
   FollowCamera,
   FreeCamera,
@@ -57,6 +56,7 @@ export class TankMe {
   private players: Record<string, Tank> = {};
   private player!: Tank;
   static physicsViewer: PhysicsViewer;
+  private static timeStep = 1 / 60;
 
   private constructor(
     public canvas: HTMLCanvasElement,
@@ -65,12 +65,13 @@ export class TankMe {
     public physicsEngine: HavokPhysicsWithBindings,
     public selfUID: string
   ) {
-    this.engine = new Engine(this.canvas, true);
+    this.engine = new Engine(this.canvas, true, { deterministicLockstep: true, lockstepMaxSteps: 4 });
     this.scene = new Scene(this.engine);
-    TankMe.physicsPlugin = new HavokPlugin(true, physicsEngine);
+    TankMe.physicsPlugin = new HavokPlugin(false, physicsEngine);
     this.scene.enablePhysics(gravityVector, TankMe.physicsPlugin);
-    this.scene.getPhysicsEngine()?.getPhysicsPlugin()?.setTimeStep(1);
     TankMe.physicsViewer = new PhysicsViewer(this.scene);
+    // Don't simulate anything until the scene is fully laoded
+    TankMe.physicsPlugin.setTimeStep(0);
   }
   static get(): TankMe | undefined {
     return TankMe.instance;
@@ -101,7 +102,9 @@ export class TankMe {
       await TankMe.instance.initScene();
       TankMe.instance.initStateListeners();
       TankMe.instance.initWindowListeners();
-      TankMe.instance.render();
+      TankMe.instance.start();
+
+      TankMe.physicsPlugin.setTimeStep(TankMe.timeStep);
 
       return TankMe.instance;
     }
@@ -115,6 +118,7 @@ export class TankMe {
       scene
     );
     for (let i = 1; i < meshes.length; i += 1) meshes[i].parent = meshes[0];
+    meshes.forEach((mesh) => (mesh.isVisible = false));
     TankMe.instance.playerMeshes = meshes;
   }
 
@@ -159,7 +163,8 @@ export class TankMe {
     }); */
 
     // Before frame render
-    this.scene.registerBeforeRender(this.handleInput.bind(this));
+    this.scene.onBeforeStepObservable.add(this.step.bind(this));
+    // this.scene.physicsEnabled
   }
   private setCameras() {
     // Set TPP Camera
@@ -177,25 +182,27 @@ export class TankMe {
     // Set ArcRotateCamera
     this.endCamera = new ArcRotateCamera('end-cam', 0, 0, 10, new Vector3(0, 0, 0), this.scene);
   }
-  private handleInput() {
-    const deltaTime = this.engine.getDeltaTime() / 100;
+  private step() {
+    const deltaTime = this.engine.getTimeStep() / 1000;
     const shiftModifier = InputManager.map['Shift'];
     let isMoving = false;
+    const turningDirection = InputManager.map['KeyA'] ? -1 : InputManager.map['KeyD'] ? 1 : 0;
+    const isAccelerating = InputManager.map['KeyW'] || InputManager.map['KeyS'];
 
     if (InputManager.map['KeyW']) {
-      this.player.forward(deltaTime);
+      this.player.forward(deltaTime, turningDirection);
       isMoving = true;
     }
     if (InputManager.map['KeyS']) {
-      this.player.backward(deltaTime);
+      this.player.backward(deltaTime, turningDirection);
       isMoving = true;
     }
     if (InputManager.map['KeyA']) {
-      this.player.left(deltaTime);
+      this.player.left(deltaTime, isAccelerating);
       isMoving = true;
     }
     if (InputManager.map['KeyD']) {
-      this.player.right(deltaTime);
+      this.player.right(deltaTime, isAccelerating);
       isMoving = true;
     }
     if (InputManager.map['Space']) {
@@ -222,7 +229,6 @@ export class TankMe {
     if (InputManager.map['KeyT']) {
       this.player.reset();
     }
-
     if (InputManager.map['KeyR']) {
       this.player.resetTurret();
     }
@@ -252,7 +258,8 @@ export class TankMe {
         this.players[player.uid] = await Tank.create(
           player.uid,
           this.playerMeshes,
-          new Vector3(...Object.values(player.position ?? { x: rand(-240, 240), y: 14, z: rand(-240, 240) })),
+          /* new Vector3(...Object.values(player.position ?? { x: rand(-240, 240), y: 14, z: rand(-240, 240) })), */
+          new Vector3(0, 14, 0),
           this.scene,
           !isEnemy ? { tpp: this.tppCamera, fpp: this.fppCamera } : null,
           isEnemy
@@ -304,11 +311,12 @@ export class TankMe {
     this.throttledResizeListener = throttle(this.resize.bind(this), 200);
     window.addEventListener('resize', this.throttledResizeListener.bind(this));
   }
+  private start() {
+    this.engine.runRenderLoop(this.render.bind(this));
+  }
   private render() {
-    this.engine.runRenderLoop(() => {
-      this.scene.render();
-      // fpsLabel.innerHTML = this.engine.getFps().toFixed() + ' FPS';
-    });
+    this.scene.render();
+    // fpsLabel.innerHTML = this.engine.getFps().toFixed() + ' FPS';
   }
 
   public dispose() {

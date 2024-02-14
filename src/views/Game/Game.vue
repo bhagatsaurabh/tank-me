@@ -40,7 +40,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="game-container" ref="containerEl">
-    <div v-if="isLoading" class="feed-load"></div>
+    <!--<div v-if="isLoading" class="feed-load"></div>-->
     <canvas ref="canvasEl"></canvas>
   </div>
 </template>

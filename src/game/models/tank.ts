@@ -14,7 +14,6 @@ import {
   Physics6DoFConstraint,
   PhysicsConstraintAxis,
   PhysicsShapeBox,
-  Scalar,
   PhysicsMotionType,
   Mesh,
   PhysicsShapeContainer,
@@ -22,7 +21,8 @@ import {
   PhysicsShapeType,
   Axis,
   Space,
-  PhysicsConstraintMotorType
+  PhysicsConstraintMotorType,
+  Scalar
 } from '@babylonjs/core';
 
 import { Shell } from './shell';
@@ -30,7 +30,7 @@ import { PSMuzzleFlash } from '../particle-systems/muzzle-flash';
 import { PSTankExplosion } from '../particle-systems/tank-explosion';
 import { PSFire } from '../particle-systems/fire';
 import { TankMe } from '../main';
-import { avg } from '@/utils/utils';
+import { avg, clamp } from '@/utils/utils';
 
 export class Tank {
   private turret!: AbstractMesh;
@@ -45,17 +45,23 @@ export class Tank {
   private shell!: Shell;
   private particleSystems: Record<string, ParticleSystem | GPUParticleSystem | PSFire> = {};
   private maxEnginePower = 100;
-  private enginePower = 0;
-  private maxSpeed = 10;
-  private bodyMass = 1;
+  private speedModifier = 10;
+  private decelerationModifier = 4;
+  private leftSpeed = 0;
+  private rightSpeed = 0;
+  private maxSpeed = 15;
+  private maxTurningSpeed = 3;
+  private bodyMass = 2;
   private bodyFriction = 1;
   private bodyRestitution = 0;
   private wheelMass = 1;
-  private wheelFriction = 0.9;
+  private wheelFriction = 0.8;
   private wheelRestitution = 0;
-  private axleFriction = 0.9;
-  private suspensionMinLimit = -0.1;
+  private axleFriction = 0;
+  private suspensionMinLimit = -0.2;
   private suspensionMaxLimit = 0.033;
+  private suspensionStiffness = 100;
+  private suspensionDamping = 20;
   private body!: Mesh;
   private wheelMeshes: Mesh[] = [];
   private axleMeshes: Mesh[] = [];
@@ -84,7 +90,11 @@ export class Tank {
     this.body = new Mesh(this.rootMesh.name + ':Root', this.scene);
     for (let i = 0; i < this.noOfWheels; i += 1) {
       const wheelMesh = new Mesh(`wheel${i}`, this.scene);
-      const axleMesh = MeshBuilder.CreateCylinder(`axle${i}`, { height: 0.6, diameter: 0.75 }, this.scene);
+      const axleMesh = MeshBuilder.CreateSphere(
+        `axle${i}`,
+        { diameterY: 0.6, diameterX: 0.75, diameterZ: 0.75, segments: 5 },
+        this.scene
+      );
       axleMesh.rotate(Axis.Z, Math.PI / 2, Space.LOCAL);
       axleMesh.bakeCurrentTransformIntoVertices();
       (wheelMesh as AbstractMesh).addChild(axleMesh);
@@ -93,13 +103,10 @@ export class Tank {
     }
 
     this.rootMesh.position = Vector3.Zero();
-
     this.turret = this.rootMesh.getChildMeshes()[1];
     this.turret.rotation.y = 0;
-
     this.rootMesh.parent = this.body;
-
-    this.body.position = this.spawn.add(new Vector3(0, -13, 0));
+    this.body.position = this.spawn;
 
     this.rootMesh.isVisible = false;
     this.rootMesh.getChildMeshes().forEach((mesh) => (mesh.isVisible = false));
@@ -117,7 +124,6 @@ export class Tank {
     bodyShapeContainer.material = { friction: this.bodyFriction, restitution: this.bodyRestitution };
     bodyPB.shape = bodyShapeContainer;
     bodyPB.setMassProperties({ mass: this.bodyMass, centerOfMass: Vector3.Zero() });
-    bodyPB.disablePreStep = false;
 
     const wheelPositions: Vector3[] = [
       new Vector3(-1.475, 0.2, 2),
@@ -141,23 +147,22 @@ export class Tank {
 
       const axleAgg = new PhysicsAggregate(
         axle,
-        PhysicsShapeType.MESH,
+        PhysicsShapeType.SPHERE,
         {
           mass: this.wheelMass,
           friction: this.wheelFriction,
-          restitution: this.wheelRestitution,
-          center: Vector3.Zero()
+          restitution: this.wheelRestitution
         },
         this.scene
       );
-      axleAgg.body.disablePreStep = false;
-      this.motors.push(this.createConstraint(wheelPositions[i], axle.position, bodyPB, axleAgg.body, i < 5));
+      axle.collisionRetryCount = 5;
 
+      this.motors.push(this.createConstraint(wheelPositions[i], axle.position, bodyPB, axleAgg.body));
       this.axles.push(axle);
     }
 
     // Debug
-    this.axles.forEach((axle) => TankMe.physicsViewer.showBody(axle.physicsBody!));
+    // this.axles.forEach((axle) => TankMe.physicsViewer.showBody(axle.physicsBody!));
     this.motors.forEach((motor) => TankMe.physicsViewer.showConstraint(motor));
     TankMe.physicsViewer.showBody(bodyPB);
 
@@ -172,15 +177,14 @@ export class Tank {
     pivotA: Vector3,
     pivotB: Vector3,
     parent: PhysicsBody,
-    child: PhysicsBody,
-    isLeft: boolean
+    child: PhysicsBody
   ): Physics6DoFConstraint {
     const _6dofConstraint = new Physics6DoFConstraint(
       {
         pivotA,
         pivotB,
         axisA: new Vector3(1, 0, 0),
-        axisB: new Vector3(/* isLeft ? -1 :  */1, 0, 0),
+        axisB: new Vector3(1, 0, 0),
         perpAxisA: new Vector3(0, 1, 0),
         perpAxisB: new Vector3(0, 1, 0)
       },
@@ -189,21 +193,13 @@ export class Tank {
         {
           axis: PhysicsConstraintAxis.LINEAR_Y,
           minLimit: this.suspensionMinLimit,
-          maxLimit: this.suspensionMaxLimit
-          /* stiffness: this.suspensionStiffness,
-          damping: this.suspensionDamping */
+          maxLimit: this.suspensionMaxLimit,
+          stiffness: this.suspensionStiffness,
+          damping: this.suspensionDamping
         },
         { axis: PhysicsConstraintAxis.LINEAR_Z, minLimit: 0, maxLimit: 0 },
-        {
-          axis: PhysicsConstraintAxis.ANGULAR_Y,
-          minLimit: 0,
-          maxLimit: 0
-        },
-        {
-          axis: PhysicsConstraintAxis.ANGULAR_Z,
-          minLimit: 0,
-          maxLimit: 0
-        }
+        { axis: PhysicsConstraintAxis.ANGULAR_Y, minLimit: 0, maxLimit: 0 },
+        { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 }
       ],
       this.scene
     );
@@ -212,6 +208,15 @@ export class Tank {
     _6dofConstraint.setAxisFriction(PhysicsConstraintAxis.ANGULAR_X, this.axleFriction);
     _6dofConstraint.setAxisMotorType(PhysicsConstraintAxis.ANGULAR_X, PhysicsConstraintMotorType.VELOCITY);
     _6dofConstraint.setAxisMotorMaxForce(PhysicsConstraintAxis.ANGULAR_X, this.maxEnginePower);
+
+    // Locking axes creates weird results...
+    /* _6dofConstraint.setAxisMode(PhysicsConstraintAxis.LINEAR_X, PhysicsConstraintAxisLimitMode.LOCKED);
+    _6dofConstraint.setAxisMode(PhysicsConstraintAxis.LINEAR_Y, PhysicsConstraintAxisLimitMode.LOCKED);
+    _6dofConstraint.setAxisMode(PhysicsConstraintAxis.LINEAR_Z, PhysicsConstraintAxisLimitMode.LOCKED);
+    _6dofConstraint.setAxisMode(PhysicsConstraintAxis.LINEAR_DISTANCE, PhysicsConstraintAxisLimitMode.LOCKED);
+    _6dofConstraint.setAxisMode(PhysicsConstraintAxis.ANGULAR_Y, PhysicsConstraintAxisLimitMode.LOCKED);
+    _6dofConstraint.setAxisMode(PhysicsConstraintAxis.ANGULAR_Z, PhysicsConstraintAxisLimitMode.LOCKED); */
+
     return _6dofConstraint;
   }
   private async setSoundSources() {
@@ -304,54 +309,110 @@ export class Tank {
     this.particleSystems['fire'] = PSFire.create(this.rootMesh.position.clone(), this.scene);
   }
 
-  public forward(dt: number) {
-    this.enginePower = Math.max(Math.min(this.enginePower + dt, this.maxSpeed), 0);
-    this.motors.forEach((motor) => {
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, this.enginePower);
-    });
-  }
-  public backward(dt: number) {
-    this.enginePower = Math.max(Math.min(this.enginePower + dt, this.maxSpeed), 0);
-    this.motors.forEach((motor) => {
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, -this.enginePower);
-    });
-  }
-  public left(dt: number) {
-    const speed = avg(this.axles.map((axle) => axle.physicsBody!.getAngularVelocity().length()));
+  public forward(dt: number, turningDirection: -1 | 0 | 1) {
+    if (turningDirection !== -1) {
+      this.leftSpeed = clamp(this.leftSpeed + dt * this.speedModifier, -this.maxSpeed, this.maxSpeed);
+    }
+    if (turningDirection !== 1) {
+      this.rightSpeed = clamp(this.rightSpeed + dt * this.speedModifier, -this.maxSpeed, this.maxSpeed);
+    }
 
     this.motors.forEach((motor, idx) => {
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? speed - 0.5 : speed + 0.5);
+      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed);
     });
   }
-  public right(dt: number) {
-    const speed = avg(this.axles.map((axle) => axle.physicsBody!.getAngularVelocity().length()));
+  public backward(dt: number, turningDirection: -1 | 0 | 1) {
+    if (turningDirection !== -1) {
+      this.leftSpeed = clamp(this.leftSpeed - dt * this.speedModifier, -this.maxSpeed, this.maxSpeed);
+    }
+    if (turningDirection !== 1) {
+      this.rightSpeed = clamp(this.rightSpeed - dt * this.speedModifier, -this.maxSpeed, this.maxSpeed);
+    }
 
     this.motors.forEach((motor, idx) => {
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? speed + 0.5 : speed - 0.5);
+      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed);
     });
+  }
+  public left(dt: number, isAccelerating: boolean) {
+    if (!isAccelerating) {
+      // If not accelerating, even out speeds, using decelerationModifier to prevent sudden halt
+      this.leftSpeed = clamp(
+        this.leftSpeed + (this.leftSpeed > -this.maxTurningSpeed ? -1 : 1) * dt * this.speedModifier,
+        -this.maxSpeed,
+        this.maxSpeed
+      );
+      this.rightSpeed = clamp(
+        this.rightSpeed + (this.rightSpeed > this.maxTurningSpeed ? -1 : 1) * dt * this.decelerationModifier,
+        -this.maxSpeed,
+        this.maxSpeed
+      );
+    } else {
+      // Reduce power of left axle to half of right axle
+      this.leftSpeed = Scalar.Lerp(this.leftSpeed, this.rightSpeed / 2, dt * this.speedModifier);
+    }
+
+    this.motors.forEach((motor, idx) => {
+      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed);
+    });
+  }
+  public right(dt: number, isAccelerating: boolean) {
+    if (!isAccelerating) {
+      // If not accelerating, even out speeds
+      this.leftSpeed = clamp(
+        this.leftSpeed + (this.leftSpeed > this.maxTurningSpeed ? -1 : 1) * dt * this.decelerationModifier,
+        -this.maxSpeed,
+        this.maxSpeed
+      );
+      this.rightSpeed = clamp(
+        this.rightSpeed + (this.rightSpeed > -this.maxTurningSpeed ? -1 : 1) * dt * this.speedModifier,
+        -this.maxSpeed,
+        this.maxSpeed
+      );
+    } else {
+      // Reduce power of right axle to half of left axle
+      this.rightSpeed = Scalar.Lerp(this.rightSpeed, this.leftSpeed / 2, dt * this.speedModifier);
+    }
+
+    this.motors.forEach((motor, idx) =>
+      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed)
+    );
   }
   public brake(dt: number) {
-    this.rootMesh.physicsBody!.setLinearDamping(
-      Scalar.Lerp(this.rootMesh.physicsBody!.getLinearDamping(), 5, 0.5)
+    if (this.leftSpeed === 0 && this.rightSpeed === 0) return;
+
+    this.leftSpeed = clamp(
+      this.leftSpeed + Math.sign(this.leftSpeed) * -1 * dt * this.speedModifier,
+      -this.maxSpeed,
+      this.maxSpeed
     );
-    this.rootMesh.physicsBody!.setAngularDamping(
-      Scalar.Lerp(this.rootMesh.physicsBody!.getAngularDamping(), 5, 0.5)
+    this.rightSpeed = clamp(
+      this.rightSpeed + Math.sign(this.rightSpeed) * -1 * dt * this.speedModifier,
+      -this.maxSpeed,
+      this.maxSpeed
     );
 
-    const speed = Scalar.Lerp(
-      avg(this.axles.map((axle) => axle.physicsBody!.getAngularVelocity().length())),
-      0,
-      0.5
+    this.motors.forEach((motor, idx) =>
+      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed)
     );
-    this.motors.forEach((motor) => {
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, speed);
-    });
   }
   public decelerate(dt: number) {
-    this.enginePower = Math.max(Math.min(this.enginePower - dt / 5, 10), 0);
-    this.motors.forEach((motor) =>
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, this.enginePower)
+    if (this.leftSpeed === 0 && this.rightSpeed === 0) return;
+
+    this.leftSpeed = clamp(
+      this.leftSpeed + Math.sign(this.leftSpeed) * -1 * dt * this.decelerationModifier,
+      -this.maxSpeed,
+      this.maxSpeed
     );
+    this.rightSpeed = clamp(
+      this.rightSpeed + Math.sign(this.rightSpeed) * -1 * dt * this.decelerationModifier,
+      -this.maxSpeed,
+      this.maxSpeed
+    );
+
+    // Even out while decelerating
+    const avgSpeed = avg([this.leftSpeed, this.rightSpeed]);
+
+    this.motors.forEach((motor) => motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, avgSpeed));
   }
   public turretLeft(amount: number) {
     this.turret.rotation.y -= amount;
@@ -428,11 +489,11 @@ export class Tank {
   }
   public playSounds(isMoving: boolean) {
     if (isMoving) {
-      if (!this.sounds['move'].isPlaying) this.sounds['move'].play();
+      // if (!this.sounds['move'].isPlaying) this.sounds['move'].play();
       if (this.sounds['idle'].isPlaying) this.sounds['idle'].pause();
     } else {
       if (this.sounds['move'].isPlaying) this.sounds['move'].pause();
-      if (!this.sounds['idle'].isPlaying) this.sounds['idle'].play();
+      // if (!this.sounds['idle'].isPlaying) this.sounds['idle'].play();
     }
   }
 
@@ -447,7 +508,7 @@ export class Tank {
     const cloned = meshes[0].clone(`${id}:${meshes[0].name}`, null) as AbstractMesh;
     const newTank = new Tank(cloned, spawn, scene, cameras, isEnemy);
     await newTank.setSoundSources();
-    newTank.sounds['idle'].play();
+    // newTank.sounds['idle'].play();
     return newTank;
   }
 }

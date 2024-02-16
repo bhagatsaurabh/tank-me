@@ -13,36 +13,40 @@ import { AssetLoader } from '../loader';
 
 export class Ground {
   private static instance: Ground;
+  private static isFlat = false;
   static groundMesh: GroundMesh;
   static groundFriction = 1;
 
   private static createMesh(scene: Scene) {
     return new Promise((resolve) => {
-      /* Ground.groundMesh = MeshBuilder.CreateGroundFromHeightMap(
-        'ground',
-        AssetLoader.assets['/assets/game/map/height.png'] as string,
-        {
-          width: 500,
-          height: 500,
-          subdivisions: 250,
-          minHeight: 0,
-          maxHeight: 14,
-          updatable: false,
-          onReady: (mesh) => Ground.onGroundCreated(scene, mesh, resolve)
-        },
-        scene
-      ); */
-      Ground.groundMesh = MeshBuilder.CreateGround(
-        'ground',
-        {
-          width: 500,
-          height: 500,
-          subdivisions: 250,
-          updatable: false
-        },
-        scene
-      );
-      this.onGroundCreated(scene, Ground.groundMesh, resolve);
+      if (Ground.isFlat) {
+        Ground.groundMesh = MeshBuilder.CreateGround(
+          'ground',
+          {
+            width: 500,
+            height: 500,
+            subdivisions: 250,
+            updatable: false
+          },
+          scene
+        );
+        this.onGroundCreated(scene, Ground.groundMesh, resolve);
+      } else {
+        Ground.groundMesh = MeshBuilder.CreateGroundFromHeightMap(
+          'ground',
+          AssetLoader.assets['/assets/game/map/height.png'] as string,
+          {
+            width: 500,
+            height: 500,
+            subdivisions: 250,
+            minHeight: 0,
+            maxHeight: 14,
+            updatable: false,
+            onReady: (mesh) => Ground.onGroundCreated(scene, mesh, resolve)
+          },
+          scene
+        );
+      }
     });
   }
   private static onGroundCreated(scene: Scene, mesh: GroundMesh, done: (val?: unknown) => void) {

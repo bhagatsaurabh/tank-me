@@ -1,11 +1,19 @@
-import { Color4, GPUParticleSystem, ParticleSystem, Scene, Texture, Vector3 } from '@babylonjs/core';
+import {
+  AbstractMesh,
+  Color4,
+  GPUParticleSystem,
+  ParticleSystem,
+  Scene,
+  Texture,
+  Vector3
+} from '@babylonjs/core';
 import { AssetLoader } from '../loader';
 
 export class PSTankExplosion {
   private particleSystem!: GPUParticleSystem | ParticleSystem;
 
   private constructor(
-    public emitter: Vector3,
+    public emitter: AbstractMesh,
     public scene: Scene
   ) {
     this.setProperties();
@@ -51,7 +59,7 @@ export class PSTankExplosion {
     this.particleSystem.preWarmCycles = GPUParticleSystem.IsSupported ? 400 : 100;
   }
 
-  static create(emitter: Vector3, scene: Scene) {
+  static create(emitter: AbstractMesh, scene: Scene) {
     return new PSTankExplosion(emitter, scene).particleSystem;
   }
 }

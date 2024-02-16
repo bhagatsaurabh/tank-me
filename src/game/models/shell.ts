@@ -9,18 +9,20 @@ import {
   Quaternion,
   Axis,
   Space,
-  AbstractMesh,
   PhysicsAggregate,
   PhysicsShapeType,
   Sound,
   type IPhysicsCollisionEvent,
-  PointLight,
-  ParticleSystem
+  ParticleSystem,
+  LockConstraint,
+  PhysicsBody,
+  Observer
 } from '@babylonjs/core';
 import { v4 as uuid } from 'uuid';
 
 import { AssetLoader } from '../loader';
 import { TankMe } from '../main';
+import { Debug } from '../debug';
 
 export class Shell {
   private static refShell: Mesh;
@@ -29,102 +31,127 @@ export class Shell {
   private playerId: string;
   private explosionSound!: Sound;
   private isSpent: boolean = false;
-  private pointLight!: PointLight;
   private particleSystem!: ParticleSystem;
+  private lock!: LockConstraint;
+  private energy = 0.015;
+  private debugTrajectory: Vector3[] = [];
+  private debug = false;
+  private observers: Observer<any>[] = [];
 
   private constructor(
-    id: string,
+    public tank: Mesh,
     public scene: Scene,
-    spawn: Vector3,
-    public absoluteRotation: Quaternion
+    public barrel: Mesh
   ) {
-    this.playerId = id;
-    this.loadAndSetTransform(spawn, absoluteRotation);
-    this.loadSound();
-    this.setPhysics();
-    this.setLight();
+    this.playerId = tank.name;
+    this.loadAndSetTransform(barrel.position, barrel.absoluteRotationQuaternion);
+    this.setPhysics(barrel.physicsBody!);
 
-    TankMe.physicsPlugin.onCollisionObservable.add((ev) => this.onCollide(ev));
-    this.mesh.registerBeforeRender((mesh) => this.checkBounds(mesh));
+    this.observers.push(TankMe.physicsPlugin.onCollisionObservable.add((ev) => this.onCollide(ev)));
+    this.observers.push(this.scene.onBeforeRenderObservable.add(this.checkBounds.bind(this)));
   }
 
   private loadAndSetTransform(spawn: Vector3, absoluteRotation: Quaternion) {
-    this.mesh = Shell.refShell.clone(`shell-${uuid()}`);
-    this.mesh.position = new Vector3(spawn.x, spawn.y + 1.75, spawn.z);
+    this.mesh = Shell.refShell.clone(`Shell:${uuid()}`);
+    this.mesh.position.z = 4.8;
     this.mesh.rotationQuaternion = absoluteRotation.clone();
-    this.mesh.translate(Axis.Z, 6.5, Space.LOCAL);
     this.mesh.isVisible = false;
     this.mesh.material = Shell.refShellMaterial;
+    this.mesh.parent = this.barrel;
   }
-  private loadSound() {
-    this.explosionSound = new Sound(
-      'explosion',
-      AssetLoader.assets['/assets/game/audio/explosion.mp3'] as ArrayBuffer,
-      this.scene,
-      null,
-      {
-        loop: false,
-        autoplay: false,
-        spatialSound: true,
-        maxDistance: 70
-      }
-    );
+  private async loadSound() {
+    return new Promise<boolean>((resolve) => {
+      this.explosionSound = new Sound(
+        'explosion',
+        '/assets/game/audio/explosion.mp3',
+        this.scene,
+        () => resolve(true),
+        {
+          loop: false,
+          autoplay: false,
+          spatialSound: true,
+          maxDistance: 150
+        }
+      );
+    });
   }
-  private setPhysics() {
+  private setPhysics(barrelPB: PhysicsBody) {
     new PhysicsAggregate(
       this.mesh,
-      PhysicsShapeType.BOX,
-      { mass: 0.01, restitution: 0 },
+      PhysicsShapeType.SPHERE,
+      { mass: 0.0001, restitution: 0 },
       this.scene
     ).body.setCollisionCallbackEnabled(true);
-  }
-  private onCollide(event: IPhysicsCollisionEvent) {
-    if (event.collider.transformNode.name !== 'shell') return;
 
-    // shell.physicsImpostor.sleep();
-    const explosionOrigin = this.mesh.position;
-    this.mesh.dispose();
-    this.explosionSound.setPosition(explosionOrigin.clone());
+    this.lock = new LockConstraint(
+      new Vector3(0, 0, 4.8),
+      Vector3.Zero(),
+      Vector3.Forward(),
+      Vector3.Forward(),
+      this.scene
+    );
+    barrelPB.addConstraint(this.mesh.physicsBody!, this.lock);
+  }
+  private unlock() {
+    this.lock.isEnabled = false;
+  }
+
+  private onCollide(event: IPhysicsCollisionEvent) {
+    if (!this.isSpent || event.collider.transformNode.name !== this.mesh.name) return;
+    console.log(event.collidedAgainst.transformNode.name);
+
+    const explosionOrigin = this.mesh.position.clone();
+    this.dispose();
+    this.explosionSound.setPosition(explosionOrigin);
     this.explosionSound.onEndedObservable.add(() => this.explosionSound.dispose());
     this.explosionSound.play();
 
-    // showBlast(blastOrigin);
+    // showExplosion(blastOrigin);
     if (event.collidedAgainst.transformNode.name !== 'ground') {
       event.collidedAgainst.applyImpulse(
         event.collider.transformNode
           .getDirection(new Vector3(0, 0, 1))
           .normalize()
-          .scale(8),
+          .scale(1),
         explosionOrigin
       );
     }
   }
-  private checkBounds(mesh: AbstractMesh) {
-    if (mesh.position.x > 300 || mesh.position.x < -300 || mesh.position.z > 300 || mesh.position.z < -300) {
-      mesh.physicsBody?.setMassProperties({ mass: 0 });
-      // mesh.physicsImpostor.sleep();
-      mesh.dispose();
+  private checkBounds() {
+    if (this.debug && this.isSpent) {
+      this.debugTrajectory.push(this.mesh.absolutePosition.clone());
+    }
+    if (
+      Math.abs(this.mesh.position.x) > 300 ||
+      Math.abs(this.mesh.position.y) > 300 ||
+      Math.abs(this.mesh.position.z) > 300
+    ) {
+      this.dispose();
     }
   }
-  private setLight() {
-    this.pointLight = new PointLight(`light-${this.mesh.name}`, new Vector3(0, 0, 0), this.scene);
-    this.pointLight.intensity = 3;
-    this.pointLight.range = 20;
-    this.pointLight.parent = this.mesh;
-    this.pointLight.setEnabled(false);
+  private dispose() {
+    if (this.debug) {
+      Debug.drawLine(`${this.mesh.name}:Trajectory`, this.debugTrajectory);
+    }
+
+    this.observers.forEach((observer) => observer.remove());
+    this.mesh.physicsBody?.dispose();
+    this.mesh.dispose();
   }
 
   public fire() {
+    this.unlock();
     this.isSpent = true;
+    this.mesh.isVisible = true;
 
-    this.pointLight.setEnabled(true);
-    this.particleSystem.start();
+    // TODO: Bullet Trail ?
+    // this.particleSystem.start();
 
     this.mesh.physicsBody?.applyImpulse(
       this.mesh
         .getDirection(new Vector3(0, 0, 1))
         .normalize()
-        .scale(1.2),
+        .scale(this.energy),
       this.mesh.getAbsolutePosition()
     );
   }
@@ -139,10 +166,13 @@ export class Shell {
     Shell.refShellMaterial.specularColor = Color3.Black();
     Shell.refShellMaterial.emissiveColor = Color3.Yellow();
 
-    Shell.refShell = MeshBuilder.CreateBox('shell', { height: 0.1, width: 0.1, depth: 1 }, scene);
+    Shell.refShell = MeshBuilder.CreateSphere('Shell:Ref', { diameter: 0.1, segments: 1 }, scene);
+    Shell.refShell.isVisible = false;
   }
-  static create(id: string, scene: Scene, spawn: Vector3, absoluteRotation: Quaternion): Shell {
+  static async create(tank: Mesh, scene: Scene, barrel: Mesh): Promise<Shell> {
     Shell.setRefShell(scene);
-    return new Shell(id, scene, spawn, absoluteRotation);
+    const newShell = new Shell(tank, scene, barrel);
+    await newShell.loadSound();
+    return newShell;
   }
 }

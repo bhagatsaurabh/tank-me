@@ -18,7 +18,7 @@ export class Ground {
 
   private static createMesh(scene: Scene) {
     return new Promise((resolve) => {
-      Ground.groundMesh = MeshBuilder.CreateGroundFromHeightMap(
+      /* Ground.groundMesh = MeshBuilder.CreateGroundFromHeightMap(
         'ground',
         AssetLoader.assets['/assets/game/map/height.png'] as string,
         {
@@ -31,8 +31,8 @@ export class Ground {
           onReady: (mesh) => Ground.onGroundCreated(scene, mesh, resolve)
         },
         scene
-      );
-      /* Ground.groundMesh = MeshBuilder.CreateGround(
+      ); */
+      Ground.groundMesh = MeshBuilder.CreateGround(
         'ground',
         {
           width: 500,
@@ -42,7 +42,7 @@ export class Ground {
         },
         scene
       );
-      this.onGroundCreated(scene, Ground.groundMesh, resolve); */
+      this.onGroundCreated(scene, Ground.groundMesh, resolve);
     });
   }
   private static onGroundCreated(scene: Scene, mesh: GroundMesh, done: (val?: unknown) => void) {

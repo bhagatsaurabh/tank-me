@@ -12,7 +12,8 @@ export class InputManager {
     'ArrowDown',
     'ArrowLeft',
     'ArrowRight',
-    'KeyT',
+    'ControlLeft',
+    'ControlRight',
     'KeyR',
     'Space',
     'KeyV'

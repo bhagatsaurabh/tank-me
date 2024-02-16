@@ -14,10 +14,12 @@ import {
   SceneLoader,
   AbstractMesh,
   ArcRotateCamera,
-  PhysicsViewer
+  PhysicsViewer,
+  PBRMaterial,
+  Texture
 } from '@babylonjs/core';
 import HavokPhysics, { type HavokPhysicsWithBindings } from '@babylonjs/havok';
-import '@babylonjs/loaders/legacy/legacy-glTF';
+import '@babylonjs/loaders/glTF/2.0/glTFLoader';
 import type { Room } from 'colyseus.js';
 
 import { GameClient } from '@/game/client';
@@ -29,7 +31,6 @@ import { Tank } from './models/tank';
 import { Ground } from './models/ground';
 import { AssetLoader } from './loader';
 import { Skybox } from './skybox';
-import { rand } from '../utils/utils';
 
 /**
  * Assumptions before creating a game instance:
@@ -57,6 +58,7 @@ export class TankMe {
   private player!: Tank;
   static physicsViewer: PhysicsViewer;
   private static timeStep = 1 / 60;
+  private static subTimeStep = 16;
 
   private constructor(
     public canvas: HTMLCanvasElement,
@@ -72,6 +74,7 @@ export class TankMe {
     TankMe.physicsViewer = new PhysicsViewer(this.scene);
     // Don't simulate anything until the scene is fully laoded
     TankMe.physicsPlugin.setTimeStep(0);
+    this.scene.getPhysicsEngine()?.setSubTimeStep(TankMe.subTimeStep);
   }
   static get(): TankMe | undefined {
     return TankMe.instance;
@@ -81,6 +84,7 @@ export class TankMe {
     if (!TankMe.instance && client && client.rooms['desert']) {
       // Pre-load assets
       await AssetLoader.load([
+        { path: '/assets/game/models/Panzer I/Panzer_I.glb' },
         { path: '/assets/game/map/height.png' },
         { path: '/assets/game/map/diffuse.png' },
         { path: '/assets/game/textures/explosion.jpg' },
@@ -90,7 +94,8 @@ export class TankMe {
         { path: '/assets/game/audio/explosion.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/cannon.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/idle.mp3', format: 'arraybuffer' },
-        { path: '/assets/game/audio/run.mp3', format: 'arraybuffer' }
+        { path: '/assets/game/audio/run.mp3', format: 'arraybuffer' },
+        { path: '/assets/game/audio/load.mp3', format: 'arraybuffer' }
       ]);
 
       // Init physics engine
@@ -113,12 +118,30 @@ export class TankMe {
   private static async importPlayerMesh(scene: Scene) {
     const { meshes } = await SceneLoader.ImportMeshAsync(
       null,
-      '/assets/game/models/default/',
-      'Tank.babylon',
+      '/assets/game/models/Panzer I/',
+      'Panzer_I.glb',
       scene
     );
-    for (let i = 1; i < meshes.length; i += 1) meshes[i].parent = meshes[0];
-    meshes.forEach((mesh) => (mesh.isVisible = false));
+
+    // Reset __root__ mesh's transform
+    meshes[0].position = Vector3.Zero();
+    meshes[0].rotation = Vector3.Zero();
+    meshes[0].scaling = Vector3.One();
+    const container = meshes.shift();
+    setTimeout(() => container?.dispose());
+
+    meshes.forEach((mesh) => {
+      if (mesh !== meshes[0]) {
+        mesh.parent = meshes[0];
+      } else {
+        mesh.parent = null;
+      }
+
+      // Disable shininess
+      (mesh.material as PBRMaterial).metallicF0Factor = 0;
+      mesh.isVisible = false;
+    });
+    meshes[0].name = 'Panzer_I:Ref';
     TankMe.instance.playerMeshes = meshes;
   }
 
@@ -188,13 +211,15 @@ export class TankMe {
     let isMoving = false;
     const turningDirection = InputManager.map['KeyA'] ? -1 : InputManager.map['KeyD'] ? 1 : 0;
     const isAccelerating = InputManager.map['KeyW'] || InputManager.map['KeyS'];
+    const isTurretMoving = InputManager.map['ArrowLeft'] || InputManager.map['ArrowRight'];
+    const isBarrelMoving = InputManager.map['ArrowUp'] || InputManager.map['ArrowDown'];
 
     if (InputManager.map['KeyW']) {
-      this.player.forward(deltaTime, turningDirection);
+      this.player.accelerate(deltaTime, turningDirection);
       isMoving = true;
     }
     if (InputManager.map['KeyS']) {
-      this.player.backward(deltaTime, turningDirection);
+      this.player.reverse(deltaTime, turningDirection);
       isMoving = true;
     }
     if (InputManager.map['KeyA']) {
@@ -211,26 +236,29 @@ export class TankMe {
     if (!isMoving) {
       this.player.decelerate(deltaTime);
     }
+    if (!isTurretMoving) {
+      this.player.stopTurret();
+    }
+    if (!isBarrelMoving) {
+      this.player.stopBarrel();
+    }
     this.player?.playSounds(isMoving);
 
     if (InputManager.map['ArrowLeft']) {
-      this.player.turretLeft(shiftModifier ? 0.01 : 0.02);
+      this.player.turretLeft(deltaTime);
     }
     if (InputManager.map['ArrowRight']) {
-      this.player.turretRight(shiftModifier ? 0.01 : 0.02);
+      this.player.turretRight(deltaTime);
     }
     if (InputManager.map['ArrowUp']) {
-      this.player.turretUp(0.01);
+      this.player.barrelUp(deltaTime);
     }
     if (InputManager.map['ArrowDown']) {
-      this.player.turretDown(0.01);
+      this.player.barrelDown(deltaTime);
     }
 
-    if (InputManager.map['KeyT']) {
-      this.player.reset();
-    }
-    if (InputManager.map['KeyR']) {
-      this.player.resetTurret();
+    if (InputManager.map['KeyR'] && !isTurretMoving && !isBarrelMoving) {
+      this.player.resetTurret(deltaTime);
     }
 
     if (InputManager.map['ControlLeft'] || InputManager.map['ControlRight']) {
@@ -295,8 +323,8 @@ export class TankMe {
     this.stateUnsubFns.push(unsubscribeOnAdd, unsubscribeOnRemove);
   }
   private toggleInspect(ev: KeyboardEvent) {
-    // Sfhit+Ctrl+Alt
-    if (ev.shiftKey && ev.ctrlKey && ev.altKey) {
+    // Sfhit+Alt+I
+    if (ev.shiftKey && ev.altKey && ev.code === 'KeyI') {
       ev.preventDefault();
       ev.stopPropagation();
       if (this.scene.debugLayer.isVisible()) this.scene.debugLayer.hide();

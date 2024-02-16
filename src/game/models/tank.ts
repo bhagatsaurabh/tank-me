@@ -33,7 +33,7 @@ import { PSFire } from '../particle-systems/fire';
 import { avg, clamp } from '@/utils/utils';
 
 export class Tank {
-  private barrel!: AbstractMesh;
+  public barrel!: AbstractMesh;
   private barrelMotor!: Physics6DoFConstraint;
   private turret!: AbstractMesh;
   private turretMotor!: Physics6DoFConstraint;
@@ -61,6 +61,8 @@ export class Tank {
   public rightSpeed = 0;
   private maxSpeed = 15;
   private maxTurningSpeed = 3;
+  private maxTurretAngle = 1.17; // ~67.5 deg
+  private maxBarrelAngle = 0.61; // ~35 deg
   private turretSpeed = 14;
   private barrelSpeed = 14;
   private bodyMass = 2;
@@ -75,8 +77,9 @@ export class Tank {
   private suspensionMinLimit = -0.2;
   private suspensionMaxLimit = 0.033;
   private suspensionStiffness = 100;
-  private suspensionDamping = 20;
+  private suspensionDamping = 7;
   private noOfWheels = 10;
+  private recoilEnergy = 7.5;
 
   private constructor(
     public rootMesh: AbstractMesh,
@@ -293,7 +296,11 @@ export class Tank {
         { axis: PhysicsConstraintAxis.LINEAR_X, minLimit: 0, maxLimit: 0 },
         { axis: PhysicsConstraintAxis.LINEAR_Y, minLimit: 0, maxLimit: 0 },
         { axis: PhysicsConstraintAxis.LINEAR_Z, minLimit: 0, maxLimit: 0 },
-        { axis: PhysicsConstraintAxis.ANGULAR_X, minLimit: -0.61, maxLimit: 0.61 }, // ~35 degrees
+        {
+          axis: PhysicsConstraintAxis.ANGULAR_X,
+          minLimit: -this.maxBarrelAngle,
+          maxLimit: this.maxBarrelAngle
+        },
         { axis: PhysicsConstraintAxis.ANGULAR_Y, minLimit: 0, maxLimit: 0 },
         { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 }
       ],
@@ -331,7 +338,11 @@ export class Tank {
         { axis: PhysicsConstraintAxis.LINEAR_Y, minLimit: 0, maxLimit: 0 },
         { axis: PhysicsConstraintAxis.LINEAR_Z, minLimit: 0, maxLimit: 0 },
         { axis: PhysicsConstraintAxis.ANGULAR_X, minLimit: 0, maxLimit: 0 },
-        { axis: PhysicsConstraintAxis.ANGULAR_Y, minLimit: -Math.PI / 2, maxLimit: Math.PI / 2 },
+        {
+          axis: PhysicsConstraintAxis.ANGULAR_Y,
+          minLimit: -this.maxTurretAngle,
+          maxLimit: this.maxTurretAngle
+        },
         { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 }
       ],
       this.scene
@@ -434,7 +445,7 @@ export class Tank {
   }
   private async loadCannon(init = false) {
     if (!init) this.sounds['load'].play();
-    this.shell = await Shell.create(this.rootMesh as Mesh, this.scene, this.barrel as Mesh);
+    this.shell = await Shell.create(this);
     this.particleSystems['muzzle-flash'] = PSMuzzleFlash.create(this.barrel, this.scene);
     this.isCanonReady = true;
   }
@@ -443,19 +454,37 @@ export class Tank {
     this.particleSystems['fire'] = PSFire.create(this.rootMesh, this.scene);
   }
   private step() {
+    this.animateTracks();
+    this.checkCannon();
+  }
+  private animateTracks() {
+    // Bug: Turning while stationary doesn't seems to visually update the track movements
     if (Math.abs(this.leftSpeed) > 0.001) {
       ((this.leftTrack.material as PBRMaterial).albedoTexture as Texture).vOffset += this.leftSpeed * 0.001;
     }
     if (Math.abs(this.rightSpeed) > 0.001) {
       ((this.rightTrack.material as PBRMaterial).albedoTexture as Texture).vOffset += this.rightSpeed * 0.001;
     }
-
+  }
+  private checkCannon() {
     const now = performance.now();
     if (!this.isCanonReady && now - this.lastFired > this.loadCooldown) {
+      // Takes few ticks, explicitly setting isCanonReady to prevent multiple loads
       this.loadCannon();
-      // This takes few ticks to load, prevent from loading multiple times
       this.isCanonReady = true;
     }
+  }
+  private simulateRecoil() {
+    const recoilVector = this.turret
+      .getDirection(new Vector3(0, 1, -1))
+      .normalize()
+      .scale(this.recoilEnergy);
+    const contactPoint = this.body.up
+      .normalize()
+      .scale(1)
+      .add(this.body.absolutePosition)
+      .add(this.turret.forward.normalize().scale(1));
+    this.body.physicsBody!.applyImpulse(recoilVector, contactPoint);
   }
 
   public accelerate(dt: number, turningDirection: -1 | 0 | 1) {
@@ -484,7 +513,7 @@ export class Tank {
   }
   public left(dt: number, isAccelerating: boolean) {
     if (!isAccelerating) {
-      // If not accelerating, even out speeds, using decelerationModifier to prevent sudden halt
+      // If not accelerating, even-out speeds to prevent sudden halt
       this.leftSpeed = clamp(
         this.leftSpeed + (this.leftSpeed > -this.maxTurningSpeed ? -1 : 1) * dt * this.speedModifier,
         -this.maxSpeed,
@@ -597,6 +626,7 @@ export class Tank {
     if (now - this.lastFired <= this.cooldown) return;
 
     this.shell.fire();
+    this.simulateRecoil();
     // this.particleSystems['muzzle-flash'].start();
     this.sounds['cannon'].play();
     this.lastFired = now;

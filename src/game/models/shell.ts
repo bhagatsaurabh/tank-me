@@ -6,9 +6,6 @@ import {
   Color3,
   MeshBuilder,
   Vector3,
-  Quaternion,
-  Axis,
-  Space,
   PhysicsAggregate,
   PhysicsShapeType,
   Sound,
@@ -23,6 +20,7 @@ import { v4 as uuid } from 'uuid';
 import { AssetLoader } from '../loader';
 import { TankMe } from '../main';
 import { Debug } from '../debug';
+import type { Tank } from './tank';
 
 export class Shell {
   private static refShell: Mesh;
@@ -39,25 +37,24 @@ export class Shell {
   private observers: Observer<any>[] = [];
 
   private constructor(
-    public tank: Mesh,
-    public scene: Scene,
-    public barrel: Mesh
+    public tank: Tank,
+    public scene: Scene
   ) {
-    this.playerId = tank.name;
-    this.loadAndSetTransform(barrel.position, barrel.absoluteRotationQuaternion);
-    this.setPhysics(barrel.physicsBody!);
+    this.playerId = tank.rootMesh.name;
+    this.loadAndSetTransform();
+    this.setPhysics(tank.barrel.physicsBody!);
 
     this.observers.push(TankMe.physicsPlugin.onCollisionObservable.add((ev) => this.onCollide(ev)));
     this.observers.push(this.scene.onBeforeRenderObservable.add(this.checkBounds.bind(this)));
   }
 
-  private loadAndSetTransform(spawn: Vector3, absoluteRotation: Quaternion) {
+  private loadAndSetTransform() {
     this.mesh = Shell.refShell.clone(`Shell:${uuid()}`);
     this.mesh.position.z = 4.8;
-    this.mesh.rotationQuaternion = absoluteRotation.clone();
+    this.mesh.rotationQuaternion = this.tank.barrel.absoluteRotationQuaternion.clone();
     this.mesh.isVisible = false;
     this.mesh.material = Shell.refShellMaterial;
-    this.mesh.parent = this.barrel;
+    this.mesh.parent = this.tank.barrel;
   }
   private async loadSound() {
     return new Promise<boolean>((resolve) => {
@@ -169,9 +166,9 @@ export class Shell {
     Shell.refShell = MeshBuilder.CreateSphere('Shell:Ref', { diameter: 0.1, segments: 1 }, scene);
     Shell.refShell.isVisible = false;
   }
-  static async create(tank: Mesh, scene: Scene, barrel: Mesh): Promise<Shell> {
-    Shell.setRefShell(scene);
-    const newShell = new Shell(tank, scene, barrel);
+  static async create(tank: Tank): Promise<Shell> {
+    Shell.setRefShell(tank.scene);
+    const newShell = new Shell(tank, tank.scene);
     await newShell.loadSound();
     return newShell;
   }

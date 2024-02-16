@@ -15,8 +15,7 @@ import {
   AbstractMesh,
   ArcRotateCamera,
   PhysicsViewer,
-  PBRMaterial,
-  Texture
+  PBRMaterial
 } from '@babylonjs/core';
 import HavokPhysics, { type HavokPhysicsWithBindings } from '@babylonjs/havok';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader';
@@ -41,7 +40,6 @@ import { Skybox } from './skybox';
 export class TankMe {
   private static instance: TankMe;
   static physicsPlugin: HavokPlugin;
-  private engine: Engine;
   private scene: Scene;
   private playerEntities: Record<string, Mesh> = {};
   private playerNextPosition: Record<string, Vector3> = {};
@@ -61,13 +59,12 @@ export class TankMe {
   private static subTimeStep = 16;
 
   private constructor(
-    public canvas: HTMLCanvasElement,
+    public engine: Engine,
     public client: GameClient,
     public room: Room<RoomState>,
     public physicsEngine: HavokPhysicsWithBindings,
     public selfUID: string
   ) {
-    this.engine = new Engine(this.canvas, true, { deterministicLockstep: true, lockstepMaxSteps: 4 });
     this.scene = new Scene(this.engine);
     TankMe.physicsPlugin = new HavokPlugin(false, physicsEngine);
     this.scene.enablePhysics(gravityVector, TankMe.physicsPlugin);
@@ -98,18 +95,38 @@ export class TankMe {
         { path: '/assets/game/audio/load.mp3', format: 'arraybuffer' }
       ]);
 
+      const engine = new Engine(canvas, true, { deterministicLockstep: true, lockstepMaxSteps: 4 });
+      // Init Engine or WebGPUEngine based on support
+      /* let engine: Engine;
+      if (await WebGPUEngine.IsSupportedAsync) {
+        engine = new WebGPUEngine(canvas, {
+          deterministicLockstep: true,
+          lockstepMaxSteps: 4,
+          antialias: true
+        });
+        await (engine as WebGPUEngine).initAsync();
+        (engine as WebGPUEngine).onContextLostObservable.add(() => {
+          console.log('Context Lost');
+          TankMe.instance.stop();
+        });
+        (engine as WebGPUEngine).onContextRestoredObservable.add(() => {
+          TankMe.instance.start();
+          console.log('Context Restored');
+        });
+        console.info('Running on WebGPU');
+      } else {
+        engine = new Engine(canvas, true, { deterministicLockstep: true, lockstepMaxSteps: 4 });
+      } */
       // Init physics engine
       const physicsEngine = await HavokPhysics();
-
       // Init game instance
-      TankMe.instance = new TankMe(canvas, client, client.rooms['desert'], physicsEngine, selfUID);
+      TankMe.instance = new TankMe(engine, client, client.rooms['desert'], physicsEngine, selfUID);
+
       await TankMe.importPlayerMesh(TankMe.instance.scene);
       await TankMe.instance.initScene();
       TankMe.instance.initStateListeners();
       TankMe.instance.initWindowListeners();
       TankMe.instance.start();
-
-      TankMe.physicsPlugin.setTimeStep(TankMe.timeStep);
 
       return TankMe.instance;
     }
@@ -341,6 +358,11 @@ export class TankMe {
   }
   private start() {
     this.engine.runRenderLoop(this.render.bind(this));
+    TankMe.physicsPlugin.setTimeStep(TankMe.timeStep);
+  }
+  private stop() {
+    TankMe.physicsPlugin.setTimeStep(0);
+    this.engine.stopRenderLoop();
   }
   private render() {
     this.scene.render();

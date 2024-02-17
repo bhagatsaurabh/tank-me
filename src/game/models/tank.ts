@@ -21,12 +21,14 @@ import {
   Scalar,
   PhysicsShapeConvexHull,
   PBRMaterial,
-  Texture
+  Texture,
+  PhysicsEventType
 } from '@babylonjs/core';
 
 import { Shell } from './shell';
 import { avg, clamp } from '@/utils/utils';
 import { PSExhaust } from '../particle-systems/exhaust';
+import { PSDust } from '../particle-systems/dust';
 
 export class Tank {
   public barrel!: AbstractMesh;
@@ -44,7 +46,7 @@ export class Tank {
   private wheelMeshes: Mesh[] = [];
   private axleMeshes: Mesh[] = [];
   private sounds: Record<string, Sound> = {};
-  private particleSystems: Record<string, PSExhaust> = {};
+  private particleSystems: Record<string, PSExhaust | PSDust> = {};
   private isStuck = false;
   private isCanonReady = true;
   private lastFired = 0;
@@ -134,11 +136,6 @@ export class Tank {
 
     this.rootMesh.isVisible = true;
     childMeshes.forEach((mesh) => (mesh.isVisible = true));
-
-    const exhaust1 = MeshBuilder.CreateSphere('exhaust-left', { diameter: 0.1, segments: 1 });
-    exhaust1.parent = this.rootMesh;
-    const exhaust2 = MeshBuilder.CreateSphere('exhaust-right', { diameter: 0.1, segments: 1 });
-    exhaust2.parent = this.rootMesh;
   }
   private setPhysics() {
     const bodyShape = new PhysicsShapeConvexHull(this.rootMesh as Mesh, this.scene);
@@ -268,14 +265,6 @@ export class Tank {
     _6dofConstraint.setAxisMotorType(PhysicsConstraintAxis.ANGULAR_X, PhysicsConstraintMotorType.VELOCITY);
     _6dofConstraint.setAxisMotorMaxForce(PhysicsConstraintAxis.ANGULAR_X, this.maxEnginePower);
 
-    // Locking axes creates weird results...
-    /* _6dofConstraint.setAxisMode(PhysicsConstraintAxis.LINEAR_X, PhysicsConstraintAxisLimitMode.LOCKED);
-    _6dofConstraint.setAxisMode(PhysicsConstraintAxis.LINEAR_Y, PhysicsConstraintAxisLimitMode.LOCKED);
-    _6dofConstraint.setAxisMode(PhysicsConstraintAxis.LINEAR_Z, PhysicsConstraintAxisLimitMode.LOCKED);
-    _6dofConstraint.setAxisMode(PhysicsConstraintAxis.LINEAR_DISTANCE, PhysicsConstraintAxisLimitMode.LOCKED);
-    _6dofConstraint.setAxisMode(PhysicsConstraintAxis.ANGULAR_Y, PhysicsConstraintAxisLimitMode.LOCKED);
-    _6dofConstraint.setAxisMode(PhysicsConstraintAxis.ANGULAR_Z, PhysicsConstraintAxisLimitMode.LOCKED); */
-
     return _6dofConstraint;
   }
   private createBarrelConstraint(
@@ -373,7 +362,7 @@ export class Tank {
             loop: false,
             autoplay: false,
             spatialSound: true,
-            maxDistance: 100,
+            maxDistance: 250,
             volume: 1
           }
         );
@@ -390,7 +379,7 @@ export class Tank {
             loop: true,
             autoplay: false,
             spatialSound: true,
-            maxDistance: 30
+            maxDistance: 50
           }
         );
       })
@@ -406,7 +395,7 @@ export class Tank {
             loop: true,
             autoplay: false,
             spatialSound: true,
-            maxDistance: 50
+            maxDistance: 70
           }
         );
       })
@@ -422,7 +411,7 @@ export class Tank {
             loop: false,
             autoplay: false,
             spatialSound: true,
-            maxDistance: 80
+            maxDistance: 160
           }
         );
       })
@@ -465,6 +454,8 @@ export class Tank {
       this.rightExhaust,
       this.scene
     );
+    this.particleSystems['dust-left'] = PSDust.create(this.rootMesh.name, this.leftTrack, this.scene);
+    this.particleSystems['dust-right'] = PSDust.create(this.rootMesh.name, this.rightTrack, this.scene);
     /* this.particleSystems['tank-explosion'] = PSTankExplosion.create(this.rootMesh, this.scene);
     this.particleSystems['fire'] = PSFire.create(this.rootMesh, this.scene); */
   }
@@ -474,11 +465,20 @@ export class Tank {
   }
   private animateTracks() {
     // Bug: Turning while stationary doesn't seems to visually update the track movements
-    if (Math.abs(this.leftSpeed) > 0.001) {
+    if (this.leftSpeed > 0) {
       ((this.leftTrack.material as PBRMaterial).albedoTexture as Texture).vOffset += this.leftSpeed * 0.001;
     }
-    if (Math.abs(this.rightSpeed) > 0.001) {
+    if (this.rightSpeed > 0) {
       ((this.rightTrack.material as PBRMaterial).albedoTexture as Texture).vOffset += this.rightSpeed * 0.001;
+    }
+
+    // Dust trail
+    if (this.leftSpeed === 0 || this.rightSpeed === 0) {
+      this.particleSystems['dust-left'].stop();
+      this.particleSystems['dust-right'].stop();
+    } else {
+      this.particleSystems['dust-left'].start();
+      this.particleSystems['dust-right'].start();
     }
   }
   private checkCannon() {
@@ -571,7 +571,7 @@ export class Tank {
     );
   }
   public brake(dt: number) {
-    if (this.leftSpeed === 0 && this.rightSpeed === 0) return;
+    /* if (this.leftSpeed === 0 && this.rightSpeed === 0) return;
 
     this.leftSpeed = clamp(
       this.leftSpeed + Math.sign(this.leftSpeed) * -1 * dt * this.speedModifier,
@@ -586,26 +586,30 @@ export class Tank {
 
     this.motors.forEach((motor, idx) =>
       motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed)
-    );
+    ); */
+    this.decelerate(dt, this.speedModifier);
   }
-  public decelerate(dt: number) {
-    if (this.leftSpeed === 0 && this.rightSpeed === 0) return;
+  public decelerate(dt: number, modifier: number = this.decelerationModifier) {
+    let speed = 0;
+    if (this.leftSpeed < 0.001 && this.rightSpeed < 0.001) {
+      this.leftSpeed = this.rightSpeed = 0;
+      speed = 0;
+    } else {
+      this.leftSpeed = clamp(
+        this.leftSpeed + Math.sign(this.leftSpeed) * -1 * dt * modifier,
+        -this.maxSpeed,
+        this.maxSpeed
+      );
+      this.rightSpeed = clamp(
+        this.rightSpeed + Math.sign(this.rightSpeed) * -1 * dt * modifier,
+        -this.maxSpeed,
+        this.maxSpeed
+      );
+      // Even out while decelerating
+      speed = avg([this.leftSpeed, this.rightSpeed]);
+    }
 
-    this.leftSpeed = clamp(
-      this.leftSpeed + Math.sign(this.leftSpeed) * -1 * dt * this.decelerationModifier,
-      -this.maxSpeed,
-      this.maxSpeed
-    );
-    this.rightSpeed = clamp(
-      this.rightSpeed + Math.sign(this.rightSpeed) * -1 * dt * this.decelerationModifier,
-      -this.maxSpeed,
-      this.maxSpeed
-    );
-
-    // Even out while decelerating
-    const avgSpeed = avg([this.leftSpeed, this.rightSpeed]);
-
-    this.motors.forEach((motor) => motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, avgSpeed));
+    this.motors.forEach((motor) => motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, speed));
   }
   public turretLeft(dt: number) {
     this.turretMotor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_Y, -dt * this.turretSpeed);

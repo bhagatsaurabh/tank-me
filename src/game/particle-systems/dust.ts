@@ -1,16 +1,9 @@
-import {
-  AbstractMesh,
-  Color4,
-  ConeParticleEmitter,
-  GPUParticleSystem,
-  Scene,
-  Texture,
-  Vector3
-} from '@babylonjs/core';
+import { AbstractMesh, Color4, ParticleSystem, Scene, Texture, Vector3 } from '@babylonjs/core';
 import { AssetLoader } from '../loader';
 
 export class PSDust {
-  private particleSystem!: GPUParticleSystem;
+  // GPUParticleSystem is not suited (yet?) for intermittent effect
+  private particleSystem!: ParticleSystem;
 
   private constructor(
     public id: string,
@@ -20,37 +13,29 @@ export class PSDust {
     this.setProperties();
   }
   private setProperties() {
-    this.particleSystem = new GPUParticleSystem(
-      `PS:Exhaust:${this.id}`,
-      { capacity: 300, randomTextureSize: 4096 },
-      this.scene
-    );
+    this.particleSystem = new ParticleSystem(`PS:Dust:${this.id}`, 250, this.scene);
 
     this.particleSystem.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/spritesheets/Smoke_SpriteSheet_8x8.png'] as string,
+      AssetLoader.assets['/assets/game/spritesheets/smoke_dust_cloud.png'] as string,
       this.scene
     );
     this.particleSystem.isBillboardBased = true;
     this.particleSystem.emitter = this.emitter;
-    this.particleSystem.particleEmitterType = new ConeParticleEmitter(0.1, 0.6);
-    this.particleSystem.blendMode = GPUParticleSystem.BLENDMODE_STANDARD;
-    this.particleSystem.maxActiveParticleCount = 100;
-    this.particleSystem.emitRate = 10;
+    this.particleSystem.blendMode = ParticleSystem.BLENDMODE_STANDARD;
+    this.particleSystem.emitRate = 20;
     this.particleSystem.minEmitPower = 0.1;
     this.particleSystem.maxEmitPower = 0.2;
-    this.particleSystem.minLifeTime = 2;
-    this.particleSystem.maxLifeTime = 3;
-    this.particleSystem.minScaleX = 0.1;
-    this.particleSystem.maxScaleX = 0.1;
-    this.particleSystem.minScaleY = 0.1;
-    this.particleSystem.maxScaleY = 0.1;
-    this.particleSystem.updateSpeed = 0.1;
-    this.particleSystem.addSizeGradient(0, 1);
-    this.particleSystem.addSizeGradient(1, 3);
-    this.particleSystem.addColorGradient(0, Color4.FromInts(128, 128, 128, 255));
-    this.particleSystem.addColorGradient(0.3, Color4.FromInts(77, 77, 77, 200));
-    this.particleSystem.addColorGradient(0.7, Color4.FromInts(51, 51, 51, 100));
-    this.particleSystem.addColorGradient(1, Color4.FromInts(26, 26, 26, 0));
+    this.particleSystem.minLifeTime = 3;
+    this.particleSystem.maxLifeTime = 4;
+    this.particleSystem.minScaleX = 1;
+    this.particleSystem.maxScaleX = 1;
+    this.particleSystem.minScaleY = 1;
+    this.particleSystem.maxScaleY = 1;
+    this.particleSystem.minEmitBox = new Vector3(0, -0.3, -3);
+    this.particleSystem.maxEmitBox = new Vector3(0, -0.3, 3);
+    this.particleSystem.direction1 = new Vector3(-2, 0, -2);
+    this.particleSystem.direction2 = new Vector3(2, 2, 2);
+    this.particleSystem.updateSpeed = 0.01;
     this.particleSystem.isAnimationSheetEnabled = true;
     this.particleSystem.startSpriteCellID = 1;
     this.particleSystem.endSpriteCellID = 63;
@@ -58,9 +43,15 @@ export class PSDust {
     this.particleSystem.spriteRandomStartCell = true;
     this.particleSystem.spriteCellWidth = 128;
     this.particleSystem.spriteCellHeight = 128;
-    this.particleSystem.spriteCellChangeSpeed = 2.5;
-    this.particleSystem.noiseStrength = new Vector3(0.2, 0, 0.15);
+    this.particleSystem.spriteCellChangeSpeed = 0.1;
     this.particleSystem.preventAutoStart = true;
+    this.particleSystem
+      .addSizeGradient(0, 2)
+      .addSizeGradient(1, 9)
+      .addColorGradient(0, Color4.FromInts(178, 153, 110, 0))
+      .addColorGradient(0.15, Color4.FromInts(178, 153, 110, 200))
+      .addColorGradient(0.7, Color4.FromInts(178, 153, 110, 100))
+      .addColorGradient(1, Color4.FromInts(178, 153, 110, 0));
   }
 
   public start() {

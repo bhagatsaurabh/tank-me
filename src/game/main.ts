@@ -85,10 +85,9 @@ export class TankMe {
         { path: '/assets/game/map/desert/height.png' },
         { path: '/assets/game/map/desert/diffuse.png' },
         { path: '/assets/game/textures/explosion.jpg' },
-        { path: '/assets/game/textures/smoke.png' },
         { path: '/assets/game/textures/flare.png' },
         { path: '/assets/game/textures/fire.jpg' },
-        { path: '/assets/game/spritesheets/Smoke_SpriteSheet_8x8.png' },
+        { path: '/assets/game/spritesheets/smoke_dust_cloud.png' },
         { path: '/assets/game/audio/explosion.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/cannon.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/idle.mp3', format: 'arraybuffer' },
@@ -218,7 +217,7 @@ export class TankMe {
     this.scene.activeCamera = this.tppCamera;
 
     // Set FPP Camera
-    this.fppCamera = new FreeCamera('fpp-cam', new Vector3(0, 2.1, 5.2), this.scene);
+    this.fppCamera = new FreeCamera('fpp-cam', new Vector3(0, -0.45, 1.5), this.scene);
 
     // Set ArcRotateCamera
     this.endCamera = new ArcRotateCamera('end-cam', 0, 0, 10, new Vector3(0, 0, 0), this.scene);

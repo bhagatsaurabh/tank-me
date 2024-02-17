@@ -7,6 +7,7 @@ import {
   Texture,
   Vector3
 } from '@babylonjs/core';
+
 import { AssetLoader } from '../loader';
 
 export class PSExhaust {
@@ -27,7 +28,7 @@ export class PSExhaust {
     );
 
     this.particleSystem.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/spritesheets/Smoke_SpriteSheet_8x8.png'] as string,
+      AssetLoader.assets['/assets/game/spritesheets/smoke_dust_cloud.png'] as string,
       this.scene
     );
     this.particleSystem.isBillboardBased = true;

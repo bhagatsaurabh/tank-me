@@ -34,7 +34,7 @@ export class Ground {
       } else {
         Ground.groundMesh = MeshBuilder.CreateGroundFromHeightMap(
           'ground',
-          AssetLoader.assets['/assets/game/map/height.png'] as string,
+          AssetLoader.assets['/assets/game/map/desert/height.png'] as string,
           {
             width: 500,
             height: 500,
@@ -52,7 +52,7 @@ export class Ground {
   private static onGroundCreated(scene: Scene, mesh: GroundMesh, done: (val?: unknown) => void) {
     const groundMaterial = new StandardMaterial('ground', scene);
     groundMaterial.diffuseTexture = new Texture(
-      AssetLoader.assets['/assets/game/map/diffuse.png'] as string,
+      AssetLoader.assets['/assets/game/map/desert/diffuse.png'] as string,
       scene
     );
     groundMaterial.specularColor = new Color3(0, 0, 0);

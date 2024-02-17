@@ -82,12 +82,13 @@ export class TankMe {
       // Pre-load assets
       await AssetLoader.load([
         { path: '/assets/game/models/Panzer I/Panzer_I.glb' },
-        { path: '/assets/game/map/height.png' },
-        { path: '/assets/game/map/diffuse.png' },
+        { path: '/assets/game/map/desert/height.png' },
+        { path: '/assets/game/map/desert/diffuse.png' },
         { path: '/assets/game/textures/explosion.jpg' },
         { path: '/assets/game/textures/smoke.png' },
         { path: '/assets/game/textures/flare.png' },
         { path: '/assets/game/textures/fire.jpg' },
+        { path: '/assets/game/spritesheets/Smoke_SpriteSheet_8x8.png' },
         { path: '/assets/game/audio/explosion.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/cannon.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/idle.mp3', format: 'arraybuffer' },

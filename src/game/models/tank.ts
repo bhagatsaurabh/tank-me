@@ -7,8 +7,6 @@ import {
   FollowCamera,
   type Nullable,
   FreeCamera,
-  ParticleSystem,
-  GPUParticleSystem,
   PhysicsBody,
   Physics6DoFConstraint,
   PhysicsConstraintAxis,
@@ -27,10 +25,8 @@ import {
 } from '@babylonjs/core';
 
 import { Shell } from './shell';
-import { PSMuzzleFlash } from '../particle-systems/muzzle-flash';
-import { PSTankExplosion } from '../particle-systems/tank-explosion';
-import { PSFire } from '../particle-systems/fire';
 import { avg, clamp } from '@/utils/utils';
+import { PSExhaust } from '../particle-systems/exhaust';
 
 export class Tank {
   public barrel!: AbstractMesh;
@@ -39,6 +35,8 @@ export class Tank {
   private turretMotor!: Physics6DoFConstraint;
   public leftTrack!: AbstractMesh;
   public rightTrack!: AbstractMesh;
+  public leftExhaust!: AbstractMesh;
+  public rightExhaust!: AbstractMesh;
   private axles: Mesh[] = [];
   private motors: Physics6DoFConstraint[] = [];
   private shell!: Shell;
@@ -46,7 +44,7 @@ export class Tank {
   private wheelMeshes: Mesh[] = [];
   private axleMeshes: Mesh[] = [];
   private sounds: Record<string, Sound> = {};
-  private particleSystems: Record<string, ParticleSystem | GPUParticleSystem | PSFire> = {};
+  private particleSystems: Record<string, PSExhaust> = {};
   private isStuck = false;
   private isCanonReady = true;
   private lastFired = 0;
@@ -123,9 +121,11 @@ export class Tank {
     this.rootMesh.position = Vector3.Zero();
     const childMeshes = this.rootMesh.getChildMeshes();
     this.barrel = childMeshes[0];
-    this.leftTrack = childMeshes[2];
-    this.rightTrack = childMeshes[3];
-    this.turret = childMeshes[4];
+    this.rightExhaust = childMeshes[1];
+    this.leftExhaust = childMeshes[2];
+    this.leftTrack = childMeshes[4];
+    this.rightTrack = childMeshes[5];
+    this.turret = childMeshes[6];
     this.barrel.position.y = -0.51;
     this.barrel.position.z = 1.79;
     this.barrel.parent = this.turret;
@@ -134,6 +134,11 @@ export class Tank {
 
     this.rootMesh.isVisible = true;
     childMeshes.forEach((mesh) => (mesh.isVisible = true));
+
+    const exhaust1 = MeshBuilder.CreateSphere('exhaust-left', { diameter: 0.1, segments: 1 });
+    exhaust1.parent = this.rootMesh;
+    const exhaust2 = MeshBuilder.CreateSphere('exhaust-right', { diameter: 0.1, segments: 1 });
+    exhaust2.parent = this.rootMesh;
   }
   private setPhysics() {
     const bodyShape = new PhysicsShapeConvexHull(this.rootMesh as Mesh, this.scene);
@@ -446,12 +451,22 @@ export class Tank {
   private async loadCannon(init = false) {
     if (!init) this.sounds['load'].play();
     this.shell = await Shell.create(this);
-    this.particleSystems['muzzle-flash'] = PSMuzzleFlash.create(this.barrel, this.scene);
+    // this.particleSystems['muzzle-flash'] = PSMuzzleFlash.create(this.barrel, this.scene);
     this.isCanonReady = true;
   }
   private setParticleSystems() {
-    this.particleSystems['tank-explosion'] = PSTankExplosion.create(this.rootMesh, this.scene);
-    this.particleSystems['fire'] = PSFire.create(this.rootMesh, this.scene);
+    this.particleSystems['exhaust-left'] = PSExhaust.create(
+      'Left' + this.rootMesh.name,
+      this.leftExhaust,
+      this.scene
+    );
+    this.particleSystems['exhaust-right'] = PSExhaust.create(
+      'Right' + this.rootMesh.name,
+      this.rightExhaust,
+      this.scene
+    );
+    /* this.particleSystems['tank-explosion'] = PSTankExplosion.create(this.rootMesh, this.scene);
+    this.particleSystems['fire'] = PSFire.create(this.rootMesh, this.scene); */
   }
   private step() {
     this.animateTracks();
@@ -633,8 +648,8 @@ export class Tank {
     this.isCanonReady = false;
   }
   public explode() {
-    this.particleSystems['tank-explosion'].emitter = this.rootMesh.position.clone();
-    this.particleSystems['fire'].emitter = this.rootMesh.position.clone();
+    /* this.particleSystems['tank-explosion'].emitter = this.rootMesh.position.clone();
+    this.particleSystems['fire'].emitter = this.rootMesh.position.clone(); */
     this.particleSystems['tank-explosion'].start();
     this.particleSystems['fire'].start();
   }
@@ -675,6 +690,8 @@ export class Tank {
     await newTank.setSoundSources();
     await newTank.loadCannon(true);
     newTank.sounds['idle'].play();
+    newTank.particleSystems['exhaust-left'].start();
+    newTank.particleSystems['exhaust-right'].start();
     return newTank;
   }
 }

@@ -1,20 +1,17 @@
+import { Scene } from '@babylonjs/core';
+import { StandardMaterial, Texture } from '@babylonjs/core/Materials';
+import { Color3, Vector3 } from '@babylonjs/core/Maths';
+import { MeshBuilder, Mesh } from '@babylonjs/core/Meshes';
 import {
-  StandardMaterial,
-  type Mesh,
-  Scene,
-  Texture,
-  Color3,
-  MeshBuilder,
-  Vector3,
   PhysicsAggregate,
   PhysicsShapeType,
-  Sound,
   type IPhysicsCollisionEvent,
-  ParticleSystem,
-  LockConstraint,
   PhysicsBody,
-  Observer
-} from '@babylonjs/core';
+  LockConstraint
+} from '@babylonjs/core/Physics';
+import { Sound } from '@babylonjs/core/Audio';
+import { ParticleSystem } from '@babylonjs/core/Particles';
+import { Observer } from '@babylonjs/core/Misc';
 import { v4 as uuid } from 'uuid';
 
 import { AssetLoader } from '../loader';

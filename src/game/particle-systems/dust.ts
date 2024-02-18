@@ -1,19 +1,24 @@
-import { AbstractMesh, Color4, ParticleSystem, Scene, Texture, Vector3 } from '@babylonjs/core';
+import { Scene } from '@babylonjs/core';
+import { AbstractMesh } from '@babylonjs/core/Meshes';
+import { Color4, Vector3 } from '@babylonjs/core/Maths';
+import { Texture } from '@babylonjs/core/Materials';
+import { ParticleSystem } from '@babylonjs/core/Particles';
+
 import { AssetLoader } from '../loader';
+import { luid } from '@/utils/utils';
 
 export class PSDust {
   // GPUParticleSystem is not suited (yet?) for intermittent effect
   private particleSystem!: ParticleSystem;
 
   private constructor(
-    public id: string,
     public emitter: AbstractMesh,
     public scene: Scene
   ) {
     this.setProperties();
   }
   private setProperties() {
-    this.particleSystem = new ParticleSystem(`PS:Dust:${this.id}`, 250, this.scene);
+    this.particleSystem = new ParticleSystem(`PS:Dust:${luid()}`, 250, this.scene);
 
     this.particleSystem.particleTexture = new Texture(
       AssetLoader.assets['/assets/game/spritesheets/smoke_dust_cloud.png'] as string,
@@ -61,7 +66,7 @@ export class PSDust {
     this.particleSystem.stop();
   }
 
-  static create(id: string, emitter: AbstractMesh, scene: Scene) {
-    return new PSDust(id, emitter, scene);
+  static create(emitter: AbstractMesh, scene: Scene) {
+    return new PSDust(emitter, scene);
   }
 }

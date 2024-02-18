@@ -1,20 +1,16 @@
-import {
-  AbstractMesh,
-  Color4,
-  ConeParticleEmitter,
-  GPUParticleSystem,
-  Scene,
-  Texture,
-  Vector3
-} from '@babylonjs/core';
+import { Scene } from '@babylonjs/core';
+import { AbstractMesh } from '@babylonjs/core/Meshes';
+import { Color4, Vector3 } from '@babylonjs/core/Maths';
+import { Texture } from '@babylonjs/core/Materials';
+import { ConeParticleEmitter, GPUParticleSystem } from '@babylonjs/core/Particles';
 
 import { AssetLoader } from '../loader';
+import { luid } from '@/utils/utils';
 
 export class PSExhaust {
   private particleSystem!: GPUParticleSystem;
 
   private constructor(
-    public id: string,
     public emitter: AbstractMesh,
     public scene: Scene
   ) {
@@ -22,7 +18,7 @@ export class PSExhaust {
   }
   private setProperties() {
     this.particleSystem = new GPUParticleSystem(
-      `PS:Exhaust:${this.id}`,
+      `PS:Exhaust:${luid()}`,
       { capacity: 300, randomTextureSize: 4096 },
       this.scene
     );
@@ -71,7 +67,7 @@ export class PSExhaust {
     this.particleSystem.stop();
   }
 
-  static create(id: string, emitter: AbstractMesh, scene: Scene) {
-    return new PSExhaust(id, emitter, scene);
+  static create(emitter: AbstractMesh, scene: Scene) {
+    return new PSExhaust(emitter, scene);
   }
 }

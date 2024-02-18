@@ -1,24 +1,17 @@
 import '@babylonjs/core/Debug/debugLayer';
 import '@babylonjs/inspector';
-import {
-  Engine,
-  Scene,
-  Vector3,
-  Mesh,
-  HavokPlugin,
-  GlowLayer,
-  DirectionalLight,
-  CascadedShadowGenerator,
-  FollowCamera,
-  FreeCamera,
-  SceneLoader,
-  AbstractMesh,
-  ArcRotateCamera,
-  PhysicsViewer,
-  PBRMaterial
-} from '@babylonjs/core';
-import HavokPhysics, { type HavokPhysicsWithBindings } from '@babylonjs/havok';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader';
+import { GlowLayer } from '@babylonjs/core/Layers';
+import { PhysicsViewer } from '@babylonjs/core/Debug';
+import { Engine, Scene } from '@babylonjs/core';
+import { SceneLoader } from '@babylonjs/core/Loading';
+import { Vector3 } from '@babylonjs/core/Maths';
+import { Mesh, AbstractMesh } from '@babylonjs/core/Meshes';
+import { PBRMaterial } from '@babylonjs/core/Materials';
+import { HavokPlugin } from '@babylonjs/core/Physics';
+import { DirectionalLight, CascadedShadowGenerator } from '@babylonjs/core/Lights';
+import { FollowCamera, FreeCamera, ArcRotateCamera } from '@babylonjs/core/Cameras';
+import HavokPhysics, { type HavokPhysicsWithBindings } from '@babylonjs/havok';
 import type { Room } from 'colyseus.js';
 
 import { GameClient } from '@/game/client';
@@ -88,6 +81,7 @@ export class TankMe {
         { path: '/assets/game/textures/flare.png' },
         { path: '/assets/game/textures/fire.jpg' },
         { path: '/assets/game/spritesheets/smoke_dust_cloud.png' },
+        { path: '/assets/game/spritesheets/explosion.png' },
         { path: '/assets/game/audio/explosion.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/cannon.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/idle.mp3', format: 'arraybuffer' },

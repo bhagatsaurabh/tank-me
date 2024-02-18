@@ -1,4 +1,5 @@
-import { CubeTexture, Scene } from '@babylonjs/core';
+import { Scene } from '@babylonjs/core';
+import { CubeTexture } from '@babylonjs/core/Materials';
 
 export class Skybox {
   cubeTexture!: CubeTexture;

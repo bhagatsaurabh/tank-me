@@ -1,4 +1,5 @@
-import { LinesMesh, Mesh, MeshBuilder, type Vector3 } from '@babylonjs/core';
+import { type Vector3 } from '@babylonjs/core/Maths';
+import { LinesMesh, Mesh, MeshBuilder } from '@babylonjs/core/Meshes';
 
 export class Debug {
   static meshes: Record<string, Mesh> = {};

@@ -49,3 +49,6 @@ export const rand = (min: number, max: number) => {
 export const forwardVector = new Vector3(0, 0, 1);
 export const clamp = (val: number, min: number, max: number) => Math.max(Math.min(val, max), min);
 export const avg = (vals: number[]) => vals.reduce((acc, curr) => acc + curr, 0) / vals.length;
+
+const S4 = () => (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+export const luid = () => `${S4()}${S4()}`;

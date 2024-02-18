@@ -1,4 +1,5 @@
 import { Client, Room } from 'colyseus.js';
+
 import type { RoomState } from './state';
 
 export class GameClient {

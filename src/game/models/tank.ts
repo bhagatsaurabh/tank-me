@@ -1,34 +1,26 @@
+import { Scene, type Nullable, Ray } from '@babylonjs/core';
+import { Sound } from '@babylonjs/core/Audio';
+import { FollowCamera, FreeCamera } from '@babylonjs/core/Cameras';
+import { Scalar, Vector3, Space, Axis } from '@babylonjs/core/Maths';
+import { AbstractMesh, Mesh, MeshBuilder } from '@babylonjs/core/Meshes';
+import { PBRMaterial, Texture } from '@babylonjs/core/Materials';
 import {
-  AbstractMesh,
-  Vector3,
-  PhysicsAggregate,
-  Scene,
-  Sound,
-  FollowCamera,
-  type Nullable,
-  FreeCamera,
-  PhysicsBody,
-  Physics6DoFConstraint,
-  PhysicsConstraintAxis,
-  PhysicsMotionType,
-  Mesh,
-  PhysicsShapeContainer,
-  MeshBuilder,
-  PhysicsShapeType,
-  Axis,
-  Space,
-  PhysicsConstraintMotorType,
-  Scalar,
   PhysicsShapeConvexHull,
-  PBRMaterial,
-  Texture,
-  PhysicsEventType
-} from '@babylonjs/core';
+  PhysicsConstraintMotorType,
+  PhysicsShapeType,
+  PhysicsShapeContainer,
+  PhysicsMotionType,
+  PhysicsConstraintAxis,
+  Physics6DoFConstraint,
+  PhysicsBody,
+  PhysicsAggregate
+} from '@babylonjs/core/Physics';
 
 import { Shell } from './shell';
 import { avg, clamp } from '@/utils/utils';
 import { PSExhaust } from '../particle-systems/exhaust';
 import { PSDust } from '../particle-systems/dust';
+import { PSMuzzle } from '../particle-systems/muzzle';
 
 export class Tank {
   public barrel!: AbstractMesh;
@@ -46,7 +38,7 @@ export class Tank {
   private wheelMeshes: Mesh[] = [];
   private axleMeshes: Mesh[] = [];
   private sounds: Record<string, Sound> = {};
-  private particleSystems: Record<string, PSExhaust | PSDust> = {};
+  private particleSystems: Record<string, PSExhaust | PSDust | PSMuzzle> = {};
   private isStuck = false;
   private isCanonReady = true;
   private lastFired = 0;
@@ -440,22 +432,14 @@ export class Tank {
   private async loadCannon(init = false) {
     if (!init) this.sounds['load'].play();
     this.shell = await Shell.create(this);
-    // this.particleSystems['muzzle-flash'] = PSMuzzleFlash.create(this.barrel, this.scene);
     this.isCanonReady = true;
   }
   private setParticleSystems() {
-    this.particleSystems['exhaust-left'] = PSExhaust.create(
-      'Left' + this.rootMesh.name,
-      this.leftExhaust,
-      this.scene
-    );
-    this.particleSystems['exhaust-right'] = PSExhaust.create(
-      'Right' + this.rootMesh.name,
-      this.rightExhaust,
-      this.scene
-    );
-    this.particleSystems['dust-left'] = PSDust.create(this.rootMesh.name, this.leftTrack, this.scene);
-    this.particleSystems['dust-right'] = PSDust.create(this.rootMesh.name, this.rightTrack, this.scene);
+    this.particleSystems['exhaust-left'] = PSExhaust.create(this.leftExhaust, this.scene);
+    this.particleSystems['exhaust-right'] = PSExhaust.create(this.rightExhaust, this.scene);
+    this.particleSystems['dust-left'] = PSDust.create(this.leftTrack, this.scene);
+    this.particleSystems['dust-right'] = PSDust.create(this.rightTrack, this.scene);
+    this.particleSystems['muzzle'] = PSMuzzle.create(this.barrel, this.scene);
     /* this.particleSystems['tank-explosion'] = PSTankExplosion.create(this.rootMesh, this.scene);
     this.particleSystems['fire'] = PSFire.create(this.rootMesh, this.scene); */
   }
@@ -646,7 +630,16 @@ export class Tank {
 
     this.shell.fire();
     this.simulateRecoil();
-    // this.particleSystems['muzzle-flash'].start();
+    const groundHit = this.scene.pickWithRay(
+      new Ray(this.barrel.absolutePosition.add(new Vector3(0, 0, 5)), Vector3.Down(), 10),
+      (mesh) => mesh.name === 'ground'
+    );
+    if (groundHit?.hit && groundHit?.pickedPoint) {
+      this.particleSystems['muzzle'].start(groundHit.pickedPoint);
+    } else {
+      this.particleSystems['muzzle'].start();
+    }
+
     this.sounds['cannon'].play();
     this.lastFired = now;
     this.isCanonReady = false;

@@ -1,4 +1,5 @@
-import { ActionEvent, ActionManager, ExecuteCodeAction, type Scene } from '@babylonjs/core';
+import { type Scene } from '@babylonjs/core';
+import { ActionEvent, ActionManager, ExecuteCodeAction } from '@babylonjs/core/Actions';
 
 export class InputManager {
   private static keyInputSet = new Set<string>([

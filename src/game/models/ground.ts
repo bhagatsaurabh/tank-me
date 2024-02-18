@@ -1,13 +1,8 @@
-import {
-  MeshBuilder,
-  type GroundMesh,
-  Scene,
-  StandardMaterial,
-  Texture,
-  Color3,
-  PhysicsAggregate,
-  PhysicsShapeType
-} from '@babylonjs/core';
+import { Scene } from '@babylonjs/core';
+import { MeshBuilder, type GroundMesh } from '@babylonjs/core/Meshes';
+import { PhysicsAggregate, PhysicsShapeType } from '@babylonjs/core/Physics';
+import { StandardMaterial, Texture } from '@babylonjs/core/Materials';
+import { Color3 } from '@babylonjs/core/Maths';
 
 import { AssetLoader } from '../loader';
 

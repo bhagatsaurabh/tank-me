@@ -163,6 +163,7 @@ export class TankMe {
     // Set GlowLayer
     this.glowLayer = new GlowLayer('glow', this.scene);
     this.glowLayer.intensity = 2;
+    this.glowLayer.blurKernelSize = 5;
 
     // Set Lights
     this.directionalLight = new DirectionalLight('DirectionalLight', new Vector3(-1, -1, 0), this.scene);

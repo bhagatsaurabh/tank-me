@@ -52,3 +52,15 @@ export const avg = (vals: number[]) => vals.reduce((acc, curr) => acc + curr, 0)
 
 const S4 = () => (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
 export const luid = () => `${S4()}${S4()}`;
+export const delay = async (ms: number, iife: (clear: () => void) => void = noop) => {
+  let clear = noop;
+  const promise = new Promise<boolean>((res) => {
+    const handle = setTimeout(() => res(true), ms);
+    clear = () => {
+      clearTimeout(handle);
+      res(false);
+    };
+  });
+  iife(clear);
+  return promise;
+};

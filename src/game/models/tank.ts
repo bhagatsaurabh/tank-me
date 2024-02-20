@@ -1,19 +1,19 @@
-import { Scene, type Nullable, Ray } from '@babylonjs/core';
+import { Scene, type Nullable } from '@babylonjs/core';
 import { Sound } from '@babylonjs/core/Audio';
 import { FollowCamera, FreeCamera } from '@babylonjs/core/Cameras';
 import { Scalar, Vector3, Space, Axis } from '@babylonjs/core/Maths';
-import { AbstractMesh, Mesh, MeshBuilder } from '@babylonjs/core/Meshes';
+import { AbstractMesh, Mesh, MeshBuilder, TransformNode } from '@babylonjs/core/Meshes';
 import { PBRMaterial, Texture } from '@babylonjs/core/Materials';
 import {
   PhysicsShapeConvexHull,
   PhysicsConstraintMotorType,
-  PhysicsShapeType,
   PhysicsShapeContainer,
   PhysicsMotionType,
   PhysicsConstraintAxis,
   Physics6DoFConstraint,
   PhysicsBody,
-  PhysicsAggregate
+  PhysicsAggregate,
+  PhysicsShapeSphere
 } from '@babylonjs/core/Physics';
 
 import { Shell } from './shell';
@@ -24,6 +24,7 @@ import { PSMuzzle } from '../particle-systems/muzzle';
 
 export class Tank {
   public barrel!: AbstractMesh;
+  public barrelTip!: TransformNode;
   private barrelMotor!: Physics6DoFConstraint;
   private turret!: AbstractMesh;
   private turretMotor!: Physics6DoFConstraint;
@@ -31,14 +32,20 @@ export class Tank {
   public rightTrack!: AbstractMesh;
   public leftExhaust!: AbstractMesh;
   public rightExhaust!: AbstractMesh;
-  private axles: Mesh[] = [];
+  private axles: TransformNode[] = []; //
+  private axleMeshes: Mesh[] = [];
   private motors: Physics6DoFConstraint[] = [];
   private shell!: Shell;
-  private body!: Mesh;
-  private wheelMeshes: Mesh[] = [];
-  private axleMeshes: Mesh[] = [];
+  private body!: TransformNode; //
+  private wheelNodes: TransformNode[] = []; //
   private sounds: Record<string, Sound> = {};
-  private particleSystems: Record<string, PSExhaust | PSDust | PSMuzzle> = {};
+  private particleSystems: {
+    muzzle?: PSMuzzle;
+    'exhaust-left'?: PSExhaust;
+    'exhaust-right'?: PSExhaust;
+    'dust-left'?: PSDust;
+    'dust-right'?: PSDust;
+  } = {};
   private isStuck = false;
   private isCanonReady = true;
   private lastFired = 0;
@@ -95,9 +102,9 @@ export class Tank {
   }
 
   private setTransform() {
-    this.body = new Mesh(`Root:${this.rootMesh.name}`, this.scene);
+    this.body = new TransformNode(`Root:${this.rootMesh.name}`, this.scene);
     for (let i = 0; i < this.noOfWheels; i += 1) {
-      const wheelMesh = new Mesh(`wheel${i}`, this.scene);
+      const wheel = new TransformNode(`wheel${i}`, this.scene);
       const axleMesh = MeshBuilder.CreateSphere(
         `axle${i}`,
         { diameterY: 0.6, diameterX: 0.75, diameterZ: 0.75, segments: 5 },
@@ -105,10 +112,10 @@ export class Tank {
       );
       axleMesh.rotate(Axis.Z, Math.PI / 2, Space.LOCAL);
       axleMesh.bakeCurrentTransformIntoVertices();
-      (wheelMesh as AbstractMesh).addChild(axleMesh);
-      wheelMesh.isVisible = false;
+      // (wheel as AbstractMesh).addChild(axleMesh);
+      axleMesh.parent = wheel;
       axleMesh.isVisible = false;
-      this.wheelMeshes.push(wheelMesh);
+      this.wheelNodes.push(wheel);
       this.axleMeshes.push(axleMesh);
     }
 
@@ -125,6 +132,9 @@ export class Tank {
     this.barrel.parent = this.turret;
     this.rootMesh.parent = this.body;
     this.body.position = this.spawn;
+    this.barrelTip = new TransformNode(`Tip:${this.rootMesh.name}`, this.scene);
+    this.barrelTip.position.z = 4.656;
+    this.barrelTip.parent = this.barrel;
 
     this.rootMesh.isVisible = true;
     childMeshes.forEach((mesh) => (mesh.isVisible = true));
@@ -182,8 +192,10 @@ export class Tank {
       new Vector3(1.475, 0.2, -1),
       new Vector3(1.475, 0.2, -2)
     ];
+
+    const axleShape = new PhysicsShapeSphere(Vector3.Zero(), 0.375, this.scene);
     for (let i = 0; i < this.noOfWheels; i += 1) {
-      const wheel = this.wheelMeshes[i];
+      const wheel = this.wheelNodes[i];
       const axle = this.axleMeshes[i];
 
       axle.position = Vector3.Zero();
@@ -192,7 +204,7 @@ export class Tank {
 
       const axleAgg = new PhysicsAggregate(
         axle,
-        PhysicsShapeType.SPHERE,
+        axleShape /* PhysicsShapeType.SPHERE */,
         {
           mass: this.wheelMass,
           friction: this.wheelFriction,
@@ -212,11 +224,11 @@ export class Tank {
     // TankMe.physicsViewer.showBody(bodyPB);
 
     this.cameras!.tpp.position = new Vector3(
-      this.wheelMeshes[0].position.x + 0.5,
-      this.wheelMeshes[0].position.y + 0.5,
-      this.wheelMeshes[0].position.z + 0.5
+      this.wheelNodes[0].position.x + 0.5,
+      this.wheelNodes[0].position.y + 0.5,
+      this.wheelNodes[0].position.z + 0.5
     );
-    this.cameras!.tpp.lockedTarget = this.wheelMeshes[0];
+    this.cameras!.tpp.lockedTarget = this.wheelNodes[0] as Mesh;
   }
   private setLights() {
     // TODO
@@ -439,7 +451,7 @@ export class Tank {
     this.particleSystems['exhaust-right'] = PSExhaust.create(this.rightExhaust, this.scene);
     this.particleSystems['dust-left'] = PSDust.create(this.leftTrack, this.scene);
     this.particleSystems['dust-right'] = PSDust.create(this.rightTrack, this.scene);
-    this.particleSystems['muzzle'] = PSMuzzle.create(this.barrel, this.scene);
+    this.particleSystems['muzzle'] = PSMuzzle.create(this.barrelTip, this.scene);
     /* this.particleSystems['tank-explosion'] = PSTankExplosion.create(this.rootMesh, this.scene);
     this.particleSystems['fire'] = PSFire.create(this.rootMesh, this.scene); */
   }
@@ -458,11 +470,11 @@ export class Tank {
 
     // Dust trail
     if (this.leftSpeed === 0 || this.rightSpeed === 0) {
-      this.particleSystems['dust-left'].stop();
-      this.particleSystems['dust-right'].stop();
+      this.particleSystems['dust-left']?.stop();
+      this.particleSystems['dust-right']?.stop();
     } else {
-      this.particleSystems['dust-left'].start();
-      this.particleSystems['dust-right'].start();
+      this.particleSystems['dust-left']?.start();
+      this.particleSystems['dust-right']?.start();
     }
   }
   private checkCannon() {
@@ -630,15 +642,7 @@ export class Tank {
 
     this.shell.fire();
     this.simulateRecoil();
-    const groundHit = this.scene.pickWithRay(
-      new Ray(this.barrel.absolutePosition.add(new Vector3(0, 0, 5)), Vector3.Down(), 10),
-      (mesh) => mesh.name === 'ground'
-    );
-    if (groundHit?.hit && groundHit?.pickedPoint) {
-      this.particleSystems['muzzle'].start(groundHit.pickedPoint);
-    } else {
-      this.particleSystems['muzzle'].start();
-    }
+    this.particleSystems['muzzle']?.start();
 
     this.sounds['cannon'].play();
     this.lastFired = now;
@@ -647,8 +651,8 @@ export class Tank {
   public explode() {
     /* this.particleSystems['tank-explosion'].emitter = this.rootMesh.position.clone();
     this.particleSystems['fire'].emitter = this.rootMesh.position.clone(); */
-    this.particleSystems['tank-explosion'].start();
-    this.particleSystems['fire'].start();
+    // this.particleSystems['tank-explosion']?.start();
+    // this.particleSystems['fire']?.start();
   }
   public toggleCamera() {
     if (performance.now() - this.lastCameraToggle > this.cameraToggleDelay) {
@@ -687,8 +691,8 @@ export class Tank {
     await newTank.setSoundSources();
     await newTank.loadCannon(true);
     newTank.sounds['idle'].play();
-    newTank.particleSystems['exhaust-left'].start();
-    newTank.particleSystems['exhaust-right'].start();
+    newTank.particleSystems['exhaust-left']?.start();
+    newTank.particleSystems['exhaust-right']?.start();
     return newTank;
   }
 }

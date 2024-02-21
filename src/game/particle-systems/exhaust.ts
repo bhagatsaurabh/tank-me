@@ -19,7 +19,7 @@ export class PSExhaust {
   private setProperties() {
     this.particleSystem = new GPUParticleSystem(
       `PS:Exhaust:${luid()}`,
-      { capacity: 300, randomTextureSize: 4096 },
+      { capacity: 300, randomTextureSize: 1024 },
       this.scene
     );
 

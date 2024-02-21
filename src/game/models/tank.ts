@@ -49,8 +49,8 @@ export class Tank {
   private isStuck = false;
   private isCanonReady = true;
   private lastFired = 0;
-  private cooldown = 2000;
-  private loadCooldown = 1000;
+  private cooldown = 5000;
+  private loadCooldown = 2500;
   private lastCameraToggle = 0;
   private cameraToggleDelay = 1000;
   private maxEnginePower = 100;
@@ -112,7 +112,6 @@ export class Tank {
       );
       axleMesh.rotate(Axis.Z, Math.PI / 2, Space.LOCAL);
       axleMesh.bakeCurrentTransformIntoVertices();
-      // (wheel as AbstractMesh).addChild(axleMesh);
       axleMesh.parent = wheel;
       axleMesh.isVisible = false;
       this.wheelNodes.push(wheel);
@@ -204,7 +203,7 @@ export class Tank {
 
       const axleAgg = new PhysicsAggregate(
         axle,
-        axleShape /* PhysicsShapeType.SPHERE */,
+        axleShape,
         {
           mass: this.wheelMass,
           friction: this.wheelFriction,
@@ -436,6 +435,22 @@ export class Tank {
         );
       })
     );
+    promises.push(
+      new Promise((resolve) => {
+        this.sounds['turret'] = new Sound(
+          'turret',
+          '/assets/game/audio/turret.mp3',
+          this.scene,
+          () => resolve(true),
+          {
+            loop: true,
+            autoplay: false,
+            spatialSound: false,
+            maxDistance: 20
+          }
+        );
+      })
+    );
 
     Object.values(this.sounds).forEach((sound) => sound.attachToMesh(this.rootMesh));
 
@@ -452,15 +467,14 @@ export class Tank {
     this.particleSystems['dust-left'] = PSDust.create(this.leftTrack, this.scene);
     this.particleSystems['dust-right'] = PSDust.create(this.rightTrack, this.scene);
     this.particleSystems['muzzle'] = PSMuzzle.create(this.barrelTip, this.scene);
-    /* this.particleSystems['tank-explosion'] = PSTankExplosion.create(this.rootMesh, this.scene);
-    this.particleSystems['fire'] = PSFire.create(this.rootMesh, this.scene); */
+    // this.particleSystems['explosion'] = PSTankExplosion.create(this.rootMesh, this.scene);
   }
   private step() {
     this.animateTracks();
     this.checkCannon();
   }
   private animateTracks() {
-    // Bug: Turning while stationary doesn't seems to visually update the track movements
+    // Bug: Turning while stationary doesn't seem to visually update the track movements
     if (this.leftSpeed > 0) {
       ((this.leftTrack.material as PBRMaterial).albedoTexture as Texture).vOffset += this.leftSpeed * 0.001;
     }
@@ -668,13 +682,19 @@ export class Tank {
     if (this.rootMesh.up.y < 0) this.isStuck = true;
     // TODO: Delayed explosion ?
   }
-  public playSounds(isMoving: boolean) {
+  public playSounds(isMoving: boolean, isTurretMoving: boolean) {
     if (isMoving) {
       if (!this.sounds['move'].isPlaying) this.sounds['move'].play();
       if (this.sounds['idle'].isPlaying) this.sounds['idle'].pause();
     } else {
       if (this.sounds['move'].isPlaying) this.sounds['move'].pause();
       if (!this.sounds['idle'].isPlaying) this.sounds['idle'].play();
+    }
+
+    if (isTurretMoving) {
+      if (!this.sounds['turret'].isPlaying) this.sounds['turret'].play();
+    } else {
+      if (this.sounds['turret'].isPlaying) this.sounds['turret'].pause();
     }
   }
 

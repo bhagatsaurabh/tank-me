@@ -23,7 +23,7 @@ export class PSTankExplosion {
     if (GPUParticleSystem.IsSupported) {
       this.particleSystem = new GPUParticleSystem(
         'tank-explosion',
-        { capacity: 8000, randomTextureSize: 4096 },
+        { capacity: 8000, randomTextureSize: 1024 },
         this.scene
       );
     } else {

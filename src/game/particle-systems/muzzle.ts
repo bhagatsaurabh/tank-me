@@ -112,7 +112,7 @@ export class PSMuzzle {
   /* private setDelayedSmoke() {
     this.psDelayedSmoke = new GPUParticleSystem(
       `PS:MuzzleDelayedSmoke:${luid()}`,
-      { capacity: 10000, randomTextureSize: 4096 },
+      { capacity: 10000, randomTextureSize: 1024 },
       this.scene
     );
     this.psDelayedSmoke.particleTexture = new Texture(

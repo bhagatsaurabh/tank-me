@@ -17,6 +17,7 @@ import { AssetLoader } from '../loader';
 import { TankMe } from '../main';
 import { Debug } from '../debug';
 import type { Tank } from './tank';
+import { PSShellExplosion } from '../particle-systems/shell-explosion';
 
 export class Shell {
   private static refShell: Mesh;
@@ -44,6 +45,7 @@ export class Shell {
     material: Shell.refTrailMaterial
   };
   private trailLength = 3;
+  private particleSystem!: PSShellExplosion;
 
   private constructor(
     public tank: Tank,
@@ -52,6 +54,7 @@ export class Shell {
     this.playerId = tank.rootMesh.name;
     this.loadAndSetTransform();
     this.setPhysics(tank.barrel.physicsBody!);
+    this.setParticleSystem();
 
     this.observers.push(TankMe.physicsPlugin.onCollisionObservable.add((ev) => this.onCollide(ev)));
     this.observers.push(this.scene.onBeforeRenderObservable.add(this.beforeRender.bind(this)));
@@ -69,6 +72,9 @@ export class Shell {
     const initialPos = this.mesh.absolutePosition.clone();
     this.trailOptions.points = new Array(this.trailLength).fill(null).map(() => initialPos.clone());
     this.trail = MeshBuilder.CreateLines(`Trail:${this.mesh.name}`, this.trailOptions, this.scene);
+  }
+  private setParticleSystem() {
+    this.particleSystem = PSShellExplosion.create(this.scene);
   }
   private async loadSound() {
     return new Promise<boolean>((resolve) => {
@@ -111,13 +117,13 @@ export class Shell {
     if (!this.isSpent || event.collider.transformNode.name !== this.mesh.name) return;
     console.log(event.collidedAgainst.transformNode.name);
 
-    const explosionOrigin = this.mesh.position.clone();
+    const explosionOrigin = this.mesh.absolutePosition.clone();
+    this.particleSystem.start(explosionOrigin);
     this.dispose();
     this.explosionSound.setPosition(explosionOrigin);
     this.explosionSound.onEndedObservable.add(() => this.explosionSound.dispose());
     this.explosionSound.play();
 
-    // showExplosion(blastOrigin);
     if (event.collidedAgainst.transformNode.name !== 'ground') {
       event.collidedAgainst.applyImpulse(
         event.collider.transformNode

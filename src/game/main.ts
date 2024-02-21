@@ -254,7 +254,7 @@ export class TankMe {
     if (!isBarrelMoving) {
       this.player.stopBarrel();
     }
-    this.player?.playSounds(isMoving);
+    this.player?.playSounds(isMoving, isBarrelMoving || isTurretMoving);
 
     if (InputManager.map['ArrowLeft']) {
       this.player.turretLeft(deltaTime);

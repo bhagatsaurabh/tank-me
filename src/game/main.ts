@@ -222,7 +222,6 @@ export class TankMe {
   }
   private step() {
     const deltaTime = this.engine.getTimeStep() / 1000;
-    const shiftModifier = InputManager.map['Shift'];
     let isMoving = false;
     const turningDirection = InputManager.map['KeyA'] ? -1 : InputManager.map['KeyD'] ? 1 : 0;
     const isAccelerating = InputManager.map['KeyW'] || InputManager.map['KeyS'];
@@ -294,6 +293,17 @@ export class TankMe {
   private async createTanks() {
     const players: Player[] = [];
     this.room.state.players.forEach((player) => players.push(player));
+
+    this.players['test'] = await Tank.create(
+      'test',
+      this.playerMeshes,
+      // new Vector3(...Object.values(player.position ?? { x: rand(-240, 240), y: 14, z: rand(-240, 240) })),
+      new Vector3(-20, 14, 20),
+      this.scene,
+      null,
+      true
+    );
+    this.shadowGenerator.addShadowCaster(this.players['test'].rootMesh);
 
     return await Promise.all(
       players.map(async (player) => {

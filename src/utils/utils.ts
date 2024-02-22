@@ -66,3 +66,8 @@ export const delay = async (ms: number, iife: (clear: () => void) => void = noop
   iife(clear);
   return promise;
 };
+export const randInRange = (min: number, max: number) => {
+  const buf = new Uint32Array(1);
+  window.crypto.getRandomValues(buf);
+  return denormalize(buf[0] / (0xffffffff + 1), min, max);
+};

@@ -1,4 +1,4 @@
-import { Scene, type Nullable } from '@babylonjs/core';
+import { Scene, type Nullable, Observer, Ray, RayHelper } from '@babylonjs/core';
 import { Sound } from '@babylonjs/core/Audio';
 import { FollowCamera, FreeCamera } from '@babylonjs/core/Cameras';
 import { Scalar, Vector3, Space, Axis } from '@babylonjs/core/Maths';
@@ -13,11 +13,15 @@ import {
   Physics6DoFConstraint,
   PhysicsBody,
   PhysicsAggregate,
-  PhysicsShapeSphere
+  PhysicsShapeSphere,
+  HavokPlugin,
+  type IBasePhysicsCollisionEvent,
+  LockConstraint,
+  PhysicsEventType
 } from '@babylonjs/core/Physics';
 
 import { Shell } from './shell';
-import { avg, clamp, leftVector, rightVector } from '@/utils/utils';
+import { avg, clamp, forwardVector, randInRange } from '@/utils/utils';
 import { PSExhaust } from '../particle-systems/exhaust';
 import { PSDust } from '../particle-systems/dust';
 import { PSMuzzle } from '../particle-systems/muzzle';
@@ -33,6 +37,7 @@ export class Tank {
   public rightTrack!: AbstractMesh;
   public leftExhaust!: AbstractMesh;
   public rightExhaust!: AbstractMesh;
+  public innerWheels!: AbstractMesh;
   private axles: TransformNode[] = [];
   private axleJoints: TransformNode[] = [];
   private axleMotors: Physics6DoFConstraint[] = [];
@@ -82,8 +87,10 @@ export class Tank {
   private suspensionDamping = 7;
   private noOfWheels = 10;
   private recoilForce = 7.5;
+  private observers: Observer<any>[] = [];
 
   private constructor(
+    public id: string,
     public rootMesh: AbstractMesh,
     public spawn: Vector3,
     public scene: Scene,
@@ -125,6 +132,7 @@ export class Tank {
     this.barrel = childMeshes[0];
     this.rightExhaust = childMeshes[1];
     this.leftExhaust = childMeshes[2];
+    this.innerWheels = childMeshes[3];
     this.leftTrack = childMeshes[4];
     this.rightTrack = childMeshes[5];
     this.turret = childMeshes[6];
@@ -234,12 +242,45 @@ export class Tank {
     // this.axleMotors.forEach((motor) => TankMe.physicsViewer.showConstraint(motor));
     // TankMe.physicsViewer.showBody(bodyPB);
 
-    this.cameras!.tpp.position = new Vector3(
-      this.axleJoints[0].position.x + 0.5,
-      this.axleJoints[0].position.y + 0.5,
-      this.axleJoints[0].position.z + 0.5
+    const triggerShape = new PhysicsShapeSphere(Vector3.Zero(), 5, this.scene);
+    triggerShape.isTrigger = true;
+    new PhysicsBody(this.innerWheels, PhysicsMotionType.DYNAMIC, false, this.scene);
+    this.innerWheels.physicsBody!.setMassProperties({ mass: 0.1 });
+    this.body.physicsBody!.addConstraint(
+      this.innerWheels.physicsBody!,
+      new LockConstraint(Vector3.Zero(), Vector3.Zero(), forwardVector, forwardVector, this.scene)
     );
-    this.cameras!.tpp.lockedTarget = this.axleJoints[0] as Mesh;
+    this.innerWheels.physicsBody!.shape = triggerShape;
+    this.observers.push(
+      (this.scene.getPhysicsEngine()?.getPhysicsPlugin() as HavokPlugin).onTriggerCollisionObservable.add(
+        (event) => this.trigger(event)
+      )
+    );
+
+    if (!this.isEnemy) {
+      this.cameras!.tpp.position = new Vector3(
+        this.axleJoints[0].position.x + 0.5,
+        this.axleJoints[0].position.y + 0.5,
+        this.axleJoints[0].position.z + 0.5
+      );
+      this.cameras!.tpp.lockedTarget = this.axleJoints[0] as Mesh;
+    }
+  }
+  private trigger(event: IBasePhysicsCollisionEvent) {
+    if (
+      event.type === PhysicsEventType.TRIGGER_ENTERED &&
+      event.collidedAgainst.transformNode.name.includes('Shell')
+    ) {
+      const ray = new Ray(
+        event.collidedAgainst.transformNode.absolutePosition,
+        event.collidedAgainst.transformNode.forward.normalize(),
+        10
+      );
+      const info = this.scene.pickWithRay(ray, undefined, true);
+      if (!info || !info.hit || (info.pickedMesh && !info.pickedMesh.name.includes(this.id))) {
+        this.sounds[`whizz${Math.round(randInRange(1, 2))}`].play();
+      }
+    }
   }
   private createWheelConstraint(
     pivotA: Vector3,
@@ -456,6 +497,38 @@ export class Tank {
             autoplay: false,
             spatialSound: false,
             maxDistance: 20
+          }
+        );
+      })
+    );
+    promises.push(
+      new Promise((resolve) => {
+        this.sounds['whizz1'] = new Sound(
+          'whizz1',
+          '/assets/game/audio/whizz1.mp3',
+          this.scene,
+          () => resolve(true),
+          {
+            loop: false,
+            autoplay: false,
+            spatialSound: false,
+            maxDistance: 10
+          }
+        );
+      })
+    );
+    promises.push(
+      new Promise((resolve) => {
+        this.sounds['whizz2'] = new Sound(
+          'whizz2',
+          '/assets/game/audio/whizz2.mp3',
+          this.scene,
+          () => resolve(true),
+          {
+            loop: false,
+            autoplay: false,
+            spatialSound: false,
+            maxDistance: 10
           }
         );
       })
@@ -702,7 +775,7 @@ export class Tank {
     isEnemy: boolean = false
   ) {
     const cloned = meshes[0].clone(`${meshes[0].name.replace(':Ref', '')}:${id}`, null) as AbstractMesh;
-    const newTank = new Tank(cloned, spawn, scene, cameras, isEnemy);
+    const newTank = new Tank(id, cloned, spawn, scene, cameras, isEnemy);
     await newTank.setSoundSources();
     await newTank.loadCannon(true);
     newTank.sounds['idle'].play();

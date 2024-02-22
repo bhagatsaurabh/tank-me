@@ -82,11 +82,14 @@ export class TankMe {
         { path: '/assets/game/textures/fire.jpg' },
         { path: '/assets/game/spritesheets/smoke_dust_cloud.png' },
         { path: '/assets/game/spritesheets/explosion.png' },
+        { path: '/assets/game/spritesheets/fire.png' },
         { path: '/assets/game/audio/explosion.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/cannon.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/idle.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/run.mp3', format: 'arraybuffer' },
-        { path: '/assets/game/audio/load.mp3', format: 'arraybuffer' }
+        { path: '/assets/game/audio/load.mp3', format: 'arraybuffer' },
+        { path: '/assets/game/audio/whizz1.mp3', format: 'arraybuffer' },
+        { path: '/assets/game/audio/whizz2.mp3', format: 'arraybuffer' }
       ]);
 
       const engine = new Engine(canvas, true, { deterministicLockstep: true, lockstepMaxSteps: 4 });
@@ -162,8 +165,8 @@ export class TankMe {
 
     // Set GlowLayer
     this.glowLayer = new GlowLayer('glow', this.scene);
-    this.glowLayer.intensity = 2;
-    this.glowLayer.blurKernelSize = 5;
+    this.glowLayer.intensity = 1;
+    this.glowLayer.blurKernelSize = 15;
 
     // Set Lights
     this.directionalLight = new DirectionalLight('DirectionalLight', new Vector3(-1, -1, 0), this.scene);

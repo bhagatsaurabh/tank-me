@@ -17,10 +17,11 @@ import {
 } from '@babylonjs/core/Physics';
 
 import { Shell } from './shell';
-import { avg, clamp } from '@/utils/utils';
+import { avg, clamp, leftVector, rightVector } from '@/utils/utils';
 import { PSExhaust } from '../particle-systems/exhaust';
 import { PSDust } from '../particle-systems/dust';
 import { PSMuzzle } from '../particle-systems/muzzle';
+import { PSTankExplosion } from '../particle-systems/tank-explosion';
 
 export class Tank {
   public barrel!: AbstractMesh;
@@ -32,12 +33,13 @@ export class Tank {
   public rightTrack!: AbstractMesh;
   public leftExhaust!: AbstractMesh;
   public rightExhaust!: AbstractMesh;
-  private axles: TransformNode[] = []; //
-  private axleMeshes: Mesh[] = [];
-  private motors: Physics6DoFConstraint[] = [];
-  private shell!: Shell;
-  private body!: TransformNode; //
-  private wheelNodes: TransformNode[] = []; //
+  private axles: TransformNode[] = [];
+  private axleJoints: TransformNode[] = [];
+  private axleMotors: Physics6DoFConstraint[] = [];
+  private leftWheels: AbstractMesh[] = [];
+  private rightWheels: AbstractMesh[] = [];
+  private loadedShell!: Shell;
+  private body!: TransformNode;
   private sounds: Record<string, Sound> = {};
   private particleSystems: {
     muzzle?: PSMuzzle;
@@ -45,6 +47,7 @@ export class Tank {
     'exhaust-right'?: PSExhaust;
     'dust-left'?: PSDust;
     'dust-right'?: PSDust;
+    explosion?: PSTankExplosion;
   } = {};
   private isStuck = false;
   private isCanonReady = true;
@@ -78,7 +81,7 @@ export class Tank {
   private suspensionStiffness = 100;
   private suspensionDamping = 7;
   private noOfWheels = 10;
-  private recoilEnergy = 7.5;
+  private recoilForce = 7.5;
 
   private constructor(
     public rootMesh: AbstractMesh,
@@ -90,7 +93,6 @@ export class Tank {
     this.setTransform();
     this.setPhysics();
     this.setParticleSystems();
-    this.setLights();
 
     if (!isEnemy && cameras?.tpp && cameras.fpp) {
       // cameras.tpp.position = new Vector3(spawn.x + 1, spawn.y + 1, spawn.z + 1);
@@ -104,7 +106,7 @@ export class Tank {
   private setTransform() {
     this.body = new TransformNode(`Root:${this.rootMesh.name}`, this.scene);
     for (let i = 0; i < this.noOfWheels; i += 1) {
-      const wheel = new TransformNode(`wheel${i}`, this.scene);
+      const axleJoint = new TransformNode(`axlejoint${i}`, this.scene);
       const axleMesh = MeshBuilder.CreateSphere(
         `axle${i}`,
         { diameterY: 0.6, diameterX: 0.75, diameterZ: 0.75, segments: 5 },
@@ -112,10 +114,10 @@ export class Tank {
       );
       axleMesh.rotate(Axis.Z, Math.PI / 2, Space.LOCAL);
       axleMesh.bakeCurrentTransformIntoVertices();
-      axleMesh.parent = wheel;
+      axleMesh.parent = axleJoint;
       axleMesh.isVisible = false;
-      this.wheelNodes.push(wheel);
-      this.axleMeshes.push(axleMesh);
+      this.axleJoints.push(axleJoint);
+      this.axles.push(axleMesh);
     }
 
     this.rootMesh.position = Vector3.Zero();
@@ -134,6 +136,14 @@ export class Tank {
     this.barrelTip = new TransformNode(`Tip:${this.rootMesh.name}`, this.scene);
     this.barrelTip.position.z = 4.656;
     this.barrelTip.parent = this.barrel;
+    for (
+      let r = childMeshes.length - 1, l = childMeshes.length - 8;
+      this.leftWheels.length < 7;
+      l -= 1, r -= 1
+    ) {
+      this.leftWheels.push(childMeshes[l]);
+      this.rightWheels.push(childMeshes[r]);
+    }
 
     this.rootMesh.isVisible = true;
     childMeshes.forEach((mesh) => (mesh.isVisible = true));
@@ -194,12 +204,12 @@ export class Tank {
 
     const axleShape = new PhysicsShapeSphere(Vector3.Zero(), 0.375, this.scene);
     for (let i = 0; i < this.noOfWheels; i += 1) {
-      const wheel = this.wheelNodes[i];
-      const axle = this.axleMeshes[i];
+      const axleJoint = this.axleJoints[i];
+      const axle = this.axles[i];
 
       axle.position = Vector3.Zero();
-      wheel.parent = this.body;
-      wheel.position = wheelPositions[i];
+      axleJoint.parent = this.body;
+      axleJoint.position = wheelPositions[i];
 
       const axleAgg = new PhysicsAggregate(
         axle,
@@ -211,26 +221,25 @@ export class Tank {
         },
         this.scene
       );
-      axle.collisionRetryCount = 5;
+      (axle as Mesh).collisionRetryCount = 5;
 
-      this.motors.push(this.createWheelConstraint(wheelPositions[i], axle.position, bodyPB, axleAgg.body));
+      this.axleMotors.push(
+        this.createWheelConstraint(wheelPositions[i], axle.position, bodyPB, axleAgg.body)
+      );
       this.axles.push(axle);
     }
 
     // Debug
     // this.axles.forEach((axle) => TankMe.physicsViewer.showBody(axle.physicsBody!));
-    // this.motors.forEach((motor) => TankMe.physicsViewer.showConstraint(motor));
+    // this.axleMotors.forEach((motor) => TankMe.physicsViewer.showConstraint(motor));
     // TankMe.physicsViewer.showBody(bodyPB);
 
     this.cameras!.tpp.position = new Vector3(
-      this.wheelNodes[0].position.x + 0.5,
-      this.wheelNodes[0].position.y + 0.5,
-      this.wheelNodes[0].position.z + 0.5
+      this.axleJoints[0].position.x + 0.5,
+      this.axleJoints[0].position.y + 0.5,
+      this.axleJoints[0].position.z + 0.5
     );
-    this.cameras!.tpp.lockedTarget = this.wheelNodes[0] as Mesh;
-  }
-  private setLights() {
-    // TODO
+    this.cameras!.tpp.lockedTarget = this.axleJoints[0] as Mesh;
   }
   private createWheelConstraint(
     pivotA: Vector3,
@@ -458,7 +467,7 @@ export class Tank {
   }
   private async loadCannon(init = false) {
     if (!init) this.sounds['load'].play();
-    this.shell = await Shell.create(this);
+    this.loadedShell = await Shell.create(this);
     this.isCanonReady = true;
   }
   private setParticleSystems() {
@@ -467,19 +476,21 @@ export class Tank {
     this.particleSystems['dust-left'] = PSDust.create(this.leftTrack, this.scene);
     this.particleSystems['dust-right'] = PSDust.create(this.rightTrack, this.scene);
     this.particleSystems['muzzle'] = PSMuzzle.create(this.barrelTip, this.scene);
-    // this.particleSystems['explosion'] = PSTankExplosion.create(this.rootMesh, this.scene);
+    this.particleSystems['explosion'] = PSTankExplosion.create(this.rootMesh, this.scene);
   }
   private step() {
-    this.animateTracks();
+    this.animate();
     this.checkCannon();
   }
-  private animateTracks() {
-    // Bug: Turning while stationary doesn't seem to visually update the track movements
-    if (this.leftSpeed > 0) {
-      ((this.leftTrack.material as PBRMaterial).albedoTexture as Texture).vOffset += this.leftSpeed * 0.001;
+  private animate() {
+    if (this.leftSpeed !== 0) {
+      ((this.leftTrack.material as PBRMaterial).albedoTexture as Texture).vOffset += this.leftSpeed * 0.0009;
+      this.leftWheels.forEach((wheel) => wheel.rotate(Axis.X, this.leftSpeed * 0.0095, Space.LOCAL));
     }
-    if (this.rightSpeed > 0) {
-      ((this.rightTrack.material as PBRMaterial).albedoTexture as Texture).vOffset += this.rightSpeed * 0.001;
+    if (this.rightSpeed !== 0) {
+      ((this.rightTrack.material as PBRMaterial).albedoTexture as Texture).vOffset +=
+        this.rightSpeed * 0.0009;
+      this.rightWheels.forEach((wheel) => wheel.rotate(Axis.X, this.rightSpeed * 0.0095, Space.LOCAL));
     }
 
     // Dust trail
@@ -503,7 +514,7 @@ export class Tank {
     const recoilVector = this.turret
       .getDirection(new Vector3(0, 1, -1))
       .normalize()
-      .scale(this.recoilEnergy);
+      .scale(this.recoilForce);
     const contactPoint = this.body.up
       .normalize()
       .scale(1)
@@ -520,7 +531,7 @@ export class Tank {
       this.rightSpeed = clamp(this.rightSpeed + dt * this.speedModifier, -this.maxSpeed, this.maxSpeed);
     }
 
-    this.motors.forEach((motor, idx) => {
+    this.axleMotors.forEach((motor, idx) => {
       motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed);
     });
   }
@@ -532,7 +543,7 @@ export class Tank {
       this.rightSpeed = clamp(this.rightSpeed - dt * this.speedModifier, -this.maxSpeed, this.maxSpeed);
     }
 
-    this.motors.forEach((motor, idx) => {
+    this.axleMotors.forEach((motor, idx) => {
       motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed);
     });
   }
@@ -554,7 +565,7 @@ export class Tank {
       this.leftSpeed = Scalar.Lerp(this.leftSpeed, this.rightSpeed / 2, dt * this.speedModifier);
     }
 
-    this.motors.forEach((motor, idx) => {
+    this.axleMotors.forEach((motor, idx) => {
       motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed);
     });
   }
@@ -576,27 +587,11 @@ export class Tank {
       this.rightSpeed = Scalar.Lerp(this.rightSpeed, this.leftSpeed / 2, dt * this.speedModifier);
     }
 
-    this.motors.forEach((motor, idx) =>
+    this.axleMotors.forEach((motor, idx) =>
       motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed)
     );
   }
   public brake(dt: number) {
-    /* if (this.leftSpeed === 0 && this.rightSpeed === 0) return;
-
-    this.leftSpeed = clamp(
-      this.leftSpeed + Math.sign(this.leftSpeed) * -1 * dt * this.speedModifier,
-      -this.maxSpeed,
-      this.maxSpeed
-    );
-    this.rightSpeed = clamp(
-      this.rightSpeed + Math.sign(this.rightSpeed) * -1 * dt * this.speedModifier,
-      -this.maxSpeed,
-      this.maxSpeed
-    );
-
-    this.motors.forEach((motor, idx) =>
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed)
-    ); */
     this.decelerate(dt, this.speedModifier);
   }
   public decelerate(dt: number, modifier: number = this.decelerationModifier) {
@@ -619,7 +614,7 @@ export class Tank {
       speed = avg([this.leftSpeed, this.rightSpeed]);
     }
 
-    this.motors.forEach((motor) => motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, speed));
+    this.axleMotors.forEach((motor) => motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, speed));
   }
   public turretLeft(dt: number) {
     this.turretMotor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_Y, -dt * this.turretSpeed);
@@ -654,7 +649,7 @@ export class Tank {
     const now = performance.now();
     if (now - this.lastFired <= this.cooldown) return;
 
-    this.shell.fire();
+    this.loadedShell.fire();
     this.simulateRecoil();
     this.particleSystems['muzzle']?.start();
 
@@ -663,10 +658,10 @@ export class Tank {
     this.isCanonReady = false;
   }
   public explode() {
-    /* this.particleSystems['tank-explosion'].emitter = this.rootMesh.position.clone();
-    this.particleSystems['fire'].emitter = this.rootMesh.position.clone(); */
-    // this.particleSystems['tank-explosion']?.start();
-    // this.particleSystems['fire']?.start();
+    this.particleSystems['explosion']?.start();
+    this.particleSystems['exhaust-left']?.stop();
+    this.particleSystems['exhaust-right']?.stop();
+    // TODO
   }
   public toggleCamera() {
     if (performance.now() - this.lastCameraToggle > this.cameraToggleDelay) {

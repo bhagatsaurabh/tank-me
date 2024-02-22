@@ -22,7 +22,7 @@ export class PSDust {
   private setProperties() {
     const particleSystem = new GPUParticleSystem(
       `PS:Dust:${luid()}`,
-      { capacity: 250, randomTextureSize: 1024 },
+      { capacity: 100, randomTextureSize: 512 },
       this.scene
     );
 
@@ -42,8 +42,8 @@ export class PSDust {
     particleSystem.maxScaleX = 1;
     particleSystem.minScaleY = 1;
     particleSystem.maxScaleY = 1;
-    particleSystem.minEmitBox = new Vector3(0, -0.3, -3);
-    particleSystem.maxEmitBox = new Vector3(0, -0.3, 3);
+    particleSystem.minEmitBox = new Vector3(0, -0.2, -3);
+    particleSystem.maxEmitBox = new Vector3(0, -0.2, 3);
     particleSystem.direction1 = new Vector3(-2, 0, -2);
     particleSystem.direction2 = new Vector3(2, 2, 2);
     particleSystem.updateSpeed = 0.01;
@@ -58,10 +58,12 @@ export class PSDust {
     particleSystem.preventAutoStart = true;
     particleSystem
       .addSizeGradient(0, 2)
-      .addSizeGradient(1, 11)
+      .addSizeGradient(0.1, 3)
+      .addSizeGradient(0.3, 5)
+      .addSizeGradient(1, 10)
       .addColorGradient(0, Color4.FromInts(178, 153, 110, 0))
-      .addColorGradient(0.15, Color4.FromInts(178, 153, 110, 200))
-      .addColorGradient(0.7, Color4.FromInts(178, 153, 110, 100))
+      .addColorGradient(0.15, Color4.FromInts(178, 153, 110, 255))
+      .addColorGradient(0.7, Color4.FromInts(178, 153, 110, 150))
       .addColorGradient(1, Color4.FromInts(178, 153, 110, 0));
 
     this.particleSystems[particleSystem.name] = particleSystem;
@@ -84,7 +86,7 @@ export class PSDust {
     // Create new system immediately
     this.setProperties();
     // Disposing only when all the particles are invisible after sometime
-    if (!(await delay(6000, (clear) => this.unsub.push(clear)))) return;
+    if (!(await delay(6500, (clear) => this.unsub.push(clear)))) return;
     this.particleSystems[currId].dispose();
     delete this.particleSystems[currId];
   }

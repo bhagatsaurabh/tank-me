@@ -18,6 +18,7 @@ import { TankMe } from '../main';
 import { Debug } from '../debug';
 import type { Tank } from './tank';
 import { PSShellExplosion } from '../particle-systems/shell-explosion';
+import { forwardVector } from '@/utils/utils';
 
 export class Shell {
   private static refShell: Mesh;
@@ -126,10 +127,7 @@ export class Shell {
 
     if (event.collidedAgainst.transformNode.name !== 'ground') {
       event.collidedAgainst.applyImpulse(
-        event.collider.transformNode
-          .getDirection(new Vector3(0, 0, 1))
-          .normalize()
-          .scale(1),
+        event.collider.transformNode.getDirection(forwardVector).normalize().scale(1),
         explosionOrigin
       );
     }
@@ -179,10 +177,7 @@ export class Shell {
     this.mesh.isVisible = true;
 
     this.mesh.physicsBody?.applyImpulse(
-      this.mesh
-        .getDirection(new Vector3(0, 0, 1))
-        .normalize()
-        .scale(this.energy),
+      this.mesh.getDirection(forwardVector).normalize().scale(this.energy),
       this.mesh.getAbsolutePosition()
     );
   }

@@ -5,10 +5,10 @@ import { GlowLayer } from '@babylonjs/core/Layers';
 import { PhysicsViewer } from '@babylonjs/core/Debug';
 import { Engine, Scene } from '@babylonjs/core';
 import { SceneLoader } from '@babylonjs/core/Loading';
-import { Vector3 } from '@babylonjs/core/Maths';
-import { Mesh, AbstractMesh } from '@babylonjs/core/Meshes';
-import { PBRMaterial } from '@babylonjs/core/Materials';
-import { HavokPlugin } from '@babylonjs/core/Physics';
+import { Axis, Space, Vector3 } from '@babylonjs/core/Maths';
+import { Mesh, AbstractMesh, MeshBuilder, TransformNode } from '@babylonjs/core/Meshes';
+import { PBRMaterial, StandardMaterial, Texture } from '@babylonjs/core/Materials';
+import { HavokPlugin, PhysicsAggregate, PhysicsShapeType } from '@babylonjs/core/Physics';
 import { DirectionalLight, CascadedShadowGenerator } from '@babylonjs/core/Lights';
 import { FollowCamera, FreeCamera, ArcRotateCamera } from '@babylonjs/core/Cameras';
 import HavokPhysics, { type HavokPhysicsWithBindings } from '@babylonjs/havok';
@@ -210,6 +210,7 @@ export class TankMe {
     // this.scene.physicsEnabled
 
     this.setGUI();
+    this.setBarriers();
   }
   private setCameras() {
     // Set TPP Camera
@@ -219,11 +220,13 @@ export class TankMe {
     this.tppCamera.rotationOffset = 180;
     this.tppCamera.cameraAcceleration = 0.05;
     this.tppCamera.maxCameraSpeed = 10;
+    this.tppCamera.maxZ = 100000;
     this.scene.activeCamera = this.tppCamera;
 
     // Set FPP Camera
     this.fppCamera = new FreeCamera('fpp-cam', new Vector3(0.3, -0.309, 1), this.scene);
     this.fppCamera.minZ = 0.5;
+    this.fppCamera.maxZ = 100000;
 
     // Set ArcRotateCamera
     this.endCamera = new ArcRotateCamera('end-cam', 0, 0, 10, new Vector3(0, 0, 0), this.scene);
@@ -271,6 +274,59 @@ export class TankMe {
     this.gui.addControl(padRight);
 
     this.sights.push(scope, overlay, padLeft, padRight);
+  }
+  private setBarriers() {
+    const barrier = new TransformNode('barrier', this.scene);
+    const barrierMaterial = new StandardMaterial('barrier', this.scene);
+    barrierMaterial.diffuseTexture = new Texture('/assets/game/textures/metal.png', this.scene);
+    barrierMaterial.diffuseTexture.level = 1.4;
+    (barrierMaterial.diffuseTexture as Texture).uScale = 5;
+    (barrierMaterial.diffuseTexture as Texture).vScale = 0.5;
+
+    const barrier1 = MeshBuilder.CreateBox('barrier1', { width: 500, height: 20, depth: 1 }, this.scene);
+    barrier1.position = new Vector3(0, 9, -249);
+    barrier1.receiveShadows = true;
+    barrier1.material = barrierMaterial;
+    const barrier2 = MeshBuilder.CreateBox('barrier2', { width: 500, height: 20, depth: 1 }, this.scene);
+    barrier2.position = new Vector3(0, 9, 249);
+    barrier2.receiveShadows = true;
+    barrier2.material = barrierMaterial;
+    const barrier3 = MeshBuilder.CreateBox('barrier3', { width: 500, height: 20, depth: 1 }, this.scene);
+    barrier3.rotate(Axis.Y, Math.PI / 2, Space.LOCAL);
+    barrier3.position = new Vector3(-249, 9, 0);
+    barrier3.receiveShadows = true;
+    barrier3.material = barrierMaterial;
+    const barrier4 = MeshBuilder.CreateBox('barrier4', { width: 500, height: 20, depth: 1 }, this.scene);
+    barrier4.rotate(Axis.Y, Math.PI / 2, Space.LOCAL);
+    barrier4.position = new Vector3(249, 9, 0);
+    barrier4.receiveShadows = true;
+    barrier4.material = barrierMaterial;
+
+    barrier1.parent = barrier;
+    barrier2.parent = barrier;
+    barrier3.parent = barrier;
+    barrier4.parent = barrier;
+
+    // Not working
+    /* const barrierShape = new PhysicsShapeBox(
+      Vector3.Zero(),
+      Quaternion.Identity(),
+      new Vector3(250, 10, 1),
+      this.scene
+    );
+    const barrierContainerShape = new PhysicsShapeContainer(this.scene);
+    barrierShape.addChildFromParent(barrier, barrierShape, barrier1);
+    barrierShape.addChildFromParent(barrier, barrierShape, barrier2);
+    barrierShape.addChildFromParent(barrier, barrierShape, barrier3);
+    barrierShape.addChildFromParent(barrier, barrierShape, barrier4);
+    const barrierPB = new PhysicsBody(barrier, PhysicsMotionType.STATIC, false, this.scene);
+    barrierPB.shape = barrierContainerShape;
+    barrierPB.setMassProperties({ mass: 0, centerOfMass: Vector3.Zero() }); */
+
+    new PhysicsAggregate(barrier1, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
+    new PhysicsAggregate(barrier2, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
+    new PhysicsAggregate(barrier3, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
+    new PhysicsAggregate(barrier4, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
   }
   private step() {
     const deltaTime = this.engine.getTimeStep() / 1000;

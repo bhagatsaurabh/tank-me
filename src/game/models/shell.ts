@@ -30,7 +30,7 @@ export class Shell {
   private explosionSound!: Sound;
   private isSpent: boolean = false;
   private lock!: LockConstraint;
-  private energy = 0.015;
+  private energy = 0.02;
   private debugTrajectory: Vector3[] = [];
   private debug = false;
   private observers: Observer<any>[] = [];
@@ -138,9 +138,9 @@ export class Shell {
       this.debugTrajectory.push(this.mesh.absolutePosition.clone());
     }
     if (
-      Math.abs(this.mesh.position.x) > 300 ||
-      Math.abs(this.mesh.position.y) > 300 ||
-      Math.abs(this.mesh.position.z) > 300
+      Math.abs(this.mesh.position.x) > 750 ||
+      Math.abs(this.mesh.position.y) > 750 ||
+      Math.abs(this.mesh.position.z) > 750
     ) {
       this.dispose();
       return;

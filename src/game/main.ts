@@ -12,6 +12,7 @@ import { HavokPlugin } from '@babylonjs/core/Physics';
 import { DirectionalLight, CascadedShadowGenerator } from '@babylonjs/core/Lights';
 import { FollowCamera, FreeCamera, ArcRotateCamera } from '@babylonjs/core/Cameras';
 import HavokPhysics, { type HavokPhysicsWithBindings } from '@babylonjs/havok';
+import { AdvancedDynamicTexture, Image, Control, Rectangle, Container } from '@babylonjs/gui';
 import type { Room } from 'colyseus.js';
 
 import { GameClient } from '@/game/client';
@@ -47,6 +48,8 @@ export class TankMe {
   private playerMeshes: AbstractMesh[] = [];
   private players: Record<string, Tank> = {};
   private player!: Tank;
+  private gui!: AdvancedDynamicTexture;
+  private sights: (Control | Container)[] = [];
   static physicsViewer: PhysicsViewer;
   private static timeStep = 1 / 60;
   private static subTimeStep = 16;
@@ -89,7 +92,9 @@ export class TankMe {
         { path: '/assets/game/audio/run.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/load.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/whizz1.mp3', format: 'arraybuffer' },
-        { path: '/assets/game/audio/whizz2.mp3', format: 'arraybuffer' }
+        { path: '/assets/game/audio/whizz2.mp3', format: 'arraybuffer' },
+        { path: '/assets/game/gui/ads.png' },
+        { path: '/assets/game/gui/overlay.png' }
       ]);
 
       const engine = new Engine(canvas, true, { deterministicLockstep: true, lockstepMaxSteps: 4 });
@@ -203,6 +208,8 @@ export class TankMe {
     // Before frame render
     this.scene.onBeforeStepObservable.add(this.step.bind(this));
     // this.scene.physicsEnabled
+
+    this.setGUI();
   }
   private setCameras() {
     // Set TPP Camera
@@ -215,10 +222,55 @@ export class TankMe {
     this.scene.activeCamera = this.tppCamera;
 
     // Set FPP Camera
-    this.fppCamera = new FreeCamera('fpp-cam', new Vector3(0, -0.45, 1.5), this.scene);
+    this.fppCamera = new FreeCamera('fpp-cam', new Vector3(0.3, -0.309, 1), this.scene);
+    this.fppCamera.minZ = 0.5;
 
     // Set ArcRotateCamera
     this.endCamera = new ArcRotateCamera('end-cam', 0, 0, 10, new Vector3(0, 0, 0), this.scene);
+  }
+  private setGUI() {
+    this.gui = AdvancedDynamicTexture.CreateFullscreenUI('UI');
+    const scope = new Image('ads', AssetLoader.assets['/assets/game/gui/ads.png'] as string);
+    scope.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    scope.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+    scope.autoScale = true;
+    scope.width = '50%';
+    scope.fixedRatio = 1;
+    scope.stretch = Image.STRETCH_FILL;
+    scope.shadowBlur = 3;
+    scope.shadowColor = '#AFE1AF';
+    scope.alpha = 0.8;
+    scope.isVisible = false;
+    scope.scaleX = 1.5;
+    scope.scaleY = 1.5;
+    this.gui.addControl(scope);
+
+    const overlay = new Image('overlay', AssetLoader.assets['/assets/game/gui/overlay.png'] as string);
+    overlay.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    overlay.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+    overlay.height = '100%';
+    overlay.fixedRatio = 1;
+    overlay.isVisible = false;
+    this.gui.addControl(overlay);
+
+    const padWidth = (this.engine.getRenderWidth(true) - this.engine.getRenderHeight(true)) / 2;
+    const padLeft = new Rectangle('left-pad');
+    padLeft.width = `${padWidth}px`;
+    padLeft.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    padLeft.color = '#000';
+    padLeft.background = '#000';
+    padLeft.isVisible = false;
+    this.gui.addControl(padLeft);
+
+    const padRight = new Rectangle('right-pad');
+    padRight.width = `${padWidth}px`;
+    padRight.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    padRight.color = '#000';
+    padRight.background = '#000';
+    padRight.isVisible = false;
+    this.gui.addControl(padRight);
+
+    this.sights.push(scope, overlay, padLeft, padRight);
   }
   private step() {
     const deltaTime = this.engine.getTimeStep() / 1000;
@@ -281,6 +333,7 @@ export class TankMe {
 
     if (InputManager.map['KeyV']) {
       this.player.toggleCamera();
+      this.sights.forEach((ui) => (ui.isVisible = this.scene.activeCamera === this.fppCamera));
     }
 
     this.player?.checkStuck();

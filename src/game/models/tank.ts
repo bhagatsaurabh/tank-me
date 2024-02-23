@@ -1,4 +1,4 @@
-import { Scene, type Nullable, Observer, Ray, RayHelper } from '@babylonjs/core';
+import { Scene, type Nullable, Observer, Ray } from '@babylonjs/core';
 import { Sound } from '@babylonjs/core/Audio';
 import { FollowCamera, FreeCamera } from '@babylonjs/core/Cameras';
 import { Scalar, Vector3, Space, Axis } from '@babylonjs/core/Maths';
@@ -277,7 +277,7 @@ export class Tank {
         10
       );
       const info = this.scene.pickWithRay(ray, undefined, true);
-      if (!info || !info.hit || (info.pickedMesh && !info.pickedMesh.name.includes(this.id))) {
+      if (!info?.hit || !info.pickedMesh || (info.pickedMesh && !info.pickedMesh.name.includes(this.id))) {
         this.sounds[`whizz${Math.round(randInRange(1, 2))}`].play();
       }
     }

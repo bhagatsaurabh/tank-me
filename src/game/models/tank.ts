@@ -69,7 +69,7 @@ export class Tank {
   private maxSpeed = 15;
   private maxTurningSpeed = 3;
   private maxTurretAngle = 1.17; // ~67.5 deg
-  private maxBarrelAngle = 0.61; // ~35 deg
+  private maxBarrelAngle = 0.43; // ~25 deg
   private turretSpeed = 14;
   private barrelSpeed = 14;
   private bodyMass = 2;

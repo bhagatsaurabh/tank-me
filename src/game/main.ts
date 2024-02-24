@@ -83,6 +83,7 @@ export class TankMe {
         { path: '/assets/game/textures/explosion.jpg' },
         { path: '/assets/game/textures/flare.png' },
         { path: '/assets/game/textures/fire.jpg' },
+        { path: '/assets/game/textures/grass.png' },
         { path: '/assets/game/spritesheets/smoke_dust_cloud.png' },
         { path: '/assets/game/spritesheets/explosion.png' },
         { path: '/assets/game/spritesheets/fire.png' },
@@ -174,7 +175,7 @@ export class TankMe {
     this.glowLayer.blurKernelSize = 15;
 
     // Set Lights
-    this.directionalLight = new DirectionalLight('DirectionalLight', new Vector3(-1, -1, 0), this.scene);
+    this.directionalLight = new DirectionalLight('DirectionalLight', new Vector3(0, 1, 0), this.scene);
     this.directionalLight.intensity = 1.3;
     this.directionalLight.position = new Vector3(0, 0, 0);
     this.directionalLight.direction = new Vector3(-1, -1.2, -1);

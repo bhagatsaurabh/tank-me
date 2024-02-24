@@ -2,7 +2,8 @@ import { Scene } from '@babylonjs/core';
 import { MeshBuilder, type GroundMesh } from '@babylonjs/core/Meshes';
 import { PhysicsAggregate, PhysicsShapeType } from '@babylonjs/core/Physics';
 import { StandardMaterial, Texture } from '@babylonjs/core/Materials';
-import { Color3 } from '@babylonjs/core/Maths';
+import { FurMaterial } from '@babylonjs/materials';
+import { Color3, Vector3 } from '@babylonjs/core/Maths';
 
 import { AssetLoader } from '../loader';
 
@@ -62,11 +63,31 @@ export class Ground {
     );
     groundAgg.body.setCollisionCallbackEnabled(true);
     Ground.groundMesh.collisionRetryCount = 5;
-    /* groundAgg.body.shape!.filterMembershipMask = 12;
-    groundAgg.body.shape!.filterCollideMask = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11; */
 
     mesh.position.y = 0;
     mesh.receiveShadows = true;
+
+    /* const grassMaterial = new FurMaterial('grass', scene);
+    grassMaterial.furLength = 0.2;
+    grassMaterial.furAngle = 0.1;
+    grassMaterial.furColor = Color3.FromInts(136, 104, 35);
+    grassMaterial.diffuseTexture = new Texture(
+      AssetLoader.assets['/assets/game/textures/grass.png'] as string,
+      scene
+    );
+    grassMaterial.heightTexture = new Texture(
+      AssetLoader.assets['/assets/game/map/desert/height.png'] as string,
+      scene
+    );
+    grassMaterial.furTexture = FurMaterial.GenerateTexture('furTexture', scene);
+    grassMaterial.furSpacing = 0.6;
+    grassMaterial.furDensity = 15;
+    grassMaterial.furSpeed = 2000;
+    grassMaterial.furGravity = new Vector3(0, -1, 0);
+
+    Ground.groundMesh.material = grassMaterial;
+    const grassMesh = FurMaterial.FurifyMesh(Ground.groundMesh, 10); */
+
     done();
   }
 

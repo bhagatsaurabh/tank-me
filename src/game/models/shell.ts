@@ -11,14 +11,13 @@ import {
 } from '@babylonjs/core/Physics';
 import { Sound } from '@babylonjs/core/Audio';
 import { Observer } from '@babylonjs/core/Misc';
-import { v4 as uuid } from 'uuid';
 
 import { AssetLoader } from '../loader';
 import { TankMe } from '../main';
 import { Debug } from '../debug';
 import type { Tank } from './tank';
 import { PSShellExplosion } from '../particle-systems/shell-explosion';
-import { forwardVector } from '@/utils/utils';
+import { forwardVector, luid } from '@/utils/utils';
 
 export class Shell {
   private static refShell: Mesh;
@@ -63,7 +62,7 @@ export class Shell {
   }
 
   private loadAndSetTransform() {
-    this.mesh = Shell.refShell.clone(`Shell:${uuid()}`);
+    this.mesh = Shell.refShell.clone(`Shell:${luid()}`);
     this.mesh.position.z = 4.8;
     this.mesh.rotationQuaternion = this.tank.barrel.absoluteRotationQuaternion.clone();
     this.mesh.isVisible = false;

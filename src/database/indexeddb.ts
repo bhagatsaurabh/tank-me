@@ -1,4 +1,4 @@
-import type { Null } from '@/interfaces/types';
+import type { Null } from '@/types/types';
 
 let localDB: Null<IDBDatabase> = null;
 

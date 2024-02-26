@@ -3,40 +3,36 @@ import '@babylonjs/inspector';
 import '@babylonjs/loaders/glTF/2.0/glTFLoader';
 import { GlowLayer } from '@babylonjs/core/Layers';
 import { PhysicsViewer } from '@babylonjs/core/Debug';
-import { Engine, Scene } from '@babylonjs/core';
+import { Engine, Observer, Scene } from '@babylonjs/core';
 import { SceneLoader } from '@babylonjs/core/Loading';
 import { Axis, Space, Vector3 } from '@babylonjs/core/Maths';
-import { Mesh, AbstractMesh, MeshBuilder, TransformNode } from '@babylonjs/core/Meshes';
+import { AbstractMesh, MeshBuilder, TransformNode } from '@babylonjs/core/Meshes';
 import { PBRMaterial, StandardMaterial, Texture } from '@babylonjs/core/Materials';
 import { HavokPlugin, PhysicsAggregate, PhysicsShapeType } from '@babylonjs/core/Physics';
 import { DirectionalLight, CascadedShadowGenerator } from '@babylonjs/core/Lights';
 import { FollowCamera, FreeCamera, ArcRotateCamera } from '@babylonjs/core/Cameras';
-import HavokPhysics, { type HavokPhysicsWithBindings } from '@babylonjs/havok';
+import HavokPhysics from '@babylonjs/havok';
 import { AdvancedDynamicTexture, Image, Control, Rectangle, Container } from '@babylonjs/gui';
-import type { Room } from 'colyseus.js';
 
 import { GameClient } from '@/game/client';
-import type { Player, RoomState } from './state';
-import type { Null } from '@/interfaces/types';
+import type { Player } from './state';
 import { gravityVector, noop, throttle } from '@/utils/utils';
 import { InputManager } from './input';
 import { Tank } from './models/tank';
 import { Ground } from './models/ground';
 import { AssetLoader } from './loader';
 import { Skybox } from './skybox';
+import { GameInputType } from '@/types/types';
 
-/**
- * Assumptions before creating a game instance:
- * 1. GameClient is connected to LobbyRoom
- * 2. GameClient is connected to GameRoom
- * 3. GameRoom is full with maxNoOfClients
- */
-export class TankMe {
-  private static instance: TankMe;
-  static physicsPlugin: HavokPlugin;
-  private scene: Scene;
-  private playerEntities: Record<string, Mesh> = {};
-  private playerNextPosition: Record<string, Vector3> = {};
+export class World {
+  private static instance: World;
+  private static timeStep = 1 / 60;
+  private static subTimeStep = 16;
+  static physicsViewer: PhysicsViewer;
+
+  private id: string;
+  private state: Player;
+  scene: Scene;
   private throttledResizeListener = noop;
   private stateUnsubFns: (() => boolean)[] = [];
   private glowLayer!: GlowLayer;
@@ -46,36 +42,29 @@ export class TankMe {
   private fppCamera!: FreeCamera;
   private endCamera!: ArcRotateCamera;
   private playerMeshes: AbstractMesh[] = [];
-  private players: Record<string, Tank> = {};
-  private player!: Tank;
+  players: Record<string, Tank> = {};
+  player!: Tank;
   private gui!: AdvancedDynamicTexture;
   private sights: (Control | Container)[] = [];
-  static physicsViewer: PhysicsViewer;
-  private static timeStep = 1 / 60;
-  private static subTimeStep = 16;
+  private observers: Observer<Scene>[] = [];
 
   private constructor(
     public engine: Engine,
     public client: GameClient,
-    public room: Room<RoomState>,
-    public physicsEngine: HavokPhysicsWithBindings,
-    public selfUID: string
+    public physicsPlugin: HavokPlugin
   ) {
+    this.id = client.getSessionId()!;
     this.scene = new Scene(this.engine);
-    TankMe.physicsPlugin = new HavokPlugin(false, physicsEngine);
-    this.scene.enablePhysics(gravityVector, TankMe.physicsPlugin);
-    TankMe.physicsViewer = new PhysicsViewer(this.scene);
-    // Don't simulate anything until the scene is fully laoded
-    TankMe.physicsPlugin.setTimeStep(0);
-    this.scene.getPhysicsEngine()?.setSubTimeStep(TankMe.subTimeStep);
+    this.scene.enablePhysics(gravityVector, physicsPlugin);
+    World.physicsViewer = new PhysicsViewer(this.scene);
+    // Not simulating anything until the scene is fully loaded
+    physicsPlugin.setTimeStep(0);
+    this.scene.getPhysicsEngine()?.setSubTimeStep(World.subTimeStep);
+    this.state = client.state.get(this.id)!;
   }
-  static get(): TankMe | undefined {
-    return TankMe.instance;
-  }
-  static async init(canvas: HTMLCanvasElement, selfUID: string): Promise<Null<TankMe>> {
-    const client = GameClient.get();
-    if (!TankMe.instance && client && client.rooms['desert']) {
-      // Pre-load assets
+  static async create(client: GameClient, canvas: HTMLCanvasElement): Promise<World> {
+    if (!World.instance && client?.getSessionId()) {
+      // Pre-fetch all assets
       await AssetLoader.load([
         { path: '/assets/game/models/Panzer I/Panzer_I.glb' },
         { path: '/assets/game/map/desert/height.png' },
@@ -98,49 +87,26 @@ export class TankMe {
         { path: '/assets/game/gui/overlay.png' }
       ]);
 
+      // Init engine
       const engine = new Engine(canvas, true, { deterministicLockstep: true, lockstepMaxSteps: 4 });
-      // Init Engine or WebGPUEngine based on support
-      /* let engine: Engine;
-      if (await WebGPUEngine.IsSupportedAsync) {
-        engine = new WebGPUEngine(canvas, {
-          deterministicLockstep: true,
-          lockstepMaxSteps: 4,
-          antialias: true
-        });
-        await (engine as WebGPUEngine).initAsync();
-        (engine as WebGPUEngine).onContextLostObservable.add(() => {
-          console.log('Context Lost');
-          TankMe.instance.stop();
-        });
-        (engine as WebGPUEngine).onContextRestoredObservable.add(() => {
-          TankMe.instance.start();
-          console.log('Context Restored');
-        });
-        console.info('Running on WebGPU');
-      } else {
-        engine = new Engine(canvas, true, { deterministicLockstep: true, lockstepMaxSteps: 4 });
-      } */
-      // Init physics engine
-      const physicsEngine = await HavokPhysics();
-      // Init game instance
-      TankMe.instance = new TankMe(engine, client, client.rooms['desert'], physicsEngine, selfUID);
+      const physicsPlugin = new HavokPlugin(false, await HavokPhysics());
+      const world = new World(engine, client, physicsPlugin);
+      await world.importPlayerMesh(world);
+      await world.initScene();
+      world.initWindowListeners();
+      world.start();
 
-      await TankMe.importPlayerMesh(TankMe.instance.scene);
-      await TankMe.instance.initScene();
-      TankMe.instance.initStateListeners();
-      TankMe.instance.initWindowListeners();
-      TankMe.instance.start();
-
-      return TankMe.instance;
+      World.instance = world;
+      return world;
     }
-    return null;
+    return World.instance;
   }
-  private static async importPlayerMesh(scene: Scene) {
+  private async importPlayerMesh(world: World) {
     const { meshes } = await SceneLoader.ImportMeshAsync(
       null,
       '/assets/game/models/Panzer I/',
       'Panzer_I.glb',
-      scene
+      world.scene
     );
 
     // Reset __root__ mesh's transform
@@ -151,30 +117,49 @@ export class TankMe {
     setTimeout(() => container?.dispose());
 
     meshes.forEach((mesh) => {
-      if (mesh !== meshes[0]) {
-        mesh.parent = meshes[0];
-      } else {
-        mesh.parent = null;
-      }
+      mesh.parent = mesh !== meshes[0] ? meshes[0] : null;
 
       // Disable shininess
       (mesh.material as PBRMaterial).metallicF0Factor = 0;
       mesh.isVisible = false;
     });
     meshes[0].name = 'Panzer_I:Ref';
-    TankMe.instance.playerMeshes = meshes;
+    world.playerMeshes = meshes;
   }
-
   private async initScene() {
-    // Init input manager
-    this.scene.actionManager = InputManager.init(this.scene);
+    // The classic :)
+    this.setLights();
+    this.setCameras();
+    this.scene.actionManager = InputManager.create(this.scene);
 
-    // Set GlowLayer
+    await Skybox.create(this.scene);
+    await Ground.create(this.scene);
+    this.shadowGenerator?.addShadowCaster(Ground.mesh);
+    await this.createTanks();
+    this.setBarriers();
+    this.setGUI();
+
+    this.observers.push(this.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
+    this.observers.push(this.scene.onAfterStepObservable.add(this.afterStep.bind(this)));
+  }
+  private initWindowListeners() {
+    window.addEventListener('keydown', this.toggleInspect.bind(this));
+    this.throttledResizeListener = throttle(this.resize.bind(this), 200);
+    window.addEventListener('resize', this.throttledResizeListener.bind(this));
+  }
+  private start() {
+    this.engine.runRenderLoop(this.render.bind(this));
+    this.physicsPlugin.setTimeStep(World.timeStep);
+  }
+  private render() {
+    this.scene.render();
+    // fpsLabel.innerHTML = this.engine.getFps().toFixed() + ' FPS';
+  }
+  private setLights() {
     this.glowLayer = new GlowLayer('glow', this.scene);
     this.glowLayer.intensity = 1;
     this.glowLayer.blurKernelSize = 15;
 
-    // Set Lights
     this.directionalLight = new DirectionalLight('DirectionalLight', new Vector3(0, 1, 0), this.scene);
     this.directionalLight.intensity = 1.3;
     this.directionalLight.position = new Vector3(0, 0, 0);
@@ -188,30 +173,6 @@ export class TankMe {
     this.shadowGenerator.darkness = 0.34;
     this.shadowGenerator.autoCalcDepthBounds = true;
     this.shadowGenerator.autoCalcDepthBoundsRefreshRate = 2;
-
-    this.setCameras();
-    this.shadowGenerator.autoCalcDepthBounds = true;
-
-    // Create SkyBox
-    await Skybox.create(this.scene);
-
-    // Create Ground
-    await Ground.create(this.scene);
-    this.shadowGenerator?.addShadowCaster(Ground.groundMesh);
-    await this.createTanks();
-
-    /* this.client.rooms['desert']?.send('updatePosition', {
-      x: targetPosition.x,
-      y: targetPosition.y,
-      z: targetPosition.z
-    }); */
-
-    // Before frame render
-    this.scene.onBeforeStepObservable.add(this.step.bind(this));
-    // this.scene.physicsEnabled
-
-    this.setGUI();
-    this.setBarriers();
   }
   private setCameras() {
     // Set TPP Camera
@@ -229,8 +190,10 @@ export class TankMe {
     this.fppCamera.minZ = 0.5;
     this.fppCamera.maxZ = 100000;
 
-    // Set ArcRotateCamera
+    // Set Kill Camera
     this.endCamera = new ArcRotateCamera('end-cam', 0, 0, 10, new Vector3(0, 0, 0), this.scene);
+
+    this.shadowGenerator.autoCalcDepthBounds = true;
   }
   private setGUI() {
     this.gui = AdvancedDynamicTexture.CreateFullscreenUI('UI');
@@ -329,133 +292,58 @@ export class TankMe {
     new PhysicsAggregate(barrier3, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
     new PhysicsAggregate(barrier4, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
   }
-  private step() {
-    const deltaTime = this.engine.getTimeStep() / 1000;
+  private beforeStep() {
     let isMoving = false;
-    const turningDirection = InputManager.map['KeyA'] ? -1 : InputManager.map['KeyD'] ? 1 : 0;
-    const isAccelerating = InputManager.map['KeyW'] || InputManager.map['KeyS'];
-    const isTurretMoving = InputManager.map['ArrowLeft'] || InputManager.map['ArrowRight'];
-    const isBarrelMoving = InputManager.map['ArrowUp'] || InputManager.map['ArrowDown'];
+    let isTurretMoving =
+      InputManager.keys[GameInputType.TURRET_LEFT] || InputManager.keys[GameInputType.TURRET_RIGHT];
+    const isBarrelMoving =
+      InputManager.keys[GameInputType.BARREL_UP] || InputManager.keys[GameInputType.BARREL_DOWN];
 
-    if (InputManager.map['KeyW']) {
-      this.player.accelerate(deltaTime, turningDirection);
+    if (
+      InputManager.keys[GameInputType.FORWARD] ||
+      InputManager.keys[GameInputType.REVERSE] ||
+      InputManager.keys[GameInputType.LEFT] ||
+      InputManager.keys[GameInputType.RIGHT]
+    ) {
       isMoving = true;
     }
-    if (InputManager.map['KeyS']) {
-      this.player.reverse(deltaTime, turningDirection);
-      isMoving = true;
+    if (InputManager.keys[GameInputType.RESET] && !isTurretMoving && !isBarrelMoving) {
+      isTurretMoving = true;
     }
-    if (InputManager.map['KeyA']) {
-      this.player.left(deltaTime, isAccelerating);
-      isMoving = true;
-    }
-    if (InputManager.map['KeyD']) {
-      this.player.right(deltaTime, isAccelerating);
-      isMoving = true;
-    }
-    if (InputManager.map['Space']) {
-      this.player.brake(deltaTime);
-    }
-    if (!isMoving) {
-      this.player.decelerate(deltaTime);
-    }
-    if (!isTurretMoving) {
-      this.player.stopTurret();
-    }
-    if (!isBarrelMoving) {
-      this.player.stopBarrel();
-    }
-    this.player?.playSounds(isMoving, isBarrelMoving || isTurretMoving);
-
-    if (InputManager.map['ArrowLeft']) {
-      this.player.turretLeft(deltaTime);
-    }
-    if (InputManager.map['ArrowRight']) {
-      this.player.turretRight(deltaTime);
-    }
-    if (InputManager.map['ArrowUp']) {
-      this.player.barrelUp(deltaTime);
-    }
-    if (InputManager.map['ArrowDown']) {
-      this.player.barrelDown(deltaTime);
-    }
-
-    if (InputManager.map['KeyR'] && !isTurretMoving && !isBarrelMoving) {
-      this.player.resetTurret(deltaTime);
-    }
-
-    if (InputManager.map['ControlLeft'] || InputManager.map['ControlRight']) {
+    if (InputManager.keys[GameInputType.FIRE] && this.state.canFire) {
       this.player.fire();
     }
-
-    if (InputManager.map['KeyV']) {
+    if (InputManager.keys[GameInputType.CHANGE_PERSPECTIVE]) {
       this.player.toggleCamera();
       this.sights.forEach((ui) => (ui.isVisible = this.scene.activeCamera === this.fppCamera));
     }
 
-    this.player?.checkStuck();
-
-    // Post-game cam
-    /* if (rotateCamera) {
-        arcRotateCam.alpha += 0.007;
-      } */
+    this.player.playSounds(isMoving, isBarrelMoving || isTurretMoving);
+  }
+  private afterStep() {
+    if (this.client.isReady()) {
+      this.client.sendUpdate(InputManager.keys);
+    }
   }
   private async createTanks() {
     const players: Player[] = [];
-    this.room.state.players.forEach((player) => players.push(player));
-
-    this.players['test'] = await Tank.create(
-      'test',
-      this.playerMeshes,
-      // new Vector3(...Object.values(player.position ?? { x: rand(-240, 240), y: 14, z: rand(-240, 240) })),
-      new Vector3(-20, 14, 20),
-      this.scene,
-      null,
-      true
-    );
-    this.shadowGenerator.addShadowCaster(this.players['test'].rootMesh);
+    this.client.getPlayers().forEach((player) => players.push(player));
 
     return await Promise.all(
       players.map(async (player) => {
-        const isEnemy = this.selfUID !== player.uid;
-        this.players[player.uid] = await Tank.create(
-          player.uid,
-          this.playerMeshes,
-          /* new Vector3(...Object.values(player.position ?? { x: rand(-240, 240), y: 14, z: rand(-240, 240) })), */
-          new Vector3(0, 14, 0),
-          this.scene,
+        const isEnemy = this.id !== player.sid;
+        this.players[player.sid] = await Tank.create(
+          this,
+          player,
+          this.playerMeshes[0],
+          new Vector3(player.position.x, player.position.y, player.position.z),
           !isEnemy ? { tpp: this.tppCamera, fpp: this.fppCamera } : null,
           isEnemy
         );
-        this.shadowGenerator.addShadowCaster(this.players[player.uid].rootMesh);
-        if (!isEnemy) this.player = this.players[player.uid];
+        this.shadowGenerator.addShadowCaster(this.players[player.sid].body as AbstractMesh);
+        if (!isEnemy) this.player = this.players[player.sid];
       })
     );
-  }
-  private initStateListeners() {
-    const unsubscribeOnAdd = this.room.state.players.onAdd((player, sessionId) => {
-      /* player.onChange(() => {
-        this.playerNextPosition[sessionId].set(player.x, player.y, player.z);
-      });
-      const isCurrentPlayer = sessionId === this.room.sessionId;
-      const sphere = CreateSphere(`player-${sessionId}`, {
-        segments: 8,
-        diameter: 40
-      });
-      sphere.position.set(player.x, player.y, player.z);
-      sphere.material = new StandardMaterial(`player-material-${sessionId}`);
-      (sphere.material as StandardMaterial).emissiveColor = isCurrentPlayer
-        ? Color3.FromHexString('#ff9900')
-        : Color3.Gray();
-      this.playerEntities[sessionId] = sphere;
-      this.playerNextPosition[sessionId] = sphere.position.clone(); */
-    });
-    const unsubscribeOnRemove = this.room.state.players.onRemove((player, sessionId) => {
-      /* this.playerEntities[sessionId].dispose();
-      delete this.playerEntities[sessionId]; */
-    });
-
-    this.stateUnsubFns.push(unsubscribeOnAdd, unsubscribeOnRemove);
   }
   private toggleInspect(ev: KeyboardEvent) {
     // Sfhit+Alt+I
@@ -469,22 +357,9 @@ export class TankMe {
   private resize() {
     this.engine.resize();
   }
-  private initWindowListeners() {
-    window.addEventListener('keydown', this.toggleInspect.bind(this));
-    this.throttledResizeListener = throttle(this.resize.bind(this), 200);
-    window.addEventListener('resize', this.throttledResizeListener.bind(this));
-  }
-  private start() {
-    this.engine.runRenderLoop(this.render.bind(this));
-    TankMe.physicsPlugin.setTimeStep(TankMe.timeStep);
-  }
   private stop() {
-    TankMe.physicsPlugin.setTimeStep(0);
+    this.physicsPlugin.setTimeStep(0);
     this.engine.stopRenderLoop();
-  }
-  private render() {
-    this.scene.render();
-    // fpsLabel.innerHTML = this.engine.getFps().toFixed() + ' FPS';
   }
 
   public dispose() {
@@ -492,5 +367,11 @@ export class TankMe {
     window.removeEventListener('keydown', this.toggleInspect);
     window.removeEventListener('resize', this.throttledResizeListener);
     this.engine.dispose();
+  }
+  public updatePlayer(player: Player, id: string) {
+    this.players[id].update(player);
+  }
+  public removePlayer(id: string) {
+    this.players[id].dispose();
   }
 }

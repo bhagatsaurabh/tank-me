@@ -1,9 +1,7 @@
-import { Vector3 } from '@babylonjs/core';
-
-import type { Null } from '@/interfaces/types';
+import { Vector3, type Nullable } from '@babylonjs/core';
 
 export const throttle = (cb: (...argmts: any) => void, delay: number) => {
-  let timerHandle: Null<Number>, args: any;
+  let timerHandle: Nullable<Number>, args: any;
   const throttled = (...a: any) => {
     args = a;
     if (!timerHandle) {

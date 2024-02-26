@@ -2,8 +2,8 @@ import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { useAuthStore } from './auth';
-import type { Null } from '@/interfaces/types';
-import type { BroadcastMessage } from '@/interfaces/auth';
+import type { Null } from '@/types/types';
+import type { BroadcastMessage } from '@/types/auth';
 
 // For cross-tab communication
 export const useBroadcastStore = defineStore('broadcast', () => {

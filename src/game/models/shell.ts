@@ -13,7 +13,7 @@ import { Sound } from '@babylonjs/core/Audio';
 import { Observer } from '@babylonjs/core/Misc';
 
 import { AssetLoader } from '../loader';
-import { TankMe } from '../main';
+import { World } from '../main';
 import { Debug } from '../debug';
 import type { Tank } from './tank';
 import { PSShellExplosion } from '../particle-systems/shell-explosion';
@@ -56,7 +56,7 @@ export class Shell {
     this.setPhysics(tank.barrel.physicsBody!);
     this.setParticleSystem();
 
-    this.observers.push(TankMe.physicsPlugin.onCollisionObservable.add((ev) => this.onCollide(ev)));
+    this.observers.push(World.physicsPlugin.onCollisionObservable.add((ev) => this.onCollide(ev)));
     this.observers.push(this.scene.onBeforeRenderObservable.add(this.beforeRender.bind(this)));
     this.observers.push(this.scene.onAfterStepObservable.add(this.step.bind(this)));
   }

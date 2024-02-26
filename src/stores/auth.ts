@@ -19,8 +19,8 @@ import { useRemoteDBStore } from './remote';
 import { useBroadcastStore } from './broadcast';
 import * as local from '@/database/driver';
 import { app, remoteDB } from '@/config/firebase';
-import { type Profile } from '@/interfaces/auth';
-import type { AuthStatus, AuthType, Null } from '@/interfaces/types';
+import { type Profile } from '@/types/auth';
+import type { AuthStatus, AuthType, Null } from '@/types/types';
 
 const auth = getAuth(app);
 auth.useDeviceLanguage();

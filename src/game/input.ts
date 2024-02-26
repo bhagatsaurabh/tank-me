@@ -1,36 +1,23 @@
+import { GameInputType, KeyInputType } from '@/types/types';
+import { keyMap } from '@/utils/constants';
 import { type Scene } from '@babylonjs/core';
 import { ActionEvent, ActionManager, ExecuteCodeAction } from '@babylonjs/core/Actions';
 
 export class InputManager {
-  private static keyInputSet = new Set<string>([
-    'KeyW',
-    'KeyS',
-    'KeyA',
-    'KeyD',
-    'ShiftLeft',
-    'ShiftRight',
-    'ArrowUp',
-    'ArrowDown',
-    'ArrowLeft',
-    'ArrowRight',
-    'ControlLeft',
-    'ControlRight',
-    'KeyR',
-    'Space',
-    'KeyV'
-  ]);
-  static map: Record<string, boolean> = {};
+  static keys: Record<GameInputType, boolean>;
 
-  static init(scene: Scene) {
+  static create(scene: Scene) {
     const actionManager = new ActionManager(scene);
     actionManager.registerAction(
       new ExecuteCodeAction(ActionManager.OnKeyDownTrigger, (ev: ActionEvent) => {
-        if (this.keyInputSet.has(ev.sourceEvent.code)) InputManager.map[ev.sourceEvent.code] = true;
+        const code = ev.sourceEvent.code as KeyInputType;
+        if (typeof GameInputType[keyMap[code]] !== 'undefined') InputManager.keys[keyMap[code]] = true;
       })
     );
     actionManager.registerAction(
       new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (ev: ActionEvent) => {
-        if (this.keyInputSet.has(ev.sourceEvent.code)) InputManager.map[ev.sourceEvent.code] = false;
+        const code = ev.sourceEvent.code as KeyInputType;
+        if (typeof GameInputType[keyMap[code]] !== 'undefined') InputManager.keys[keyMap[code]] = false;
       })
     );
     return actionManager;

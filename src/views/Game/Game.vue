@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
-import { useAuthStore } from '@/stores/auth';
 import { throttle } from '@/utils/utils';
-import type { Null } from '@/interfaces/types';
-import { TankMe } from '@/game/main';
+import type { Nullable } from '@babylonjs/core';
+import { GameClient } from '@/game/client';
 
-const auth = useAuthStore();
-const containerEl = ref<Null<HTMLDivElement>>(null);
-const canvasEl = ref<Null<HTMLCanvasElement>>(null);
+const containerEl = ref<Nullable<HTMLDivElement>>(null);
+const canvasEl = ref<Nullable<HTMLCanvasElement>>(null);
 const isLoading = ref(false);
 
 const handleResize = () => {
@@ -29,7 +27,7 @@ onMounted(async () => {
 
     // Initialize the game
     isLoading.value = true;
-    await TankMe.init(canvasEl.value, auth.user?.uid as string);
+    await GameClient.get().createWorld(canvasEl.value);
     isLoading.value = false;
   }
 });

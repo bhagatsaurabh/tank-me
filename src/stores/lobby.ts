@@ -3,19 +3,19 @@ import { defineStore } from 'pinia';
 import * as Colyseus from 'colyseus.js';
 
 import { useAuthStore } from './auth';
-import type { Null, LobbyStatus } from '@/interfaces/types';
+import type { LobbyStatus } from '@/types/types';
 import type { RoomState } from '@/game/state';
 import { GameClient } from '@/game/client';
+import type { Nullable } from '@babylonjs/core';
 
 export const useLobbyStore = defineStore('lobby', () => {
   const auth = useAuthStore();
-  const status = ref<LobbyStatus>('connecting');
-  // Because of weird typescript bug...
 
+  const status = ref<LobbyStatus>('connecting');
   const client = ref<GameClient | undefined>(undefined);
-  const lobbyRoom = ref<Null<Colyseus.Room>>(null);
+  const lobbyRoom = ref<Nullable<Colyseus.Room>>(null);
+  const gameRoom = ref<Nullable<Colyseus.Room<RoomState>>>(null);
   const allRooms = ref<Colyseus.RoomAvailable[]>([]);
-  const gameRoom = ref<Null<Colyseus.Room<RoomState>>>(null);
 
   async function connect() {
     client.value = GameClient.connect();
@@ -51,11 +51,6 @@ export const useLobbyStore = defineStore('lobby', () => {
     status.value = 'matchmaking';
     try {
       gameRoom.value = await client.value.joinRoom(map, (auth.user as any).accessToken);
-
-      gameRoom.value.state.listen('status', (newVal) => {
-        if (newVal === 'ready') status.value = 'playing';
-      });
-
       return true;
     } catch (error) {
       console.log(error);

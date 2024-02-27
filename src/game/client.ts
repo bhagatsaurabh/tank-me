@@ -3,7 +3,7 @@ import { MapSchema } from '@colyseus/schema';
 
 import type { Player, RoomState } from './state';
 import { World } from './main';
-import { GameInputType, MessageType } from '@/types/types';
+import { MessageType } from '@/types/types';
 import { useLobbyStore } from '@/stores/lobby';
 import type { MessageTypeFire } from '@/types/interfaces';
 
@@ -50,14 +50,13 @@ export class GameClient {
   }
   private setListeners() {
     this.rooms.desert!.state.players.onChange((player, sessionId) => {
-      // const isPlayer = sessionId === this.rooms.desert!.sessionId;
       this.world.updatePlayer(player, sessionId);
     });
     this.rooms.desert!.state.players.onRemove((_player, sessionId) => {
       this.world.removePlayer(sessionId);
     });
 
-    this.rooms.desert!.onMessage(MessageType.FIRE, (message: MessageTypeFire) => {
+    this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: MessageTypeFire) => {
       this.world.players[message.id].fire();
     });
     this.rooms.desert!.onMessage(MessageType.LOAD, () => this.world.player.playSound('load'));
@@ -72,10 +71,10 @@ export class GameClient {
   isReady() {
     return this.rooms.desert?.state?.status === 'ready';
   }
-  sendUpdate(keys: Record<GameInputType, boolean>) {
-    this.rooms.desert?.send(MessageType.INPUT, keys);
-  }
   getPlayers() {
     return this.rooms.desert!.state.players;
+  }
+  sendEvent<T>(type: MessageType, message: T) {
+    this.rooms.desert?.send(type, message);
   }
 }

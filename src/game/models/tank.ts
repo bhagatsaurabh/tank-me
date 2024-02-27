@@ -2,9 +2,16 @@ import { type Nullable, Observer, Ray } from '@babylonjs/core';
 import { Sound } from '@babylonjs/core/Audio';
 import { FollowCamera, FreeCamera } from '@babylonjs/core/Cameras';
 import { Vector3, Space, Axis, Quaternion } from '@babylonjs/core/Maths';
-import { AbstractMesh, TransformNode } from '@babylonjs/core/Meshes';
+import { AbstractMesh, Mesh, TransformNode } from '@babylonjs/core/Meshes';
 import { PBRMaterial, Texture } from '@babylonjs/core/Materials';
-import { type IBasePhysicsCollisionEvent, PhysicsEventType } from '@babylonjs/core/Physics';
+import {
+  type IBasePhysicsCollisionEvent,
+  PhysicsEventType,
+  PhysicsShapeConvexHull,
+  PhysicsShapeContainer,
+  PhysicsBody,
+  PhysicsMotionType
+} from '@babylonjs/core/Physics';
 
 import { Shell } from './shell';
 import { randInRange } from '@/utils/utils';
@@ -17,6 +24,10 @@ import type { TankSounds, TankSoundType } from '@/types/types';
 import type { World } from '../main';
 
 export class Tank {
+  private static config = {
+    cooldown: 5000
+  };
+  private lastFired = 0;
   public body!: TransformNode;
   public barrel!: AbstractMesh;
   public barrelTip!: TransformNode;
@@ -27,7 +38,8 @@ export class Tank {
   public rightExhaust!: AbstractMesh;
   private leftWheels: AbstractMesh[] = [];
   private rightWheels: AbstractMesh[] = [];
-  private loadedShell!: Shell;
+  // Actual shell with physics enabled just for effects, the server is still the authority
+  private loadedDummyShell!: Shell;
   private sounds: TankSounds = {};
   private particleSystems: {
     muzzle?: PSMuzzle;
@@ -51,6 +63,7 @@ export class Tank {
     public isEnemy: boolean = false
   ) {
     this.setTransform(rootMesh, spawn);
+    this.setPhysics(rootMesh as Mesh);
     this.setParticleSystems();
 
     if (!isEnemy && cameras?.tpp && cameras.fpp) {
@@ -75,6 +88,7 @@ export class Tank {
     newTank.sounds['idle']?.play();
     newTank.particleSystems['exhaust-left']?.start();
     newTank.particleSystems['exhaust-right']?.start();
+    newTank.loadedDummyShell = await Shell.create(newTank);
     return newTank;
   }
 
@@ -108,6 +122,46 @@ export class Tank {
 
     rootMesh.isVisible = true;
     childMeshes.forEach((mesh) => (mesh.isVisible = true));
+  }
+  private setPhysics(rootMesh: Mesh) {
+    const bodyShape = new PhysicsShapeConvexHull(rootMesh, this.world.scene);
+    const bodyShapeContainer = new PhysicsShapeContainer(this.world.scene);
+    bodyShapeContainer.addChildFromParent(this.body, bodyShape, rootMesh);
+    const bodyPB = new PhysicsBody(this.body, PhysicsMotionType.STATIC, false, this.world.scene);
+    bodyPB.shape = bodyShapeContainer;
+    bodyPB.setMassProperties({ mass: 0 });
+
+    const turretShape = new PhysicsShapeConvexHull(this.turret as Mesh, this.world.scene);
+    const turretPB = new PhysicsBody(this.turret, PhysicsMotionType.STATIC, false, this.world.scene);
+    turretPB.shape = turretShape;
+    turretPB.setMassProperties({ mass: 0 });
+    /* this.turretMotor = this.createTurretConstraint(
+      this.turret.position,
+      Vector3.Zero(),
+      new Vector3(1, 0, 1),
+      new Vector3(1, 0, 1),
+      new Vector3(0, 1, 0),
+      new Vector3(0, 1, 0),
+      bodyPB,
+      turretPB
+    ); */
+
+    const barrelShape = new PhysicsShapeConvexHull(this.barrel as Mesh, this.world.scene);
+    const barrelPB = new PhysicsBody(this.barrel, PhysicsMotionType.STATIC, false, this.world.scene);
+    barrelPB.shape = barrelShape;
+    barrelPB.setMassProperties({ mass: 0 });
+    /* this.barrelMotor = this.createBarrelConstraint(
+      this.barrel.position,
+      Vector3.Zero(),
+      new Vector3(1, 0, 0),
+      new Vector3(1, 0, 0),
+      new Vector3(0, 1, 0),
+      new Vector3(0, 1, 0),
+      turretPB,
+      barrelPB
+    ); */
+
+    bodyPB.disablePreStep = false;
   }
   private setParticleSystems() {
     this.particleSystems['exhaust-left'] = PSExhaust.create(this.leftExhaust, this.world.scene);
@@ -300,9 +354,16 @@ export class Tank {
   }
 
   public fire() {
-    this.loadedShell.fire(); // ??
+    const now = performance.now();
+    if (now - this.lastFired <= Tank.config.cooldown) return false;
+
+    this.loadedDummyShell.fire();
     this.particleSystems['muzzle']?.start();
     this.sounds['cannon']?.play();
+    Shell.create(this).then((shell) => (this.loadedDummyShell = shell));
+
+    this.lastFired = now;
+    return true;
   }
   public explode() {
     this.particleSystems['explosion']?.start();
@@ -339,14 +400,14 @@ export class Tank {
     if (!this.sounds[type]?.isPlaying) this.sounds[type]?.play();
   }
   update(state: Player) {
-    this.body.absolutePosition.x = state.position.x;
-    this.body.absolutePosition.y = state.position.y;
-    this.body.absolutePosition.z = state.position.z;
+    this.body.absolutePosition.set(state.position.x, state.position.y, state.position.z);
 
-    this.body.absoluteRotationQuaternion.x = state.rotation.x;
-    this.body.absoluteRotationQuaternion.y = state.rotation.y;
-    this.body.absoluteRotationQuaternion.z = state.rotation.z;
-    this.body.absoluteRotationQuaternion.w = state.rotation.w;
+    this.body.absoluteRotationQuaternion.set(
+      state.rotation.x,
+      state.rotation.y,
+      state.rotation.z,
+      state.rotation.w
+    );
 
     if (!this.turret.rotationQuaternion) {
       this.turret.rotationQuaternion = new Quaternion(
@@ -356,10 +417,12 @@ export class Tank {
         state.turretRotation.w
       );
     } else {
-      this.turret.rotationQuaternion.x = state.turretRotation.x;
-      this.turret.rotationQuaternion.y = state.turretRotation.y;
-      this.turret.rotationQuaternion.z = state.turretRotation.z;
-      this.turret.rotationQuaternion.w = state.turretRotation.w;
+      this.turret.rotationQuaternion.set(
+        state.turretRotation.x,
+        state.turretRotation.y,
+        state.turretRotation.z,
+        state.turretRotation.w
+      );
     }
 
     if (!this.barrel.rotationQuaternion) {
@@ -370,10 +433,12 @@ export class Tank {
         state.barrelRotation.w
       );
     } else {
-      this.barrel.rotationQuaternion.x = state.barrelRotation.x;
-      this.barrel.rotationQuaternion.y = state.barrelRotation.y;
-      this.barrel.rotationQuaternion.z = state.barrelRotation.z;
-      this.barrel.rotationQuaternion.w = state.barrelRotation.w;
+      this.barrel.rotationQuaternion.set(
+        state.barrelRotation.x,
+        state.barrelRotation.y,
+        state.barrelRotation.z,
+        state.barrelRotation.w
+      );
     }
   }
   dispose() {

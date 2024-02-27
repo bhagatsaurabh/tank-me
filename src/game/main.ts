@@ -22,7 +22,7 @@ import { Tank } from './models/tank';
 import { Ground } from './models/ground';
 import { AssetLoader } from './loader';
 import { Skybox } from './skybox';
-import { GameInputType } from '@/types/types';
+import { GameInputType, MessageType } from '@/types/types';
 
 export class World {
   private static instance: World;
@@ -322,7 +322,7 @@ export class World {
   }
   private afterStep() {
     if (this.client.isReady()) {
-      this.client.sendUpdate(InputManager.keys);
+      this.client.sendEvent(MessageType.INPUT, InputManager.keys);
     }
   }
   private async createTanks() {

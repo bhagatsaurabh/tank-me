@@ -1,19 +1,12 @@
 import { Scene } from '@babylonjs/core';
 import { StandardMaterial, Texture } from '@babylonjs/core/Materials';
 import { Color3, Vector3 } from '@babylonjs/core/Maths';
-import { MeshBuilder, Mesh, LinesMesh } from '@babylonjs/core/Meshes';
-import {
-  PhysicsAggregate,
-  type IPhysicsCollisionEvent,
-  PhysicsBody,
-  LockConstraint,
-  PhysicsShapeSphere
-} from '@babylonjs/core/Physics';
+import { MeshBuilder, Mesh, LinesMesh, AbstractMesh } from '@babylonjs/core/Meshes';
+import { PhysicsAggregate, type IPhysicsCollisionEvent, PhysicsShapeSphere } from '@babylonjs/core/Physics';
 import { Sound } from '@babylonjs/core/Audio';
 import { Observer } from '@babylonjs/core/Misc';
 
 import { AssetLoader } from '../loader';
-import { World } from '../main';
 import { Debug } from '../debug';
 import type { Tank } from './tank';
 import { PSShellExplosion } from '../particle-systems/shell-explosion';
@@ -24,11 +17,10 @@ export class Shell {
   private static refShellMaterial: StandardMaterial;
   private static refTrailMaterial: StandardMaterial;
   private static refPhysicsShape: PhysicsShapeSphere;
-  private mesh!: Mesh;
   private playerId: string;
+  private mesh!: AbstractMesh;
   private explosionSound!: Sound;
   private isSpent: boolean = false;
-  private lock!: LockConstraint;
   private energy = 0.02;
   private debugTrajectory: Vector3[] = [];
   private debug = false;
@@ -49,39 +41,37 @@ export class Shell {
 
   private constructor(
     public tank: Tank,
-    public scene: Scene
+    mesh: AbstractMesh
   ) {
-    this.playerId = tank.rootMesh.name;
-    this.loadAndSetTransform();
-    this.setPhysics(tank.barrel.physicsBody!);
+    this.playerId = tank.state.sid;
+    this.setTransform(mesh);
     this.setParticleSystem();
 
-    this.observers.push(World.physicsPlugin.onCollisionObservable.add((ev) => this.onCollide(ev)));
-    this.observers.push(this.scene.onBeforeRenderObservable.add(this.beforeRender.bind(this)));
-    this.observers.push(this.scene.onAfterStepObservable.add(this.step.bind(this)));
+    this.observers.push(tank.world.physicsPlugin.onCollisionObservable.add((ev) => this.onCollide(ev)));
+    this.observers.push(tank.world.scene.onBeforeRenderObservable.add(this.beforeRender.bind(this)));
   }
 
-  private loadAndSetTransform() {
-    this.mesh = Shell.refShell.clone(`Shell:${luid()}`);
-    this.mesh.position.z = 4.8;
-    this.mesh.rotationQuaternion = this.tank.barrel.absoluteRotationQuaternion.clone();
-    this.mesh.isVisible = false;
-    this.mesh.material = Shell.refShellMaterial;
-    this.mesh.parent = this.tank.barrel;
+  private setTransform(mesh: AbstractMesh) {
+    mesh.position.z = 4.8;
+    mesh.rotationQuaternion = this.tank.barrel.absoluteRotationQuaternion.clone();
+    mesh.isVisible = false;
+    mesh.material = Shell.refShellMaterial;
+    mesh.parent = this.tank.barrel;
 
-    const initialPos = this.mesh.absolutePosition.clone();
+    const initialPos = mesh.absolutePosition.clone();
     this.trailOptions.points = new Array(this.trailLength).fill(null).map(() => initialPos.clone());
-    this.trail = MeshBuilder.CreateLines(`Trail:${this.mesh.name}`, this.trailOptions, this.scene);
+    this.trail = MeshBuilder.CreateLines(`Trail:${mesh.name}`, this.trailOptions, this.tank.world.scene);
+    this.mesh = mesh;
   }
   private setParticleSystem() {
-    this.particleSystem = PSShellExplosion.create(this.scene);
+    this.particleSystem = PSShellExplosion.create(this.tank.world.scene);
   }
   private async loadSound() {
     return new Promise<boolean>((resolve) => {
       this.explosionSound = new Sound(
         'explosion',
         '/assets/game/audio/explosion.mp3',
-        this.scene,
+        this.tank.world.scene,
         () => resolve(true),
         {
           loop: false,
@@ -92,25 +82,13 @@ export class Shell {
       );
     });
   }
-  private setPhysics(barrelPB: PhysicsBody) {
+  private setPhysics() {
     new PhysicsAggregate(
       this.mesh,
       Shell.refPhysicsShape,
       { mass: 0.0001, restitution: 0 },
-      this.scene
+      this.tank.world.scene
     ).body.setCollisionCallbackEnabled(true);
-
-    this.lock = new LockConstraint(
-      new Vector3(0, 0, 4.8),
-      Vector3.Zero(),
-      Vector3.Forward(),
-      Vector3.Forward(),
-      this.scene
-    );
-    barrelPB.addConstraint(this.mesh.physicsBody!, this.lock);
-  }
-  private unlock() {
-    this.lock.isEnabled = false;
   }
 
   private onCollide(event: IPhysicsCollisionEvent) {
@@ -156,7 +134,6 @@ export class Shell {
       this.trailOptions.points[this.trailLength - 1] = this.mesh.absolutePosition.clone();
     }
   }
-  private step() {}
   private dispose() {
     if (this.debug) {
       Debug.drawLine(`${this.mesh.name}:Trajectory`, this.debugTrajectory);
@@ -169,16 +146,15 @@ export class Shell {
   }
 
   public fire() {
-    this.unlock();
+    this.setPhysics();
     const firedPos = this.mesh.absolutePosition.clone();
     this.trailOptions.points.forEach((_, idx) => (this.trailOptions.points[idx] = firedPos.clone()));
-    this.isSpent = true;
     this.mesh.isVisible = true;
-
     this.mesh.physicsBody?.applyImpulse(
       this.mesh.getDirection(forwardVector).normalize().scale(this.energy),
       this.mesh.getAbsolutePosition()
     );
+    this.isSpent = true;
   }
 
   private static setRefShell(scene: Scene) {
@@ -201,8 +177,9 @@ export class Shell {
     Shell.refPhysicsShape = new PhysicsShapeSphere(Vector3.Zero(), 0.05, scene);
   }
   static async create(tank: Tank): Promise<Shell> {
-    Shell.setRefShell(tank.scene);
-    const newShell = new Shell(tank, tank.scene);
+    Shell.setRefShell(tank.world.scene);
+    const mesh = Shell.refShell.clone(`Shell:${luid()}`);
+    const newShell = new Shell(tank, mesh);
     await newShell.loadSound();
     return newShell;
   }

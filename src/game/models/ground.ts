@@ -1,4 +1,4 @@
-import { Scene } from '@babylonjs/core';
+import { PhysicsAggregate, PhysicsShapeType, Scene } from '@babylonjs/core';
 import { MeshBuilder, type GroundMesh } from '@babylonjs/core/Meshes';
 import { StandardMaterial, Texture } from '@babylonjs/core/Materials';
 import { Color3 } from '@babylonjs/core/Maths';
@@ -55,6 +55,15 @@ export class Ground {
     groundMaterial.specularColor = new Color3(0, 0, 0);
     groundMaterial.ambientColor = new Color3(1, 1, 1);
     mesh.material = groundMaterial;
+
+    const groundAgg = new PhysicsAggregate(
+      mesh,
+      PhysicsShapeType.MESH,
+      { mass: 0, restitution: 0, friction: Ground.groundFriction },
+      scene
+    );
+    groundAgg.body.setCollisionCallbackEnabled(true);
+    mesh.collisionRetryCount = 5;
 
     mesh.position.y = 0;
     mesh.receiveShadows = true;

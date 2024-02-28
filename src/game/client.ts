@@ -10,7 +10,7 @@ import type { MessageTypeFire } from '@/types/interfaces';
 export class GameClient {
   private static instance: GameClient;
   private client!: Client;
-  private world!: World;
+  private world?: World;
   private rooms: { lobby?: Room<any>; desert?: Room<RoomState> } = {};
 
   get state(): MapSchema<Player, string> {
@@ -36,30 +36,31 @@ export class GameClient {
   }
 
   async joinRoom(name: 'lobby' | 'desert', accessToken: string) {
-    const lobby = useLobbyStore();
-
     const room = await this.client.joinOrCreate<RoomState>(name, { accessToken });
     this.rooms[name] = room;
-    this.setListeners();
 
-    room.state.listen('status', (newVal) => {
-      if (newVal === 'ready') lobby.status = 'playing';
-    });
+    this.setListeners();
 
     return room;
   }
   private setListeners() {
-    this.rooms.desert!.state.players.onChange((player, sessionId) => {
-      this.world.updatePlayer(player, sessionId);
-    });
-    this.rooms.desert!.state.players.onRemove((_player, sessionId) => {
-      this.world.removePlayer(sessionId);
-    });
+    const lobby = useLobbyStore();
 
-    this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: MessageTypeFire) => {
-      this.world.players[message.id].fire();
-    });
-    this.rooms.desert!.onMessage(MessageType.LOAD, () => this.world.player.playSound('load'));
+    if (this.rooms.desert) {
+      this.rooms.desert!.state.listen('status', (newVal) => {
+        if (newVal === 'ready') lobby.status = 'playing';
+      });
+      this.rooms.desert!.state.players.onChange((player, sessionId) => {
+        this.world?.updatePlayer(player, sessionId);
+      });
+      this.rooms.desert!.state.players.onRemove((_player, sessionId) => {
+        this.world?.removePlayer(sessionId);
+      });
+      this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: MessageTypeFire) => {
+        this.world?.players[message.id].fire();
+      });
+      this.rooms.desert!.onMessage(MessageType.LOAD, () => this.world?.player.playSound('load'));
+    }
   }
 
   async createWorld(canvasEl: HTMLCanvasElement) {

@@ -261,8 +261,8 @@ export class World {
     barrier3.receiveShadows = true;
     barrier3.material = barrierMaterial;
     const barrier4 = MeshBuilder.CreateBox('barrier4', { width: 500, height: 20, depth: 1 }, this.scene);
-    barrier4.rotate(Axis.Y, Math.PI / 2, Space.LOCAL);
     barrier4.position = new Vector3(249, 9, 0);
+    barrier4.rotate(Axis.Y, -Math.PI / 2, Space.LOCAL);
     barrier4.receiveShadows = true;
     barrier4.material = barrierMaterial;
 
@@ -270,22 +270,6 @@ export class World {
     barrier2.parent = barrier;
     barrier3.parent = barrier;
     barrier4.parent = barrier;
-
-    // Not working
-    /* const barrierShape = new PhysicsShapeBox(
-      Vector3.Zero(),
-      Quaternion.Identity(),
-      new Vector3(250, 10, 1),
-      this.scene
-    );
-    const barrierContainerShape = new PhysicsShapeContainer(this.scene);
-    barrierShape.addChildFromParent(barrier, barrierShape, barrier1);
-    barrierShape.addChildFromParent(barrier, barrierShape, barrier2);
-    barrierShape.addChildFromParent(barrier, barrierShape, barrier3);
-    barrierShape.addChildFromParent(barrier, barrierShape, barrier4);
-    const barrierPB = new PhysicsBody(barrier, PhysicsMotionType.STATIC, false, this.scene);
-    barrierPB.shape = barrierContainerShape;
-    barrierPB.setMassProperties({ mass: 0, centerOfMass: Vector3.Zero() }); */
 
     new PhysicsAggregate(barrier1, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
     new PhysicsAggregate(barrier2, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
@@ -318,7 +302,7 @@ export class World {
       this.sights.forEach((ui) => (ui.isVisible = this.scene.activeCamera === this.fppCamera));
     }
 
-    this.player.playSounds(isMoving, isBarrelMoving || isTurretMoving);
+    this.player.playSounds(isMoving, !!isBarrelMoving || !!isTurretMoving);
   }
   private afterStep() {
     if (this.client.isReady()) {
@@ -340,7 +324,7 @@ export class World {
           !isEnemy ? { tpp: this.tppCamera, fpp: this.fppCamera } : null,
           isEnemy
         );
-        this.shadowGenerator.addShadowCaster(this.players[player.sid].body as AbstractMesh);
+        this.shadowGenerator.addShadowCaster(this.players[player.sid].mesh);
         if (!isEnemy) this.player = this.players[player.sid];
       })
     );

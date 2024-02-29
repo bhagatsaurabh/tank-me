@@ -4,7 +4,7 @@ import { type Scene } from '@babylonjs/core';
 import { ActionEvent, ActionManager, ExecuteCodeAction } from '@babylonjs/core/Actions';
 
 export class InputManager {
-  static keys: Record<GameInputType, boolean>;
+  static keys: Partial<Record<GameInputType, boolean>> = {};
 
   static create(scene: Scene) {
     const actionManager = new ActionManager(scene);

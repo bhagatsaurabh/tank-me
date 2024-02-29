@@ -2,6 +2,7 @@ import { PhysicsAggregate, PhysicsShapeType, Scene } from '@babylonjs/core';
 import { MeshBuilder, type GroundMesh } from '@babylonjs/core/Meshes';
 import { StandardMaterial, Texture } from '@babylonjs/core/Materials';
 import { Color3 } from '@babylonjs/core/Maths';
+import { createCanvas, loadImage } from 'canvas';
 
 import { AssetLoader } from '../loader';
 
@@ -64,7 +65,6 @@ export class Ground {
     );
     groundAgg.body.setCollisionCallbackEnabled(true);
     mesh.collisionRetryCount = 5;
-
     mesh.position.y = 0;
     mesh.receiveShadows = true;
 

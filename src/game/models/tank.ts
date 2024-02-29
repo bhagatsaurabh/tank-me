@@ -14,7 +14,7 @@ import {
 } from '@babylonjs/core/Physics';
 
 import { Shell } from './shell';
-import { randInRange } from '@/utils/utils';
+import { randInRange, throttle } from '@/utils/utils';
 import { PSExhaust } from '../particle-systems/exhaust';
 import { PSDust } from '../particle-systems/dust';
 import { PSMuzzle } from '../particle-systems/muzzle';
@@ -28,6 +28,7 @@ export class Tank {
     cooldown: 5000
   };
   private lastFired = 0;
+  public mesh!: AbstractMesh;
   public body!: TransformNode;
   public barrel!: AbstractMesh;
   public barrelTip!: TransformNode;
@@ -53,6 +54,7 @@ export class Tank {
   private lastCameraToggle = 0;
   private cameraToggleDelay = 1000;
   private observers: Observer<any>[] = [];
+  // private debugUpdate = throttle((state: Player) => console.log(state), 1000);
 
   private constructor(
     public world: World,
@@ -68,7 +70,7 @@ export class Tank {
 
     if (!isEnemy && cameras?.tpp && cameras.fpp) {
       cameras.tpp.position = new Vector3(spawn.x + 1, spawn.y + 1, spawn.z + 1);
-      cameras.tpp.lockedTarget = this.body as AbstractMesh;
+      cameras.tpp.lockedTarget = this.mesh;
       cameras.fpp.parent = this.barrel;
     }
 
@@ -93,6 +95,7 @@ export class Tank {
   }
 
   private setTransform(rootMesh: AbstractMesh, spawn: Vector3) {
+    this.mesh = rootMesh;
     const body = new TransformNode(`Root:${rootMesh.name}`, this.world.scene);
     rootMesh.position = Vector3.Zero();
     const childMeshes = rootMesh.getChildMeshes();
@@ -124,12 +127,13 @@ export class Tank {
     childMeshes.forEach((mesh) => (mesh.isVisible = true));
   }
   private setPhysics(rootMesh: Mesh) {
-    const bodyShape = new PhysicsShapeConvexHull(rootMesh, this.world.scene);
     const bodyShapeContainer = new PhysicsShapeContainer(this.world.scene);
-    bodyShapeContainer.addChildFromParent(this.body, bodyShape, rootMesh);
     const bodyPB = new PhysicsBody(this.body, PhysicsMotionType.STATIC, false, this.world.scene);
     bodyPB.shape = bodyShapeContainer;
     bodyPB.setMassProperties({ mass: 0 });
+
+    const bodyShape = new PhysicsShapeConvexHull(rootMesh, this.world.scene);
+    bodyShapeContainer.addChildFromParent(this.body, bodyShape, rootMesh);
 
     const turretShape = new PhysicsShapeConvexHull(this.turret as Mesh, this.world.scene);
     const turretPB = new PhysicsBody(this.turret, PhysicsMotionType.STATIC, false, this.world.scene);
@@ -162,6 +166,8 @@ export class Tank {
     ); */
 
     bodyPB.disablePreStep = false;
+    turretPB.disablePreStep = false;
+    barrelPB.disablePreStep = false;
   }
   private setParticleSystems() {
     this.particleSystems['exhaust-left'] = PSExhaust.create(this.leftExhaust, this.world.scene);
@@ -400,14 +406,24 @@ export class Tank {
     if (!this.sounds[type]?.isPlaying) this.sounds[type]?.play();
   }
   update(state: Player) {
-    this.body.absolutePosition.set(state.position.x, state.position.y, state.position.z);
+    // this.debugUpdate(state);
+    this.body.position.set(state.position.x, state.position.y, state.position.z);
 
-    this.body.absoluteRotationQuaternion.set(
-      state.rotation.x,
-      state.rotation.y,
-      state.rotation.z,
-      state.rotation.w
-    );
+    if (!this.body.rotationQuaternion) {
+      this.body.rotationQuaternion = new Quaternion(
+        state.rotation.x,
+        state.rotation.y,
+        state.rotation.z,
+        state.rotation.w
+      );
+    } else {
+      this.body.rotationQuaternion.set(
+        state.rotation.x,
+        state.rotation.y,
+        state.rotation.z,
+        state.rotation.w
+      );
+    }
 
     if (!this.turret.rotationQuaternion) {
       this.turret.rotationQuaternion = new Quaternion(

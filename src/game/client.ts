@@ -39,28 +39,30 @@ export class GameClient {
     const room = await this.client.joinOrCreate<RoomState>(name, { accessToken });
     this.rooms[name] = room;
 
-    this.setListeners();
+    if (name === 'desert') {
+      this.setListeners();
+    }
 
     return room;
   }
   private setListeners() {
     const lobby = useLobbyStore();
 
-    if (this.rooms.desert) {
-      this.rooms.desert!.state.listen('status', (newVal) => {
-        if (newVal === 'ready') lobby.status = 'playing';
-      });
-      this.rooms.desert!.state.players.onChange((player, sessionId) => {
-        this.world?.updatePlayer(player, sessionId);
-      });
-      this.rooms.desert!.state.players.onRemove((_player, sessionId) => {
-        this.world?.removePlayer(sessionId);
-      });
-      this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: MessageTypeFire) => {
-        this.world?.players[message.id].fire();
-      });
-      this.rooms.desert!.onMessage(MessageType.LOAD, () => this.world?.player.playSound('load'));
-    }
+    // this.rooms.desert!.onStateChange((state) => throttledDebug(state));
+    this.rooms.desert!.state.listen('status', (newVal) => {
+      if (newVal === 'ready') lobby.status = 'playing';
+    });
+    this.rooms.desert!.state.players.onAdd((player, key) => {
+      this.world?.updatePlayer(player, key);
+      player.onChange(() => this.world?.updatePlayer(player, key));
+    });
+    this.rooms.desert!.state.players.onRemove((_player, sessionId) => {
+      this.world?.removePlayer(sessionId);
+    });
+    this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: MessageTypeFire) => {
+      this.world?.players[message.id].fire();
+    });
+    this.rooms.desert!.onMessage(MessageType.LOAD, () => this.world?.player.playSound('load'));
   }
 
   async createWorld(canvasEl: HTMLCanvasElement) {

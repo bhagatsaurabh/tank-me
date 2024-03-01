@@ -139,31 +139,11 @@ export class Tank {
     const turretPB = new PhysicsBody(this.turret, PhysicsMotionType.STATIC, false, this.world.scene);
     turretPB.shape = turretShape;
     turretPB.setMassProperties({ mass: 0 });
-    /* this.turretMotor = this.createTurretConstraint(
-      this.turret.position,
-      Vector3.Zero(),
-      new Vector3(1, 0, 1),
-      new Vector3(1, 0, 1),
-      new Vector3(0, 1, 0),
-      new Vector3(0, 1, 0),
-      bodyPB,
-      turretPB
-    ); */
 
     const barrelShape = new PhysicsShapeConvexHull(this.barrel as Mesh, this.world.scene);
     const barrelPB = new PhysicsBody(this.barrel, PhysicsMotionType.STATIC, false, this.world.scene);
     barrelPB.shape = barrelShape;
     barrelPB.setMassProperties({ mass: 0 });
-    /* this.barrelMotor = this.createBarrelConstraint(
-      this.barrel.position,
-      Vector3.Zero(),
-      new Vector3(1, 0, 0),
-      new Vector3(1, 0, 0),
-      new Vector3(0, 1, 0),
-      new Vector3(0, 1, 0),
-      turretPB,
-      barrelPB
-    ); */
 
     bodyPB.disablePreStep = false;
     turretPB.disablePreStep = false;
@@ -406,56 +386,43 @@ export class Tank {
     if (!this.sounds[type]?.isPlaying) this.sounds[type]?.play();
   }
   update(state: Player) {
-    // this.debugUpdate(state);
     this.body.position.set(state.position.x, state.position.y, state.position.z);
 
-    if (!this.body.rotationQuaternion) {
-      this.body.rotationQuaternion = new Quaternion(
+    this.body.rotationQuaternion =
+      this.body.rotationQuaternion?.set(
         state.rotation.x,
         state.rotation.y,
         state.rotation.z,
         state.rotation.w
-      );
-    } else {
-      this.body.rotationQuaternion.set(
-        state.rotation.x,
-        state.rotation.y,
-        state.rotation.z,
-        state.rotation.w
-      );
-    }
+      ) ?? new Quaternion(state.rotation.x, state.rotation.y, state.rotation.z, state.rotation.w);
 
-    if (!this.turret.rotationQuaternion) {
-      this.turret.rotationQuaternion = new Quaternion(
+    this.turret.rotationQuaternion =
+      this.turret.rotationQuaternion?.set(
+        state.turretRotation.x,
+        state.turretRotation.y,
+        state.turretRotation.z,
+        state.turretRotation.w
+      ) ??
+      new Quaternion(
         state.turretRotation.x,
         state.turretRotation.y,
         state.turretRotation.z,
         state.turretRotation.w
       );
-    } else {
-      this.turret.rotationQuaternion.set(
-        state.turretRotation.x,
-        state.turretRotation.y,
-        state.turretRotation.z,
-        state.turretRotation.w
-      );
-    }
 
-    if (!this.barrel.rotationQuaternion) {
-      this.barrel.rotationQuaternion = new Quaternion(
+    this.barrel.rotationQuaternion =
+      this.barrel.rotationQuaternion?.set(
+        state.barrelRotation.x,
+        state.barrelRotation.y,
+        state.barrelRotation.z,
+        state.barrelRotation.w
+      ) ??
+      new Quaternion(
         state.barrelRotation.x,
         state.barrelRotation.y,
         state.barrelRotation.z,
         state.barrelRotation.w
       );
-    } else {
-      this.barrel.rotationQuaternion.set(
-        state.barrelRotation.x,
-        state.barrelRotation.y,
-        state.barrelRotation.z,
-        state.barrelRotation.w
-      );
-    }
   }
   dispose() {
     this.observers.forEach((observer) => observer.remove());

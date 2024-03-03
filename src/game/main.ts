@@ -23,11 +23,13 @@ import { Ground } from './models/ground';
 import { AssetLoader } from './loader';
 import { Skybox } from './skybox';
 import { GameInputType, MessageType } from '@/types/types';
+import type { IMessageTypeInput } from '@/types/interfaces';
 
 export class World {
   private static instance: World;
   private static timeStep = 1 / 60;
   private static subTimeStep = 16;
+  private static deltaTime = World.timeStep;
   static physicsViewer: PhysicsViewer;
 
   private id: string;
@@ -47,6 +49,7 @@ export class World {
   private gui!: AdvancedDynamicTexture;
   private sights: (Control | Container)[] = [];
   private observers: Observer<Scene>[] = [];
+  private seqCount = -1;
   private stats: any = {};
   private statsFn = throttle(() => console.log(this.stats), 1000);
 
@@ -277,23 +280,73 @@ export class World {
     new PhysicsAggregate(barrier4, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
   }
   private beforeStep() {
+    // Send input to server
+    if (this.client.isReady()) {
+      this.client.sendEvent<IMessageTypeInput>(MessageType.INPUT, {
+        seq: (this.seqCount += 1),
+        input: InputManager.keys
+      });
+    }
+
+    // And immediately process it
     let isMoving = false;
+    const turningDirection = InputManager.keys[GameInputType.LEFT]
+      ? -1
+      : InputManager.keys[GameInputType.RIGHT]
+        ? 1
+        : 0;
+    const isAccelerating =
+      InputManager.keys[GameInputType.FORWARD] || InputManager.keys[GameInputType.REVERSE];
     let isTurretMoving =
       InputManager.keys[GameInputType.TURRET_LEFT] || InputManager.keys[GameInputType.TURRET_RIGHT];
     const isBarrelMoving =
       InputManager.keys[GameInputType.BARREL_UP] || InputManager.keys[GameInputType.BARREL_DOWN];
 
-    if (
-      InputManager.keys[GameInputType.FORWARD] ||
-      InputManager.keys[GameInputType.REVERSE] ||
-      InputManager.keys[GameInputType.LEFT] ||
-      InputManager.keys[GameInputType.RIGHT]
-    ) {
+    if (InputManager.keys[GameInputType.FORWARD]) {
+      this.player.accelerate(World.deltaTime, turningDirection);
       isMoving = true;
     }
+    if (InputManager.keys[GameInputType.REVERSE]) {
+      this.player.reverse(World.deltaTime, turningDirection);
+      isMoving = true;
+    }
+    if (InputManager.keys[GameInputType.LEFT]) {
+      this.player.left(World.deltaTime, !!isAccelerating);
+      isMoving = true;
+    }
+    if (InputManager.keys[GameInputType.RIGHT]) {
+      this.player.right(World.deltaTime, !!isAccelerating);
+      isMoving = true;
+    }
+    if (InputManager.keys[GameInputType.BRAKE]) {
+      this.player.brake(World.deltaTime);
+    }
+    if (!isMoving) {
+      this.player.decelerate(World.deltaTime);
+    }
+    if (!isTurretMoving) {
+      this.player.stopTurret();
+    }
+    if (!isBarrelMoving) {
+      this.player.stopBarrel();
+    }
+    if (InputManager.keys[GameInputType.TURRET_LEFT]) {
+      this.player.turretLeft(World.deltaTime);
+    }
+    if (InputManager.keys[GameInputType.TURRET_RIGHT]) {
+      this.player.turretRight(World.deltaTime);
+    }
+    if (InputManager.keys[GameInputType.BARREL_UP]) {
+      this.player.barrelUp(World.deltaTime);
+    }
+    if (InputManager.keys[GameInputType.BARREL_DOWN]) {
+      this.player.barrelDown(World.deltaTime);
+    }
     if (InputManager.keys[GameInputType.RESET] && !isTurretMoving && !isBarrelMoving) {
+      this.player.resetTurret(World.deltaTime);
       isTurretMoving = true;
     }
+
     if (InputManager.keys[GameInputType.FIRE] && this.state.canFire) {
       this.player.fire();
     }
@@ -303,10 +356,6 @@ export class World {
     }
 
     this.player.playSounds(isMoving, !!isBarrelMoving || !!isTurretMoving);
-
-    if (this.client.isReady()) {
-      this.client.sendEvent(MessageType.INPUT, InputManager.keys);
-    }
   }
   private async createTanks() {
     const players: Player[] = [];
@@ -347,8 +396,8 @@ export class World {
     window.removeEventListener('resize', this.throttledResizeListener);
     this.engine.dispose();
   }
-  public updatePlayer(player: Player, id: string) {
-    this.players[id].update(player);
+  public updatePlayer(id: string) {
+    this.players[id].update();
   }
   public removePlayer(id: string) {
     this.players[id].dispose();

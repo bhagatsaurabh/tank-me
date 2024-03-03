@@ -86,7 +86,7 @@ export class PSDust {
     // Create new system immediately
     this.setProperties();
     // Disposing only when all the particles are invisible after sometime
-    if (!(await delay(6500, (clear) => this.unsub.push(clear)))) return;
+    if (!(await delay(8000, (clear) => this.unsub.push(clear)))) return;
     this.particleSystems[currId].dispose();
     delete this.particleSystems[currId];
   }

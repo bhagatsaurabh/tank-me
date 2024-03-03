@@ -48,7 +48,7 @@ export class Shell {
     this.setParticleSystem();
 
     this.observers.push(tank.world.physicsPlugin.onCollisionObservable.add((ev) => this.onCollide(ev)));
-    this.observers.push(tank.world.scene.onAfterStepObservable.add(this.afterStep.bind(this)));
+    this.observers.push(tank.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
   }
   private static setRefShell(scene: Scene) {
     if (Shell.refShell) return;
@@ -118,24 +118,24 @@ export class Shell {
     ).body.setCollisionCallbackEnabled(true);
   }
   private onCollide(event: IPhysicsCollisionEvent) {
-    if (!this.isSpent || event.collider.transformNode.name !== this.mesh.name) return;
-    console.log(event.collidedAgainst.transformNode.name);
+    // If this shell is not part of the collision, ignore
+    if (
+      !this.isSpent ||
+      (event.collider !== this.mesh.physicsBody! && event.collidedAgainst !== this.mesh.physicsBody!)
+    ) {
+      return;
+    }
 
     const explosionOrigin = this.mesh.absolutePosition.clone();
     this.particleSystem.start(explosionOrigin);
-    this.dispose();
     this.explosionSound.setPosition(explosionOrigin);
-    this.explosionSound.onEndedObservable.add(() => this.explosionSound.dispose());
+    this.explosionSound.onEndedObservable.add(() => this.explosionSound.dispose()).unregisterOnNextCall =
+      true;
     this.explosionSound.play();
 
-    if (event.collidedAgainst.transformNode.name !== 'ground') {
-      event.collidedAgainst.applyImpulse(
-        event.collider.transformNode.getDirection(forwardVector).normalize().scale(1),
-        explosionOrigin
-      );
-    }
+    this.dispose();
   }
-  private afterStep() {
+  private beforeStep() {
     if (!this.isSpent) return;
 
     if (
@@ -167,8 +167,6 @@ export class Shell {
     this.mesh.dispose();
   }
   public fire() {
-    // this.tank.barrel.computeWorldMatrix();
-    // this.mesh.rotationQuaternion = this.tank.barrel.rotationQuaternion!.clone();
     this.mesh.rotationQuaternion = Quaternion.Identity();
     const firedPos = this.mesh.absolutePosition.clone();
     this.trailOptions.points.forEach((_, idx) => (this.trailOptions.points[idx] = firedPos.clone()));

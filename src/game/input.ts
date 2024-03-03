@@ -1,10 +1,10 @@
-import { GameInputType, KeyInputType } from '@/types/types';
+import { GameInputType, KeyInputType, type PlayerInputs } from '@/types/types';
 import { keyMap } from '@/utils/constants';
 import { type Scene } from '@babylonjs/core';
 import { ActionEvent, ActionManager, ExecuteCodeAction } from '@babylonjs/core/Actions';
 
 export class InputManager {
-  static keys: Partial<Record<GameInputType, boolean>> = {};
+  static keys: PlayerInputs = {};
 
   static create(scene: Scene) {
     const actionManager = new ActionManager(scene);

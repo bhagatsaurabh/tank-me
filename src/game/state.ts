@@ -29,6 +29,7 @@ export class Player extends Schema {
   canFire!: boolean;
   leftSpeed!: number;
   rightSpeed!: number;
+  health!: number;
   position!: Position;
   rotation!: Rotation;
   barrelRotation!: BarrelRotation;

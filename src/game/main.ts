@@ -47,6 +47,8 @@ export class World {
   private gui!: AdvancedDynamicTexture;
   private sights: (Control | Container)[] = [];
   private observers: Observer<Scene>[] = [];
+  private stats: any = {};
+  private statsFn = throttle(() => console.log(this.stats), 1000);
 
   private constructor(
     public engine: Engine,
@@ -57,7 +59,6 @@ export class World {
     this.scene = new Scene(this.engine);
     this.scene.enablePhysics(gravityVector, physicsPlugin);
     World.physicsViewer = new PhysicsViewer(this.scene);
-    // Not simulating anything until the scene is fully loaded
     physicsPlugin.setTimeStep(0);
     this.scene.getPhysicsEngine()?.setSubTimeStep(World.subTimeStep);
     this.state = client.state.get(this.id)!;
@@ -123,7 +124,7 @@ export class World {
       (mesh.material as PBRMaterial).metallicF0Factor = 0;
       mesh.isVisible = false;
     });
-    meshes[0].name = 'Panzer_I:Ref';
+    meshes[0].name = 'Panzer:Ref';
     world.playerMeshes = meshes;
   }
   private async initScene() {
@@ -140,7 +141,6 @@ export class World {
     this.setGUI();
 
     this.observers.push(this.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
-    this.observers.push(this.scene.onAfterStepObservable.add(this.afterStep.bind(this)));
   }
   private initWindowListeners() {
     window.addEventListener('keydown', this.toggleInspect.bind(this));
@@ -303,8 +303,7 @@ export class World {
     }
 
     this.player.playSounds(isMoving, !!isBarrelMoving || !!isTurretMoving);
-  }
-  private afterStep() {
+
     if (this.client.isReady()) {
       this.client.sendEvent(MessageType.INPUT, InputManager.keys);
     }
@@ -340,10 +339,6 @@ export class World {
   }
   private resize() {
     this.engine.resize();
-  }
-  private stop() {
-    this.physicsPlugin.setTimeStep(0);
-    this.engine.stopRenderLoop();
   }
 
   public dispose() {

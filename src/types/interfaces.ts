@@ -1,3 +1,9 @@
+import type { PlayerInputs } from './types';
+
+export interface MessageTypeInput {
+  input: PlayerInputs;
+}
+
 export interface MessageTypeFire {
   id: string;
 }

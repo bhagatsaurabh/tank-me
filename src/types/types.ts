@@ -45,3 +45,5 @@ export type TankSoundType = 'idle' | 'move' | 'explode' | 'turret' | 'cannon' | 
 export type TankSounds = {
   [id in TankSoundType]?: Sound;
 };
+
+export type PlayerInputs = Partial<Record<GameInputType, boolean>>;

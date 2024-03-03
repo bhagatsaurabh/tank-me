@@ -14,7 +14,7 @@ import {
 } from '@babylonjs/core/Physics';
 
 import { Shell } from './shell';
-import { randInRange, throttle } from '@/utils/utils';
+import { randInRange } from '@/utils/utils';
 import { PSExhaust } from '../particle-systems/exhaust';
 import { PSDust } from '../particle-systems/dust';
 import { PSMuzzle } from '../particle-systems/muzzle';
@@ -25,7 +25,8 @@ import type { World } from '../main';
 
 export class Tank {
   private static config = {
-    cooldown: 5000
+    // Less than actual cooldown, to avoid sync issues, state.canFire is used together
+    cooldown: 2500
   };
   private lastFired = 0;
   public mesh!: AbstractMesh;
@@ -54,7 +55,7 @@ export class Tank {
   private lastCameraToggle = 0;
   private cameraToggleDelay = 1000;
   private observers: Observer<any>[] = [];
-  // private debugUpdate = throttle((state: Player) => console.log(state), 1000);
+  health: number = 100.0;
 
   private constructor(
     public world: World,
@@ -74,7 +75,7 @@ export class Tank {
       cameras.fpp.parent = this.barrel;
     }
 
-    this.observers.push(this.world.scene.onAfterStepObservable.add(this.afterStep.bind(this)));
+    this.observers.push(this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
   }
   static async create(
     world: World,
@@ -293,10 +294,7 @@ export class Tank {
 
     return Promise.all(promises);
   }
-  private afterStep() {
-    this.animate();
-  }
-  private animate() {
+  private beforeStep() {
     if (this.state.leftSpeed !== 0) {
       ((this.leftTrack.material as PBRMaterial).albedoTexture as Texture).vOffset +=
         this.state.leftSpeed * 0.0009;

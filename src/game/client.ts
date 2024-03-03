@@ -5,7 +5,7 @@ import type { Player, RoomState } from './state';
 import { World } from './main';
 import { MessageType } from '@/types/types';
 import { useLobbyStore } from '@/stores/lobby';
-import type { MessageTypeFire } from '@/types/interfaces';
+import type { IMessageTypeFire } from '@/types/interfaces';
 
 export class GameClient {
   private static instance: GameClient;
@@ -53,13 +53,13 @@ export class GameClient {
       if (newVal === 'ready') lobby.status = 'playing';
     });
     this.rooms.desert!.state.players.onAdd((player, key) => {
-      this.world?.updatePlayer(player, key);
-      player.onChange(() => this.world?.updatePlayer(player, key));
+      this.world?.updatePlayer(key);
+      player.onChange(() => this.world?.updatePlayer(key));
     });
     this.rooms.desert!.state.players.onRemove((_player, sessionId) => {
       this.world?.removePlayer(sessionId);
     });
-    this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: MessageTypeFire) => {
+    this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: IMessageTypeFire) => {
       this.world?.players[message.id].fire();
     });
     this.rooms.desert!.onMessage(MessageType.LOAD, () => this.world?.player.playSound('load'));

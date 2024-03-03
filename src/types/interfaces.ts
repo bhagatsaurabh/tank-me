@@ -1,10 +1,11 @@
 import type { PlayerInputs } from './types';
 
-export interface MessageTypeInput {
+export interface IMessageTypeInput {
+  seq: number;
   input: PlayerInputs;
 }
 
-export interface MessageTypeFire {
+export interface IMessageTypeFire {
   id: string;
 }
-export interface MessageTypeLoad {}
+export interface IMessageTypeLoad {}

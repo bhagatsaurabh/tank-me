@@ -12,7 +12,7 @@ import { HavokPlugin, PhysicsAggregate, PhysicsShapeType } from '@babylonjs/core
 import { DirectionalLight, CascadedShadowGenerator } from '@babylonjs/core/Lights';
 import { FollowCamera, FreeCamera, ArcRotateCamera } from '@babylonjs/core/Cameras';
 import HavokPhysics from '@babylonjs/havok';
-import { AdvancedDynamicTexture, Image, Control, Rectangle, Container } from '@babylonjs/gui';
+import { AdvancedDynamicTexture } from '@babylonjs/gui';
 
 import { GameClient } from '@/game/client';
 import type { Player } from './state';
@@ -22,18 +22,19 @@ import { Tank } from './models/tank';
 import { Ground } from './models/ground';
 import { AssetLoader } from './loader';
 import { Skybox } from './skybox';
-import { GameInputType, MessageType } from '@/types/types';
-import type { IMessageTypeInput } from '@/types/interfaces';
+import { MessageType } from '@/types/types';
+import type { IMessageInput } from '@/types/interfaces';
+import { PlayerTank } from './models/player';
+import { EnemyTank } from './models/enemy';
 
 export class World {
   private static instance: World;
   private static timeStep = 1 / 60;
   private static subTimeStep = 16;
-  private static deltaTime = World.timeStep;
+  static deltaTime = World.timeStep;
   static physicsViewer: PhysicsViewer;
 
   private id: string;
-  private state: Player;
   scene: Scene;
   private throttledResizeListener = noop;
   private stateUnsubFns: (() => boolean)[] = [];
@@ -45,9 +46,8 @@ export class World {
   private endCamera!: ArcRotateCamera;
   private playerMeshes: AbstractMesh[] = [];
   players: Record<string, Tank> = {};
-  player!: Tank;
-  private gui!: AdvancedDynamicTexture;
-  private sights: (Control | Container)[] = [];
+  player!: PlayerTank;
+  gui!: AdvancedDynamicTexture;
   private observers: Observer<Scene>[] = [];
   private seqCount = -1;
   private stats: any = {};
@@ -64,7 +64,6 @@ export class World {
     World.physicsViewer = new PhysicsViewer(this.scene);
     physicsPlugin.setTimeStep(0);
     this.scene.getPhysicsEngine()?.setSubTimeStep(World.subTimeStep);
-    this.state = client.state.get(this.id)!;
   }
   static async create(client: GameClient, canvas: HTMLCanvasElement): Promise<World> {
     if (!World.instance && client?.getSessionId()) {
@@ -139,9 +138,9 @@ export class World {
     await Skybox.create(this.scene);
     await Ground.create(this.scene);
     this.shadowGenerator?.addShadowCaster(Ground.mesh);
+    this.setGUI();
     await this.createTanks();
     this.setBarriers();
-    this.setGUI();
 
     this.observers.push(this.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
   }
@@ -200,47 +199,6 @@ export class World {
   }
   private setGUI() {
     this.gui = AdvancedDynamicTexture.CreateFullscreenUI('UI');
-    const scope = new Image('ads', AssetLoader.assets['/assets/game/gui/ads.png'] as string);
-    scope.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    scope.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    scope.autoScale = true;
-    scope.width = '50%';
-    scope.fixedRatio = 1;
-    scope.stretch = Image.STRETCH_FILL;
-    scope.shadowBlur = 3;
-    scope.shadowColor = '#AFE1AF';
-    scope.alpha = 0.8;
-    scope.isVisible = false;
-    scope.scaleX = 1.5;
-    scope.scaleY = 1.5;
-    this.gui.addControl(scope);
-
-    const overlay = new Image('overlay', AssetLoader.assets['/assets/game/gui/overlay.png'] as string);
-    overlay.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    overlay.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    overlay.height = '100%';
-    overlay.fixedRatio = 1;
-    overlay.isVisible = false;
-    this.gui.addControl(overlay);
-
-    const padWidth = (this.engine.getRenderWidth(true) - this.engine.getRenderHeight(true)) / 2;
-    const padLeft = new Rectangle('left-pad');
-    padLeft.width = `${padWidth}px`;
-    padLeft.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    padLeft.color = '#000';
-    padLeft.background = '#000';
-    padLeft.isVisible = false;
-    this.gui.addControl(padLeft);
-
-    const padRight = new Rectangle('right-pad');
-    padRight.width = `${padWidth}px`;
-    padRight.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    padRight.color = '#000';
-    padRight.background = '#000';
-    padRight.isVisible = false;
-    this.gui.addControl(padRight);
-
-    this.sights.push(scope, overlay, padLeft, padRight);
   }
   private setBarriers() {
     const barrier = new TransformNode('barrier', this.scene);
@@ -280,102 +238,53 @@ export class World {
     new PhysicsAggregate(barrier4, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
   }
   private beforeStep() {
-    // Send input to server
+    // Send input to server + push to history
     if (this.client.isReady()) {
-      this.client.sendEvent<IMessageTypeInput>(MessageType.INPUT, {
+      const message = {
         seq: (this.seqCount += 1),
-        input: InputManager.keys
-      });
+        input: structuredClone(InputManager.keys)
+      };
+      this.client.sendEvent<IMessageInput>(MessageType.INPUT, message);
+      InputManager.addHistory(message);
     }
 
-    // And immediately process it
-    let isMoving = false;
-    const turningDirection = InputManager.keys[GameInputType.LEFT]
-      ? -1
-      : InputManager.keys[GameInputType.RIGHT]
-        ? 1
-        : 0;
-    const isAccelerating =
-      InputManager.keys[GameInputType.FORWARD] || InputManager.keys[GameInputType.REVERSE];
-    let isTurretMoving =
-      InputManager.keys[GameInputType.TURRET_LEFT] || InputManager.keys[GameInputType.TURRET_RIGHT];
-    const isBarrelMoving =
-      InputManager.keys[GameInputType.BARREL_UP] || InputManager.keys[GameInputType.BARREL_DOWN];
-
-    if (InputManager.keys[GameInputType.FORWARD]) {
-      this.player.accelerate(World.deltaTime, turningDirection);
-      isMoving = true;
-    }
-    if (InputManager.keys[GameInputType.REVERSE]) {
-      this.player.reverse(World.deltaTime, turningDirection);
-      isMoving = true;
-    }
-    if (InputManager.keys[GameInputType.LEFT]) {
-      this.player.left(World.deltaTime, !!isAccelerating);
-      isMoving = true;
-    }
-    if (InputManager.keys[GameInputType.RIGHT]) {
-      this.player.right(World.deltaTime, !!isAccelerating);
-      isMoving = true;
-    }
-    if (InputManager.keys[GameInputType.BRAKE]) {
-      this.player.brake(World.deltaTime);
-    }
-    if (!isMoving) {
-      this.player.decelerate(World.deltaTime);
-    }
-    if (!isTurretMoving) {
-      this.player.stopTurret();
-    }
-    if (!isBarrelMoving) {
-      this.player.stopBarrel();
-    }
-    if (InputManager.keys[GameInputType.TURRET_LEFT]) {
-      this.player.turretLeft(World.deltaTime);
-    }
-    if (InputManager.keys[GameInputType.TURRET_RIGHT]) {
-      this.player.turretRight(World.deltaTime);
-    }
-    if (InputManager.keys[GameInputType.BARREL_UP]) {
-      this.player.barrelUp(World.deltaTime);
-    }
-    if (InputManager.keys[GameInputType.BARREL_DOWN]) {
-      this.player.barrelDown(World.deltaTime);
-    }
-    if (InputManager.keys[GameInputType.RESET] && !isTurretMoving && !isBarrelMoving) {
-      this.player.resetTurret(World.deltaTime);
-      isTurretMoving = true;
-    }
-
-    if (InputManager.keys[GameInputType.FIRE] && this.state.canFire) {
-      this.player.fire();
-    }
-    if (InputManager.keys[GameInputType.CHANGE_PERSPECTIVE]) {
-      this.player.toggleCamera();
-      this.sights.forEach((ui) => (ui.isVisible = this.scene.activeCamera === this.fppCamera));
-    }
-
-    this.player.playSounds(isMoving, !!isBarrelMoving || !!isTurretMoving);
+    // And immediately apply it
+    this.player.applyInputs(InputManager.keys);
   }
   private async createTanks() {
     const players: Player[] = [];
     this.client.getPlayers().forEach((player) => players.push(player));
 
-    return await Promise.all(
-      players.map(async (player) => {
-        const isEnemy = this.id !== player.sid;
-        this.players[player.sid] = await Tank.create(
-          this,
-          player,
-          this.playerMeshes[0],
-          new Vector3(player.position.x, player.position.y, player.position.z),
-          !isEnemy ? { tpp: this.tppCamera, fpp: this.fppCamera } : null,
-          isEnemy
-        );
-        this.shadowGenerator.addShadowCaster(this.players[player.sid].mesh);
-        if (!isEnemy) this.player = this.players[player.sid];
+    const tanks = await Promise.all(
+      players.map((player) => {
+        const isPlayer = this.id === player.sid;
+
+        if (!isPlayer) {
+          return EnemyTank.create(
+            this,
+            player,
+            this.playerMeshes[0],
+            new Vector3(player.position.x, player.position.y, player.position.z)
+          );
+        } else {
+          return PlayerTank.create(
+            this,
+            player,
+            this.playerMeshes[0],
+            new Vector3(player.position.x, player.position.y, player.position.z),
+            { tpp: this.tppCamera, fpp: this.fppCamera }
+          );
+        }
       })
     );
+
+    tanks.forEach((tank) => {
+      this.players[tank.state.sid] = tank;
+      this.shadowGenerator.addShadowCaster(this.players[tank.state.sid].mesh);
+      if (this.id === tank.state.sid) {
+        this.player = tank as PlayerTank;
+      }
+    });
   }
   private toggleInspect(ev: KeyboardEvent) {
     // Sfhit+Alt+I
@@ -396,9 +305,9 @@ export class World {
     window.removeEventListener('resize', this.throttledResizeListener);
     this.engine.dispose();
   }
-  public updatePlayer(id: string) {
-    this.players[id].update();
-  }
+  /* public updatePlayer(id: string) {
+    (this.players[id] as PlayerTank | EnemyTank).update();
+  } */
   public removePlayer(id: string) {
     this.players[id].dispose();
   }

@@ -1,11 +1,13 @@
 import type { PlayerInputs } from './types';
 
-export interface IMessageTypeInput {
+export interface IMessageInput {
   seq: number;
+  // Actual timestamp is set at server, TS = ServerTime - AveragePing
+  timestamp?: 0;
   input: PlayerInputs;
 }
 
-export interface IMessageTypeFire {
+export interface IMessageFire {
   id: string;
 }
-export interface IMessageTypeLoad {}
+export interface IMessageLoad {}

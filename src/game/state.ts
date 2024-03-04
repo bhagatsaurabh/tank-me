@@ -23,6 +23,11 @@ export class TurretRotation extends Schema {
   z!: number;
   w!: number;
 }
+export class LastProcessedInput extends Schema {
+  seq!: number;
+  timestamp!: number;
+}
+
 export class Player extends Schema {
   sid!: string;
   uid!: string;
@@ -34,6 +39,7 @@ export class Player extends Schema {
   rotation!: Rotation;
   barrelRotation!: BarrelRotation;
   turretRotation!: TurretRotation;
+  lastProcessedInput!: LastProcessedInput;
 }
 
 export class RoomState extends Schema {

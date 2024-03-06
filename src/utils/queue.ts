@@ -54,8 +54,11 @@ export class IndexedQueue<I extends string | number | symbol, T> {
       node.next = null;
 
       let curr: ListNode<T> | null = node;
+      delete this.index[curr.value[this.indexName] as I];
+      this.list.length -= 1;
       while ((curr = curr.prev) !== null) {
         delete this.index[curr.value[this.indexName] as I];
+        this.list.length -= 1;
       }
     } else {
       this.clear();

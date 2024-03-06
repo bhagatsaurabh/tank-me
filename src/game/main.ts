@@ -12,7 +12,7 @@ import { HavokPlugin, PhysicsAggregate, PhysicsShapeType } from '@babylonjs/core
 import { DirectionalLight, CascadedShadowGenerator } from '@babylonjs/core/Lights';
 import { FollowCamera, FreeCamera, ArcRotateCamera } from '@babylonjs/core/Cameras';
 import HavokPhysics from '@babylonjs/havok';
-import { AdvancedDynamicTexture } from '@babylonjs/gui';
+import { AdvancedDynamicTexture, TextBlock, Control } from '@babylonjs/gui';
 
 import { GameClient } from '@/game/client';
 import type { Player } from './state';
@@ -48,10 +48,9 @@ export class World {
   players: Record<string, Tank> = {};
   player!: PlayerTank;
   gui!: AdvancedDynamicTexture;
+  debugStats = false;
   private observers: Observer<Scene>[] = [];
   private seqCount = -1;
-  private stats: any = {};
-  private statsFn = throttle(() => console.log(this.stats), 1000);
 
   private constructor(
     public engine: Engine,
@@ -199,6 +198,16 @@ export class World {
   }
   private setGUI() {
     this.gui = AdvancedDynamicTexture.CreateFullscreenUI('UI');
+
+    const statsControl = new TextBlock('stats');
+    statsControl.text = 'Hello world';
+    statsControl.color = 'white';
+    statsControl.fontSize = 24;
+    statsControl.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    statsControl.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    statsControl.resizeToFit = true;
+    statsControl.fontSize = 14;
+    this.gui.addControl(statsControl);
   }
   private setBarriers() {
     const barrier = new TransformNode('barrier', this.scene);

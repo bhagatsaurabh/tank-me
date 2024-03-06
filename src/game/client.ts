@@ -7,6 +7,7 @@ import { MessageType } from '@/types/types';
 import { useLobbyStore } from '@/stores/lobby';
 import type { IMessageFire } from '@/types/interfaces';
 import type { EnemyTank } from './models/enemy';
+import { Monitor } from './monitor';
 
 export class GameClient {
   private static instance: GameClient;
@@ -51,7 +52,9 @@ export class GameClient {
 
     // this.rooms.desert!.onStateChange((state) => throttledDebug(state));
     this.rooms.desert!.state.listen('status', (newVal) => {
-      if (newVal === 'ready') lobby.status = 'playing';
+      if (newVal === 'ready') {
+        lobby.status = 'playing';
+      }
     });
     this.rooms.desert!.state.players.onAdd((player, key) => {
       // this.world?.updatePlayer(key);
@@ -68,6 +71,7 @@ export class GameClient {
 
   async createWorld(canvasEl: HTMLCanvasElement) {
     this.world = await World.create(this, canvasEl);
+    Monitor.start(this.world!);
   }
   getSessionId() {
     return this.rooms.desert?.sessionId;

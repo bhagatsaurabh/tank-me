@@ -50,15 +50,10 @@ export class GameClient {
   private setListeners() {
     const lobby = useLobbyStore();
 
-    // this.rooms.desert!.onStateChange((state) => throttledDebug(state));
     this.rooms.desert!.state.listen('status', (newVal) => {
       if (newVal === 'ready') {
         lobby.status = 'playing';
       }
-    });
-    this.rooms.desert!.state.players.onAdd((player, key) => {
-      // this.world?.updatePlayer(key);
-      // player.onChange(() => this.world?.updatePlayer(key));
     });
     this.rooms.desert!.state.players.onRemove((_player, sessionId) => {
       this.world?.removePlayer(sessionId);

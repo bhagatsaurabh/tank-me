@@ -67,11 +67,11 @@ export class Tank {
 
   private afterPhysics() {
     if (this.isPlayer) {
-      this.body.physicsBody!.disablePreStep = true;
+      /* this.body.physicsBody!.disablePreStep = true;
       this.turret.physicsBody!.disablePreStep = true;
       this.barrel.physicsBody!.disablePreStep = true;
       (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = true));
-      (this as unknown as PlayerTank).innerWheels.physicsBody!.disablePreStep = true;
+      (this as unknown as PlayerTank).innerWheels.physicsBody!.disablePreStep = true; */
     }
   }
   protected trigger(event: IBasePhysicsCollisionEvent) {
@@ -359,7 +359,7 @@ export class Tank {
       );
   }
   replay(messages: IMessageInput[]) {
-    messages.forEach((message) => (this as unknown as PlayerTank).applyInputs(message.input));
+    // messages.forEach((message) => (this as unknown as PlayerTank).applyInputs(message.input));
     console.log('replay done for ' + messages.length + 'messages');
   }
   dispose() {

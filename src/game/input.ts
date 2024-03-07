@@ -5,6 +5,7 @@ import { IndexedQueue } from '@/utils/queue';
 import { type Scene } from '@babylonjs/core';
 import { ActionEvent, ActionManager, ExecuteCodeAction } from '@babylonjs/core/Actions';
 import type { LastProcessedInput } from './state';
+import { World } from './main';
 
 export class InputManager {
   static history = new IndexedQueue<number, IMessageInput>([], 'seq');
@@ -21,6 +22,9 @@ export class InputManager {
     actionManager.registerAction(
       new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (ev: ActionEvent) => {
         const code = ev.sourceEvent.code as KeyInputType;
+        if ((code as any) === 'KeyP') {
+          World.instance.player.debugStart();
+        }
         if (typeof GameInputType[keyMap[code]] !== 'undefined') InputManager.keys[keyMap[code]] = false;
       })
     );

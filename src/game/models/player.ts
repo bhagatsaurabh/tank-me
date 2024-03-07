@@ -1,5 +1,5 @@
 import { TransformNode, type AbstractMesh, type Mesh, type Nullable, MeshBuilder } from '@babylonjs/core';
-import { Vector3, Axis, Space, Scalar } from '@babylonjs/core/Maths';
+import { Vector3, Axis, Space, Scalar, Quaternion } from '@babylonjs/core/Maths';
 import {
   PhysicsShapeConvexHull,
   PhysicsShapeContainer,
@@ -24,6 +24,7 @@ import { AssetLoader } from '../loader';
 import { GameInputType, type PlayerInputs } from '@/types/types';
 import { Shell } from './shell';
 import { InputManager } from '../input';
+import { Ground } from './ground';
 
 export class PlayerTank extends Tank {
   private static config = {
@@ -410,6 +411,16 @@ export class PlayerTank extends Tank {
     this.sights.push(scope, overlay, padLeft, padRight);
   }
 
+  private debugFlag = false;
+  private count = 0;
+  debugStart() {
+    this.debugFlag = true;
+  }
+  private initialPos!: Vector3;
+  private initialRot!: Quaternion;
+  private endPos!: Vector3;
+  private endRot!: Quaternion;
+  private noopInputCount = 0;
   private beforeStep() {
     this.animate(this.leftSpeed, this.rightSpeed);
 
@@ -419,6 +430,142 @@ export class PlayerTank extends Tank {
     if (InputManager.keys[GameInputType.CHANGE_PERSPECTIVE]) {
       this.toggleCamera();
       this.sights.forEach((ui) => (ui.isVisible = this.world.scene.activeCamera === this.cameras?.fpp));
+    }
+
+    if (this.debugFlag) {
+      if (this.count === 0) {
+        this.initialPos = this.body.position.clone();
+        this.initialRot = this.body.rotationQuaternion!.clone();
+        console.log('Start');
+        console.log(
+          this.body.position.x.toFixed(2),
+          this.body.position.y.toFixed(2),
+          this.body.position.z.toFixed(2)
+        );
+        console.log(
+          this.body.rotationQuaternion!.x.toFixed(2),
+          this.body.rotationQuaternion!.y.toFixed(2),
+          this.body.rotationQuaternion!.z.toFixed(2),
+          this.body.rotationQuaternion!.w.toFixed(2)
+        );
+        console.log('Speed', this.leftSpeed.toFixed(2), this.rightSpeed.toFixed(2));
+        console.log(' ');
+      }
+
+      if (this.count < 120) {
+        this.applyInputs({ [GameInputType.FORWARD]: true });
+        this.count += 1;
+        if (this.count === 120) {
+          console.log('HalfSpeed', this.leftSpeed.toFixed(2), this.rightSpeed.toFixed(2));
+        }
+      } else if (this.count >= 120) {
+        if (this.leftSpeed !== 0 && this.rightSpeed !== 0) {
+          this.applyInputs({});
+          this.noopInputCount += 1;
+        }
+      }
+      if (this.leftSpeed === 0 && this.rightSpeed === 0) {
+        this.endPos = this.body.position.clone();
+        this.endRot = this.body.rotationQuaternion!.clone();
+        console.log('End');
+        console.log(
+          this.body.position.x.toFixed(2),
+          this.body.position.y.toFixed(2),
+          this.body.position.z.toFixed(2)
+        );
+        console.log(
+          this.body.rotationQuaternion!.x.toFixed(2),
+          this.body.rotationQuaternion!.y.toFixed(2),
+          this.body.rotationQuaternion!.z.toFixed(2),
+          this.body.rotationQuaternion!.w.toFixed(2)
+        );
+        console.log('Speed', this.leftSpeed.toFixed(2), this.rightSpeed.toFixed(2));
+        console.log('Noop Count: ' + this.noopInputCount);
+        console.log(' ');
+
+        // Pullback
+        this.body.physicsBody!.disablePreStep = false;
+        this.turret.physicsBody!.disablePreStep = false;
+        this.barrel.physicsBody!.disablePreStep = false;
+        (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = false));
+        (this as unknown as PlayerTank).innerWheels.physicsBody!.disablePreStep = false;
+        Ground.mesh.physicsBody!.disablePreStep = false;
+
+        this.body.position = this.initialPos.clone();
+        this.body.rotationQuaternion = this.initialRot.clone();
+
+        this.world.physicsPlugin.executeStep(0, [
+          this.body.physicsBody!,
+          this.turret.physicsBody!,
+          this.barrel.physicsBody!,
+          this.innerWheels.physicsBody!,
+          Ground.mesh.physicsBody!,
+          ...this.axles.map((axle) => axle.physicsBody!)
+        ]);
+
+        this.body.physicsBody!.disablePreStep = true;
+        this.turret.physicsBody!.disablePreStep = true;
+        this.barrel.physicsBody!.disablePreStep = true;
+        (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = true));
+        (this as unknown as PlayerTank).innerWheels.physicsBody!.disablePreStep = true;
+        Ground.mesh.physicsBody!.disablePreStep = true;
+        // Replay
+        console.log('Speed', this.leftSpeed.toFixed(2), this.rightSpeed.toFixed(2));
+        for (let i = 0; i < 120; i += 1) {
+          this.applyInputs({ [GameInputType.FORWARD]: true });
+          this.world.physicsPlugin.executeStep(World.deltaTime, [
+            this.body.physicsBody!,
+            this.turret.physicsBody!,
+            this.barrel.physicsBody!,
+            this.innerWheels.physicsBody!,
+            Ground.mesh.physicsBody!,
+            ...this.axles.map((axle) => axle.physicsBody!)
+          ]);
+        }
+        console.log('HalfSpeed', this.leftSpeed.toFixed(2), this.rightSpeed.toFixed(2));
+        for (let i = 0; i < this.noopInputCount; i += 1) {
+          this.applyInputs({});
+          this.world.physicsPlugin.executeStep(World.deltaTime, [
+            this.body.physicsBody!,
+            this.turret.physicsBody!,
+            this.barrel.physicsBody!,
+            this.innerWheels.physicsBody!,
+            Ground.mesh.physicsBody!,
+            ...this.axles.map((axle) => axle.physicsBody!)
+          ]);
+        }
+
+        // Log
+        console.log(' ');
+        console.log('Replay End');
+        console.log(
+          this.body.position.x.toFixed(2),
+          this.body.position.y.toFixed(2),
+          this.body.position.z.toFixed(2)
+        );
+        console.log(
+          this.body.rotationQuaternion!.x.toFixed(2),
+          this.body.rotationQuaternion!.y.toFixed(2),
+          this.body.rotationQuaternion!.z.toFixed(2),
+          this.body.rotationQuaternion!.w.toFixed(2)
+        );
+        console.log('Speed', this.leftSpeed.toFixed(2), this.rightSpeed.toFixed(2));
+        console.log(' ');
+        const diffPos = this.endPos.subtract(this.body.position);
+        const diffRot = this.endRot.subtract(this.body.rotationQuaternion!);
+        console.log(
+          'Prediction Error: ',
+          Math.abs(diffPos.x),
+          Math.abs(diffPos.y),
+          Math.abs(diffPos.z),
+          Math.abs(diffRot.x),
+          Math.abs(diffRot.y),
+          Math.abs(diffRot.z),
+          Math.abs(diffRot.w)
+        );
+        // Stop
+        this.debugFlag = false;
+      }
     }
   }
 

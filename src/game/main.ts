@@ -28,7 +28,7 @@ import { PlayerTank } from './models/player';
 import { EnemyTank } from './models/enemy';
 
 export class World {
-  private static instance: World;
+  static instance: World;
   private static timeStep = 1 / 60;
   private static subTimeStep = 16;
   static deltaTime = World.timeStep;
@@ -248,17 +248,17 @@ export class World {
   }
   private beforeStep() {
     // Send input to server + push to history
-    if (this.client.isReady()) {
+    /* if (this.client.isReady()) {
       const message = {
         seq: (this.seqCount += 1),
         input: structuredClone(InputManager.keys)
       };
       this.client.sendEvent<IMessageInput>(MessageType.INPUT, message);
       InputManager.history.push(message);
-    }
+    } */
 
     // And immediately apply it
-    this.player.applyInputs(InputManager.keys);
+    // this.player.applyInputs(InputManager.keys);
   }
   private async createTanks() {
     const players: Player[] = [];

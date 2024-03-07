@@ -26,10 +26,8 @@ export class InputManager {
     );
     return actionManager;
   }
-  static addHistory(message: IMessageInput) {
-    InputManager.history.push(message);
-  }
   static cull(lastProcessedInput: LastProcessedInput) {
+    if (!lastProcessedInput?.seq) return;
     InputManager.history.clearTill(lastProcessedInput.seq);
   }
 }

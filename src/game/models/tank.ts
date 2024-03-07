@@ -360,6 +360,7 @@ export class Tank {
   }
   replay(messages: IMessageInput[]) {
     messages.forEach((message) => (this as unknown as PlayerTank).applyInputs(message.input));
+    console.log('replay done for ' + messages.length + 'messages');
   }
   dispose() {
     this.observers.forEach((observer) => observer.remove());

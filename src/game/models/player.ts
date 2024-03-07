@@ -23,6 +23,7 @@ import { avg, clamp, forwardVector } from '@/utils/utils';
 import { AssetLoader } from '../loader';
 import { GameInputType, type PlayerInputs } from '@/types/types';
 import { Shell } from './shell';
+import { InputManager } from '../input';
 
 export class PlayerTank extends Tank {
   private static config = {
@@ -411,6 +412,14 @@ export class PlayerTank extends Tank {
 
   private beforeStep() {
     this.animate(this.leftSpeed, this.rightSpeed);
+
+    if (InputManager.keys[GameInputType.FIRE] && this.state.canFire) {
+      this.fire();
+    }
+    if (InputManager.keys[GameInputType.CHANGE_PERSPECTIVE]) {
+      this.toggleCamera();
+      this.sights.forEach((ui) => (ui.isVisible = this.world.scene.activeCamera === this.cameras?.fpp));
+    }
   }
 
   private simulateRecoil() {
@@ -665,14 +674,6 @@ export class PlayerTank extends Tank {
     if (input[GameInputType.RESET] && !isTurretMoving && !isBarrelMoving) {
       this.resetTurret(World.deltaTime);
       isTurretMoving = true;
-    }
-
-    if (input[GameInputType.FIRE] && this.state.canFire) {
-      this.fire();
-    }
-    if (input[GameInputType.CHANGE_PERSPECTIVE]) {
-      this.toggleCamera();
-      this.sights.forEach((ui) => (ui.isVisible = this.world.scene.activeCamera === this.cameras?.fpp));
     }
 
     this.playSounds(isMoving, !!isBarrelMoving || !!isTurretMoving);

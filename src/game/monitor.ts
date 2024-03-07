@@ -18,7 +18,7 @@ export class Monitor {
     Monitor.handle = setInterval(() => {
       world.gui &&
         ((world.gui.getControlByName('stats') as TextBlock).text =
-          `Interpolation Buffer: ${InputManager.history.length}`);
+          `Interpolation Buffer: ${InputManager.history.length}\nSeq: ${InputManager.history.seekLast()?.seq}`);
     }, this._interval);
   }
   static stop() {

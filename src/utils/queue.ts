@@ -46,7 +46,10 @@ export class IndexedQueue<I extends string | number | symbol, T> {
   }
   clearTill(idx: I) {
     const node = this.index[idx];
-    if (!node) return;
+    if (!node) {
+      console.log('node not found');
+      return;
+    }
 
     if (node.next) {
       node.next.prev = null;
@@ -60,8 +63,10 @@ export class IndexedQueue<I extends string | number | symbol, T> {
         delete this.index[curr.value[this.indexName] as I];
         this.list.length -= 1;
       }
+      console.log('cleared');
     } else {
       this.clear();
+      console.log('cleared all');
     }
   }
   *#traverse() {

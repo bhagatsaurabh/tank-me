@@ -254,7 +254,7 @@ export class World {
         input: structuredClone(InputManager.keys)
       };
       this.client.sendEvent<IMessageInput>(MessageType.INPUT, message);
-      InputManager.addHistory(message);
+      InputManager.history.push(message);
     }
 
     // And immediately apply it
@@ -314,9 +314,6 @@ export class World {
     window.removeEventListener('resize', this.throttledResizeListener);
     this.engine.dispose();
   }
-  /* public updatePlayer(id: string) {
-    (this.players[id] as PlayerTank | EnemyTank).update();
-  } */
   public removePlayer(id: string) {
     this.players[id].dispose();
   }

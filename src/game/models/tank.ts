@@ -57,22 +57,17 @@ export class Tank {
     // eslint-disable-next-line no-empty-pattern
     [[], this.loadedDummyShell] = await Promise.all([this.setSoundSources(), Shell.create(this)]);
 
-    this.sounds['idle']?.play();
+    // this.sounds['idle']?.play();
     this.particleSystems['exhaust-left']?.start();
     this.particleSystems['exhaust-right']?.start();
 
-    this.state.onChange(() => this.reconcile());
-    this.observers.push(this.world.scene.onAfterPhysicsObservable.add(this.afterPhysics.bind(this)));
+    // this.state.onChange(() => this.onStateChange());
+
+    this.observers.push(this.world.scene.onAfterStepObservable.add(this.afterStep.bind(this)));
   }
 
-  private afterPhysics() {
-    if (this.isPlayer) {
-      /* this.body.physicsBody!.disablePreStep = true;
-      this.turret.physicsBody!.disablePreStep = true;
-      this.barrel.physicsBody!.disablePreStep = true;
-      (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = true));
-      (this as unknown as PlayerTank).innerWheels.physicsBody!.disablePreStep = true; */
-    }
+  private afterStep() {
+    this.sync();
   }
   protected trigger(event: IBasePhysicsCollisionEvent) {
     if (
@@ -268,6 +263,7 @@ export class Tank {
     // TODO
   }
   protected playSounds(isMoving: boolean, isTurretMoving: boolean) {
+    return;
     if (isMoving) {
       if (!this.sounds['move']?.isPlaying) this.sounds['move']?.play();
       if (this.sounds['idle']?.isPlaying) this.sounds['idle']?.pause();
@@ -283,34 +279,49 @@ export class Tank {
     }
   }
   playSound(type: TankSoundType) {
+    return;
     if (!this.sounds[type]?.isPlaying) this.sounds[type]?.play();
   }
+  setPreStep(value: boolean) {
+    this.body.physicsBody!.disablePreStep = value;
+    this.turret.physicsBody!.disablePreStep = value;
+    this.barrel.physicsBody!.disablePreStep = value;
+    (this as unknown as PlayerTank).innerWheels.physicsBody!.disablePreStep = value;
+    (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = value));
+  }
 
-  reconcile() {
+  private sync() {
     if (this.isPlayer) {
-      this.body.physicsBody!.disablePreStep = false;
-      this.turret.physicsBody!.disablePreStep = false;
-      this.barrel.physicsBody!.disablePreStep = false;
-      (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = false));
-      (this as unknown as PlayerTank).innerWheels.physicsBody!.disablePreStep = false;
-
-      // Accept authoritative state
-      this.update();
-
-      // Discard all historical messages upto last-processed-message
-      InputManager.cull(this.state.lastProcessedInput);
-
-      // Replay all messages till present
-      const unprocessedInputs: IMessageInput[] = [];
-      InputManager.history.forEach((input) => unprocessedInputs.push(input));
-      this.replay(unprocessedInputs);
+      this.reconcile();
     } else {
-      // TODO: Entity Interpolation
-      // Accept authoritative state
-      this.update();
+      this.interpolate();
     }
   }
-  update() {
+  private reconcile() {
+    // 1. Accept authoritative state
+    this.setPreStep(false);
+    this.updateTransform();
+    this.world.physicsPlugin.executeStep(0, (this as unknown as PlayerTank).physicsBodies);
+    this.setPreStep(true);
+
+    // 2. Discard all historical messages upto last-processed-message
+    InputManager.cull(this.state.lastProcessedInput);
+
+    // 3. Replay all messages till present (Prediction)
+    this.replay(InputManager.history.asArray());
+  }
+  private replay(messages: IMessageInput[]) {
+    messages.forEach((message) => {
+      (this as unknown as PlayerTank).applyInputs(message.input);
+      this.world.physicsPlugin.executeStep(World.deltaTime, (this as unknown as PlayerTank).physicsBodies);
+    });
+  }
+  private interpolate() {
+    // TODO: Entity Interpolation
+    // Accept authoritative state
+    this.updateTransform();
+  }
+  private updateTransform() {
     if (this.isPlayer) {
       (this as unknown as PlayerTank).leftSpeed = this.state.leftSpeed;
       (this as unknown as PlayerTank).rightSpeed = this.state.rightSpeed;
@@ -358,10 +369,7 @@ export class Tank {
         this.state.barrelRotation.w
       );
   }
-  replay(messages: IMessageInput[]) {
-    // messages.forEach((message) => (this as unknown as PlayerTank).applyInputs(message.input));
-    console.log('replay done for ' + messages.length + 'messages');
-  }
+
   dispose() {
     this.observers.forEach((observer) => observer.remove());
     this.body.dispose();

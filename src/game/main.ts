@@ -247,18 +247,21 @@ export class World {
     new PhysicsAggregate(barrier4, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
   }
   private beforeStep() {
-    // Send input to server + push to history
-    /* if (this.client.isReady()) {
+    // 1. Send input to server + push to history
+    if (this.client.isReady()) {
       const message = {
         seq: (this.seqCount += 1),
         input: structuredClone(InputManager.keys)
       };
-      this.client.sendEvent<IMessageInput>(MessageType.INPUT, message);
+      this.sendInput(message);
       InputManager.history.push(message);
-    } */
+    }
 
-    // And immediately apply it
-    // this.player.applyInputs(InputManager.keys);
+    // 2. Immediately process it
+    this.player.applyInputs(InputManager.keys);
+  }
+  private async sendInput(message: IMessageInput) {
+    this.client.sendEvent<IMessageInput>(MessageType.INPUT, message);
   }
   private async createTanks() {
     const players: Player[] = [];

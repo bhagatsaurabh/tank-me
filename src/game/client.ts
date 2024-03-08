@@ -15,8 +15,8 @@ export class GameClient {
   private world?: World;
   private rooms: { lobby?: Room<any>; desert?: Room<RoomState> } = {};
 
-  get state(): MapSchema<Player, string> {
-    return this.rooms.desert!.state.players;
+  get state() {
+    return this.rooms.desert!.state;
   }
 
   private constructor() {
@@ -50,17 +50,11 @@ export class GameClient {
   private setListeners() {
     const lobby = useLobbyStore();
 
-    this.rooms.desert!.state.listen('status', (newVal) => {
-      if (newVal === 'ready') {
-        lobby.status = 'playing';
-      }
-    });
-    this.rooms.desert!.state.players.onRemove((_player, sessionId) => {
-      this.world?.removePlayer(sessionId);
-    });
-    this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: IMessageFire) => {
-      (this.world?.players[message.id] as EnemyTank).fire();
-    });
+    this.rooms.desert!.state.listen('status', (newVal) => newVal === 'ready' && (lobby.status = 'playing'));
+    this.rooms.desert!.state.players.onRemove((_player, sessionId) => this.world?.removePlayer(sessionId));
+    this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: IMessageFire) =>
+      (this.world?.players[message.id] as EnemyTank).fire()
+    );
     this.rooms.desert!.onMessage(MessageType.LOAD, () => this.world?.player.playSound('load'));
   }
 

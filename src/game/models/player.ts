@@ -67,6 +67,7 @@ export class PlayerTank extends Tank {
   private lastCameraToggle = 0;
   private cameraToggleDelay = 1000;
   private lastFiredTS = 0;
+  physicsBodies: PhysicsBody[] = [];
 
   constructor(
     world: World,
@@ -235,7 +236,7 @@ export class PlayerTank extends Tank {
 
     const triggerShape = new PhysicsShapeSphere(Vector3.Zero(), 5, this.world.scene);
     triggerShape.isTrigger = true;
-    new PhysicsBody(this.innerWheels, PhysicsMotionType.DYNAMIC, false, this.world.scene);
+    const refPB = new PhysicsBody(this.innerWheels, PhysicsMotionType.DYNAMIC, false, this.world.scene);
     this.innerWheels.physicsBody!.setMassProperties({ mass: 0.1 });
     this.body.physicsBody!.addConstraint(
       this.innerWheels.physicsBody!,
@@ -246,6 +247,15 @@ export class PlayerTank extends Tank {
       (
         this.world.scene.getPhysicsEngine()?.getPhysicsPlugin() as HavokPlugin
       ).onTriggerCollisionObservable.add((event) => this.trigger(event))
+    );
+
+    this.physicsBodies.push(
+      bodyPB,
+      turretPB,
+      barrelPB,
+      refPB,
+      ...this.axles.map((axle) => axle.physicsBody!),
+      Ground.mesh.physicsBody!
     );
   }
   private createWheelConstraint(

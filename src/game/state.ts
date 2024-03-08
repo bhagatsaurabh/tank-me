@@ -43,6 +43,7 @@ export class Player extends Schema {
 }
 
 export class RoomState extends Schema {
-  players = new MapSchema<Player>();
   status: 'matching' | 'ready' = 'matching';
+  step: number = 0;
+  players = new MapSchema<Player>();
 }

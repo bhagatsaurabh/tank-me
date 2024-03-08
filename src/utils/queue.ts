@@ -84,4 +84,9 @@ export class IndexedQueue<I extends string | number | symbol, T> {
       cb(value);
     }
   }
+  asArray(): T[] {
+    const valArr: T[] = [];
+    this.forEach((val) => valArr.push(val));
+    return valArr;
+  }
 }

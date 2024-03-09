@@ -51,6 +51,7 @@ export class World {
   debugStats = false;
   private observers: Observer<Scene>[] = [];
   private seqCount = -1;
+  private fpsLabel!: TextBlock;
 
   private constructor(
     public engine: Engine,
@@ -142,6 +143,8 @@ export class World {
     this.setBarriers();
 
     this.observers.push(this.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
+    this.observers.push(this.scene.onAfterRenderObservable.add(this.update.bind(this)));
+    // this.client.state.onChange(() => this.update());
   }
   private initWindowListeners() {
     window.addEventListener('keydown', this.toggleInspect.bind(this));
@@ -154,7 +157,7 @@ export class World {
   }
   private render() {
     this.scene.render();
-    // fpsLabel.innerHTML = this.engine.getFps().toFixed() + ' FPS';
+    this.fpsLabel.text = this.engine.getFps().toFixed() + ' FPS';
   }
   private setLights() {
     this.glowLayer = new GlowLayer('glow', this.scene);
@@ -208,6 +211,17 @@ export class World {
     statsControl.resizeToFit = true;
     statsControl.fontSize = 14;
     this.gui.addControl(statsControl);
+
+    const fpsLabel = new TextBlock('fps');
+    fpsLabel.text = '';
+    fpsLabel.color = 'white';
+    fpsLabel.fontSize = 24;
+    fpsLabel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    fpsLabel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    fpsLabel.resizeToFit = true;
+    fpsLabel.fontSize = 14;
+    this.gui.addControl(fpsLabel);
+    this.fpsLabel = fpsLabel;
   }
   private setBarriers() {
     const barrier = new TransformNode('barrier', this.scene);
@@ -248,17 +262,22 @@ export class World {
   }
   private beforeStep() {
     // 1. Send input to server + push to history
-    if (this.client.isReady()) {
+    /* if (this.client.isReady()) {
       const message = {
         seq: (this.seqCount += 1),
         input: structuredClone(InputManager.keys)
       };
       this.sendInput(message);
-      InputManager.history.push(message);
-    }
+      InputManager.addHistory(message);
+    } */
 
     // 2. Immediately process it
-    this.player.applyInputs(InputManager.keys);
+    // this.player.applyInputs(InputManager.keys);
+  }
+  private update() {
+    return;
+    // 3. Reconcile/Interpolate
+    Object.values(this.players).forEach((player) => player.sync());
   }
   private async sendInput(message: IMessageInput) {
     this.client.sendEvent<IMessageInput>(MessageType.INPUT, message);

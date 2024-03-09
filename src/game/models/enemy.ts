@@ -89,6 +89,12 @@ export class EnemyTank extends Tank {
     this.animate();
   }
 
+  interpolate() {
+    // TODO: Entity Interpolation
+    // Accept authoritative state
+    this.updateTransform();
+  }
+
   fire() {
     this.loadedDummyShell.fire();
     this.particleSystems['muzzle']?.start();

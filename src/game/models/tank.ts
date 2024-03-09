@@ -17,6 +17,7 @@ import { World } from '../main';
 import type { PlayerTank } from './player';
 import { InputManager } from '../input';
 import type { IMessageInput } from '@/types/interfaces';
+import type { EnemyTank } from './enemy';
 
 export class Tank {
   protected isPlayer = false;
@@ -60,15 +61,8 @@ export class Tank {
     // this.sounds['idle']?.play();
     this.particleSystems['exhaust-left']?.start();
     this.particleSystems['exhaust-right']?.start();
-
-    // this.state.onChange(() => this.onStateChange());
-
-    this.observers.push(this.world.scene.onAfterStepObservable.add(this.afterStep.bind(this)));
   }
 
-  private afterStep() {
-    this.sync();
-  }
   protected trigger(event: IBasePhysicsCollisionEvent) {
     if (
       event.type === PhysicsEventType.TRIGGER_ENTERED &&
@@ -282,46 +276,15 @@ export class Tank {
     return;
     if (!this.sounds[type]?.isPlaying) this.sounds[type]?.play();
   }
-  setPreStep(value: boolean) {
-    this.body.physicsBody!.disablePreStep = value;
-    this.turret.physicsBody!.disablePreStep = value;
-    this.barrel.physicsBody!.disablePreStep = value;
-    (this as unknown as PlayerTank).innerWheels.physicsBody!.disablePreStep = value;
-    (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = value));
-  }
 
-  private sync() {
+  sync() {
     if (this.isPlayer) {
-      this.reconcile();
+      (this as unknown as PlayerTank).reconcile();
     } else {
-      this.interpolate();
+      (this as unknown as EnemyTank).interpolate();
     }
   }
-  private reconcile() {
-    // 1. Accept authoritative state
-    this.setPreStep(false);
-    this.updateTransform();
-    this.world.physicsPlugin.executeStep(0, (this as unknown as PlayerTank).physicsBodies);
-    this.setPreStep(true);
-
-    // 2. Discard all historical messages upto last-processed-message
-    InputManager.cull(this.state.lastProcessedInput);
-
-    // 3. Replay all messages till present (Prediction)
-    this.replay(InputManager.history.asArray());
-  }
-  private replay(messages: IMessageInput[]) {
-    messages.forEach((message) => {
-      (this as unknown as PlayerTank).applyInputs(message.input);
-      this.world.physicsPlugin.executeStep(World.deltaTime, (this as unknown as PlayerTank).physicsBodies);
-    });
-  }
-  private interpolate() {
-    // TODO: Entity Interpolation
-    // Accept authoritative state
-    this.updateTransform();
-  }
-  private updateTransform() {
+  protected updateTransform() {
     if (this.isPlayer) {
       (this as unknown as PlayerTank).leftSpeed = this.state.leftSpeed;
       (this as unknown as PlayerTank).rightSpeed = this.state.rightSpeed;

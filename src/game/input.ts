@@ -10,6 +10,7 @@ import { World } from './main';
 export class InputManager {
   static history = new IndexedQueue<number, IMessageInput>([], 'seq');
   static keys: PlayerInputs = {};
+  private static maxBufferSize = 20;
 
   static create(scene: Scene) {
     const actionManager = new ActionManager(scene);
@@ -33,5 +34,11 @@ export class InputManager {
   static cull(lastProcessedInput: LastProcessedInput) {
     if (!lastProcessedInput?.seq) return;
     InputManager.history.clearTill(lastProcessedInput.seq);
+  }
+  static addHistory(message: IMessageInput) {
+    if (InputManager.history.length >= InputManager.maxBufferSize) {
+      InputManager.history.pop();
+    }
+    InputManager.history.push(message);
   }
 }

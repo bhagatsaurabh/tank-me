@@ -10,13 +10,13 @@ import { AbstractMesh, MeshBuilder, TransformNode } from '@babylonjs/core/Meshes
 import { PBRMaterial, StandardMaterial, Texture } from '@babylonjs/core/Materials';
 import { HavokPlugin, PhysicsAggregate, PhysicsShapeType } from '@babylonjs/core/Physics';
 import { DirectionalLight, CascadedShadowGenerator } from '@babylonjs/core/Lights';
-import { FollowCamera, FreeCamera, ArcRotateCamera } from '@babylonjs/core/Cameras';
+import { FreeCamera, ArcRotateCamera } from '@babylonjs/core/Cameras';
 import HavokPhysics from '@babylonjs/havok';
 import { AdvancedDynamicTexture, TextBlock, Control } from '@babylonjs/gui';
 
 import { GameClient } from '@/game/client';
 import type { Player } from './state';
-import { gravityVector, noop, throttle } from '@/utils/utils';
+import { gravityVector, noop, nzpyVector, throttle } from '@/utils/utils';
 import { InputManager } from './input';
 import { Tank } from './models/tank';
 import { Ground } from './models/ground';
@@ -31,6 +31,7 @@ export class World {
   static instance: World;
   private static timeStep = 1 / 60;
   private static subTimeStep = 16;
+  private static lockstepMaxSteps = 4;
   static deltaTime = World.timeStep;
   static physicsViewer: PhysicsViewer;
 
@@ -41,7 +42,7 @@ export class World {
   private glowLayer!: GlowLayer;
   private directionalLight!: DirectionalLight;
   private shadowGenerator!: CascadedShadowGenerator;
-  private tppCamera!: FollowCamera;
+  private tppCamera!: FreeCamera;
   private fppCamera!: FreeCamera;
   private endCamera!: ArcRotateCamera;
   private playerMeshes: AbstractMesh[] = [];
@@ -50,7 +51,6 @@ export class World {
   gui!: AdvancedDynamicTexture;
   debugStats = false;
   private observers: Observer<Scene>[] = [];
-  private seqCount = -1;
   private fpsLabel!: TextBlock;
 
   private constructor(
@@ -91,7 +91,10 @@ export class World {
       ]);
 
       // Init engine
-      const engine = new Engine(canvas, true, { deterministicLockstep: true, lockstepMaxSteps: 4 });
+      const engine = new Engine(canvas, true, {
+        deterministicLockstep: true,
+        lockstepMaxSteps: World.lockstepMaxSteps
+      });
       const physicsPlugin = new HavokPlugin(false, await HavokPhysics());
       const world = new World(engine, client, physicsPlugin);
       await world.importPlayerMesh(world);
@@ -142,9 +145,10 @@ export class World {
     await this.createTanks();
     this.setBarriers();
 
-    this.observers.push(this.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
-    this.observers.push(this.scene.onAfterRenderObservable.add(this.update.bind(this)));
-    // this.client.state.onChange(() => this.update());
+    this.observers.push(this.scene.onBeforeStepObservable.add(() => this.beforeStep()));
+    this.observers.push(this.scene.onAfterStepObservable.add(() => this.update()));
+    this.client.state.onChange(() => this.update());
+    this.observers.push(this.scene.onBeforeRenderObservable.add(() => this.beforeRender()));
   }
   private initWindowListeners() {
     window.addEventListener('keydown', this.toggleInspect.bind(this));
@@ -180,13 +184,9 @@ export class World {
   }
   private setCameras() {
     // Set TPP Camera
-    this.tppCamera = new FollowCamera('tpp-cam', new Vector3(0, 10, -10), this.scene);
-    this.tppCamera.radius = 13;
-    this.tppCamera.heightOffset = 4;
-    this.tppCamera.rotationOffset = 180;
-    this.tppCamera.cameraAcceleration = 0.05;
-    this.tppCamera.maxCameraSpeed = 10;
+    this.tppCamera = new FreeCamera('tpp-cam', new Vector3(0, 0, 0), this.scene);
     this.tppCamera.maxZ = 100000;
+    this.tppCamera.checkCollisions = true;
     this.scene.activeCamera = this.tppCamera;
 
     // Set FPP Camera
@@ -210,6 +210,7 @@ export class World {
     statsControl.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
     statsControl.resizeToFit = true;
     statsControl.fontSize = 14;
+    statsControl.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     this.gui.addControl(statsControl);
 
     const fpsLabel = new TextBlock('fps');
@@ -260,24 +261,39 @@ export class World {
     new PhysicsAggregate(barrier3, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
     new PhysicsAggregate(barrier4, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
   }
+  private beforeRender() {
+    this.tppCamera.position = Vector3.Lerp(
+      this.tppCamera.position,
+      this.player.body.getDirection(nzpyVector).normalize().scale(15).add(this.player.body.position),
+      World.deltaTime
+    );
+    this.tppCamera.target = Vector3.Lerp(
+      this.tppCamera.target,
+      this.player.body.position,
+      World.deltaTime * 2
+    );
+  }
   private beforeStep() {
-    // 1. Send input to server + push to history
-    /* if (this.client.isReady()) {
+    if (this.client.isReady()) {
+      // 1. Send input to server
+      const step = this.scene.getStepId();
       const message = {
-        seq: (this.seqCount += 1),
+        step,
         input: structuredClone(InputManager.keys)
       };
       this.sendInput(message);
-      InputManager.addHistory(message);
-    } */
 
-    // 2. Immediately process it
-    // this.player.applyInputs(InputManager.keys);
+      // 2. Immediately process it
+      this.player.applyInputs(message.input);
+
+      InputManager.addHistory(message, this.player, step);
+    }
   }
   private update() {
-    return;
-    // 3. Reconcile/Interpolate
-    Object.values(this.players).forEach((player) => player.sync());
+    if (this.client.isReady()) {
+      // 3. Reconcile/Interpolate
+      Object.values(this.players).forEach((player) => player.sync());
+    }
   }
   private async sendInput(message: IMessageInput) {
     this.client.sendEvent<IMessageInput>(MessageType.INPUT, message);

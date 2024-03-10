@@ -1,7 +1,6 @@
 import { Client, Room } from 'colyseus.js';
-import { MapSchema } from '@colyseus/schema';
 
-import type { Player, RoomState } from './state';
+import type { RoomState } from './state';
 import { World } from './main';
 import { MessageType } from '@/types/types';
 import { useLobbyStore } from '@/stores/lobby';

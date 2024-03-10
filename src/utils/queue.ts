@@ -45,6 +45,8 @@ export class IndexedQueue<I extends string | number | symbol, T> {
     this.index = {};
   }
   clearTill(idx: I) {
+    // console.log('ClearStart: ', this.index, idx);
+
     const node = this.index[idx];
     if (!node) {
       console.log('node not found');
@@ -63,11 +65,13 @@ export class IndexedQueue<I extends string | number | symbol, T> {
         delete this.index[curr.value[this.indexName] as I];
         this.list.length -= 1;
       }
-      console.log('cleared');
+      // console.log('cleared');
     } else {
       this.clear();
-      console.log('cleared all');
+      // console.log('cleared all');
     }
+
+    // console.log('ClearEnd: ', this.index, idx);
   }
   *#traverse() {
     let curr = this.list.head;
@@ -84,9 +88,11 @@ export class IndexedQueue<I extends string | number | symbol, T> {
       cb(value);
     }
   }
-  asArray(): T[] {
-    const valArr: T[] = [];
-    this.forEach((val) => valArr.push(val));
-    return valArr;
+  getAll(): Record<I, T> {
+    const map: Record<I, T> = {} as Record<I, T>;
+    Object.entries(this.index as ArrayLike<ListNode<T>>).forEach(
+      ([key, node]) => (map[key as I] = node.value)
+    );
+    return map;
   }
 }

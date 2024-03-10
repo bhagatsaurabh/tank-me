@@ -1,5 +1,5 @@
 import { TransformNode, type AbstractMesh, type Mesh, type Nullable, MeshBuilder } from '@babylonjs/core';
-import { Vector3, Axis, Space, Scalar, Quaternion } from '@babylonjs/core/Maths';
+import { Vector3, Axis, Space, Scalar } from '@babylonjs/core/Maths';
 import {
   PhysicsShapeConvexHull,
   PhysicsShapeContainer,
@@ -13,19 +13,18 @@ import {
   PhysicsConstraintMotorType,
   HavokPlugin
 } from '@babylonjs/core/Physics';
-import { type FollowCamera, type FreeCamera } from '@babylonjs/core/Cameras';
+import { type FreeCamera } from '@babylonjs/core/Cameras';
 import { Control, Container, Image, Rectangle } from '@babylonjs/gui';
 
 import { World } from '../main';
 import type { Player } from '../state';
 import { Tank } from './tank';
-import { avg, clamp, forwardVector } from '@/utils/utils';
+import { avg, clamp, forwardVector, nzpyVector } from '@/utils/utils';
 import { AssetLoader } from '../loader';
 import { GameInputType, type PlayerInputs } from '@/types/types';
 import { Shell } from './shell';
-import { InputManager } from '../input';
+import { InputManager, type IInputHistory } from '../input';
 import { Ground } from './ground';
-import type { IMessageInput } from '@/types/interfaces';
 
 export class PlayerTank extends Tank {
   private static config = {
@@ -69,13 +68,14 @@ export class PlayerTank extends Tank {
   private cameraToggleDelay = 1000;
   private lastFiredTS = 0;
   physicsBodies: PhysicsBody[] = [];
+  isReconciling = false;
 
   constructor(
     world: World,
     state: Player,
     rootMesh: AbstractMesh,
     spawn: Vector3,
-    public cameras: { tpp: FollowCamera; fpp: FreeCamera }
+    public cameras: { tpp: FreeCamera; fpp: FreeCamera }
   ) {
     super(world, state);
 
@@ -84,8 +84,7 @@ export class PlayerTank extends Tank {
     this.setPhysics(rootMesh as Mesh);
     this.setGUI();
 
-    cameras.tpp.position = new Vector3(spawn.x + 1, spawn.y + 1, spawn.z + 1);
-    cameras.tpp.lockedTarget = this.mesh;
+    cameras.tpp.position = this.body.getDirection(nzpyVector).normalize().scale(15).add(spawn);
     cameras.fpp.parent = this.barrel;
 
     this.observers.push(this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
@@ -97,11 +96,12 @@ export class PlayerTank extends Tank {
     state: Player,
     rootMesh: AbstractMesh,
     spawn: Vector3,
-    cameras: Nullable<{ tpp: FollowCamera; fpp: FreeCamera }>
+    cameras: Nullable<{ tpp: FreeCamera; fpp: FreeCamera }>
   ) {
     const cloned = rootMesh.clone(`${rootMesh.name.replace(':Ref', '')}:Player`, null)!;
     const newTank = new PlayerTank(world, state, cloned, spawn, cameras!);
     await newTank.init();
+    newTank.setPreStep(false);
     return newTank;
   }
 
@@ -430,27 +430,8 @@ export class PlayerTank extends Tank {
     (this as unknown as PlayerTank).innerWheels.physicsBody!.disablePreStep = value;
     (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = value));
   }
-
-  private debugFlag = false;
-  private count = 0;
-  debugStart() {
-    this.debugFlag = true;
-  }
-
-  /* private beforeStepTS = -1;
-  beforeRender() {
-    const now = performance.now();
-    if (this.beforeStepTS === -1) console.log('Delta: ' + 0);
-    else console.log('Delta: ' + (now - this.beforeStepTS));
-    this.beforeStepTS = now;
-  } */
-
-  private initial: any = {};
-  private end: any = {};
-  private inputs: Record<number, PlayerInputs> = {};
-
   private beforeStep() {
-    /* this.animate(this.leftSpeed, this.rightSpeed);
+    this.animate(this.leftSpeed, this.rightSpeed);
 
     if (InputManager.keys[GameInputType.FIRE] && this.state.canFire) {
       this.fire();
@@ -458,94 +439,6 @@ export class PlayerTank extends Tank {
     if (InputManager.keys[GameInputType.CHANGE_PERSPECTIVE]) {
       this.toggleCamera();
       this.sights.forEach((ui) => (ui.isVisible = this.world.scene.activeCamera === this.cameras?.fpp));
-    } */
-
-    if (this.debugFlag) {
-      if (this.count === 0) {
-        this.initial = {
-          bodyPos: this.body.position.clone(),
-          bodyRot: this.body.rotationQuaternion!.clone(),
-          turretRot: this.turret.rotationQuaternion!.clone(),
-          barrelRot: this.barrel.rotationQuaternion!.clone(),
-          leftSpeed: this.leftSpeed,
-          rightSpeed: this.rightSpeed,
-          step: this.world.scene.getStepId()
-        };
-        console.log('Start', this.initial);
-        console.log(' ');
-      }
-      if (this.count < 120) {
-        this.applyInputs({ [GameInputType.FORWARD]: true });
-        this.inputs[this.world.scene.getStepId()] = { [GameInputType.FORWARD]: true };
-        this.count += 1;
-      } else if (this.count >= 120) {
-        if (this.leftSpeed !== 0 && this.rightSpeed !== 0) {
-          this.applyInputs({});
-          this.inputs[this.world.scene.getStepId()] = {};
-        }
-      }
-      if (this.count > 0 && this.leftSpeed === 0 && this.rightSpeed === 0) {
-        this.end = {
-          bodyPos: this.body.position.clone(),
-          bodyRot: this.body.rotationQuaternion!.clone(),
-          turretRot: this.turret.rotationQuaternion!.clone(),
-          barrelRot: this.barrel.rotationQuaternion!.clone(),
-          leftSpeed: this.leftSpeed,
-          rightSpeed: this.rightSpeed,
-          step: this.world.scene.getStepId()
-        };
-        console.log('End', this.end);
-        console.log(' ');
-
-        // Rollback
-        this.world.scene.setStepId(this.initial.step);
-        this.setPreStep(false);
-        this.body.position = this.initial.bodyPos.clone();
-        this.body.rotationQuaternion = this.initial.bodyRot.clone();
-        this.turret.rotationQuaternion = this.initial.turretRot.clone();
-        this.barrel.rotationQuaternion = this.initial.barrelRot.clone();
-        this.leftSpeed = this.initial.leftSpeed;
-        this.rightSpeed = this.initial.rightSpeed;
-        this.axleMotors.forEach((motor, idx) => {
-          motor.setAxisMotorTarget(
-            PhysicsConstraintAxis.ANGULAR_X,
-            idx < 5 ? this.leftSpeed : this.rightSpeed
-          );
-        });
-        this.world.physicsPlugin.executeStep(0, this.physicsBodies);
-        this.setPreStep(true);
-
-        // Replay
-        let currStepId = this.world.scene.getStepId();
-        console.log('Curr: ' + currStepId, 'Target: ' + this.end.step);
-        console.log(' ');
-        while (currStepId <= this.end.step) {
-          // this.world.scene._advancePhysicsEngineStep(this.world.engine.getTimeStep());
-          this.applyInputs(this.inputs[this.world.scene.getStepId()]);
-          delete this.inputs[this.world.scene.getStepId()];
-          this.world.scene._advancePhysicsEngineStep(this.world.engine.getTimeStep());
-          currStepId += 1;
-          this.world.scene.setStepId(currStepId);
-        }
-
-        // Log
-        console.log('Replay End');
-        console.log('Unprocessed: ' + Object.values(this.inputs).length);
-        const diffPos = this.end.bodyPos.subtract(this.body.position);
-        const diffRot = this.end.bodyRot.subtract(this.body.rotationQuaternion!);
-        console.log(
-          'Prediction Error: ',
-          Math.abs(diffPos.x),
-          Math.abs(diffPos.y),
-          Math.abs(diffPos.z),
-          Math.abs(diffRot.x),
-          Math.abs(diffRot.y),
-          Math.abs(diffRot.z),
-          Math.abs(diffRot.w)
-        );
-        // Stop
-        this.debugFlag = false;
-      }
     }
   }
 
@@ -666,7 +559,7 @@ export class PlayerTank extends Tank {
   }
   private decelerate(dt: number, modifier: number = PlayerTank.config.decelerationModifier) {
     let speed = 0;
-    if (this.leftSpeed < 0.001 && this.rightSpeed < 0.001) {
+    if (Math.abs(this.leftSpeed) < 0.001 && Math.abs(this.rightSpeed) < 0.001) {
       this.leftSpeed = this.rightSpeed = 0;
       speed = 0;
     } else {
@@ -730,9 +623,9 @@ export class PlayerTank extends Tank {
   private toggleCamera() {
     if (performance.now() - this.lastCameraToggle > this.cameraToggleDelay) {
       if (this.world.scene.activeCamera?.name === 'tpp-cam') {
-        this.world.scene.activeCamera = this.cameras?.fpp as FreeCamera;
+        this.world.scene.activeCamera = this.cameras.fpp;
       } else {
-        this.world.scene.activeCamera = this.cameras?.tpp as FollowCamera;
+        this.world.scene.activeCamera = this.cameras.tpp;
       }
       this.lastCameraToggle = performance.now();
     }
@@ -752,23 +645,63 @@ export class PlayerTank extends Tank {
   }
 
   reconcile() {
+    const lastProcessedInput = this.state.lastProcessedInput;
+    if (
+      lastProcessedInput.step < 0 ||
+      InputManager.history.length === 0 ||
+      lastProcessedInput.step < InputManager.history.seek()!.step
+    )
+      return;
+
+    this.isReconciling = true;
+
     // 1. Accept authoritative state
-    (this as unknown as PlayerTank).setPreStep(false);
+    this.world.scene.setStepId(lastProcessedInput.step);
     this.updateTransform();
-    this.world.physicsPlugin.executeStep(0, (this as unknown as PlayerTank).physicsBodies);
-    (this as unknown as PlayerTank).setPreStep(true);
+    this.axleMotors.forEach((motor, idx) =>
+      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed)
+    );
 
     // 2. Discard all historical messages upto last-processed-message
-    InputManager.cull(this.state.lastProcessedInput);
+    const startStepId = InputManager.cull(lastProcessedInput);
 
     // 3. Replay all messages till present (Prediction)
-    this.replay(InputManager.history.asArray());
+    const historyInfo = InputManager.getHistory();
+    if (typeof historyInfo.targetStep !== 'undefined') {
+      this.replay(historyInfo.history, startStepId, historyInfo.targetStep);
+    }
+
+    this.isReconciling = false;
   }
-  private replay(messages: IMessageInput[]) {
-    messages.forEach((message) => {
-      (this as unknown as PlayerTank).applyInputs(message.input);
-      this.world.physicsPlugin.executeStep(World.deltaTime, (this as unknown as PlayerTank).physicsBodies);
-    });
+  private replay(history: Record<number, IInputHistory>, currStepId: number, targetStepId: number) {
+    // console.log('Replaying: ', history);
+    while (currStepId <= targetStepId) {
+      // console.log('Replay: ', currStepId, targetStepId);
+      this.applyInputs(history[currStepId].message.input);
+      this.world.scene._advancePhysicsEngineStep(World.deltaTime);
+      if (currStepId !== targetStepId) {
+        this.world.scene.setStepId(currStepId);
+      }
+      currStepId += 1;
+    }
+
+    /* // Correction if prediction error is acceptable, < 0.005
+    if (history[targetStepId].transform.position.equalsWithEpsilon(this.body.position, 0.005)) {
+      this.body.position.copyFrom(history[targetStepId].transform.position.clone());
+    }
+    if (history[targetStepId].transform.rotation.equalsWithEpsilon(this.body.rotationQuaternion!, 0.005)) {
+      this.body.rotationQuaternion?.copyFrom(history[targetStepId].transform.rotation.clone());
+    }
+    if (
+      history[targetStepId].transform.turretRotation.equalsWithEpsilon(this.turret.rotationQuaternion!, 0.005)
+    ) {
+      this.turret.rotationQuaternion?.copyFrom(history[targetStepId].transform.turretRotation.clone());
+    }
+    if (
+      history[targetStepId].transform.barrelRotation.equalsWithEpsilon(this.barrel.rotationQuaternion!, 0.005)
+    ) {
+      this.barrel.rotationQuaternion?.copyFrom(history[targetStepId].transform.barrelRotation.clone());
+    } */
   }
 
   applyInputs(input: PlayerInputs) {

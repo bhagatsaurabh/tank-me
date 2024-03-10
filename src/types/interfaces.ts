@@ -1,7 +1,7 @@
 import type { PlayerInputs } from './types';
 
 export interface IMessageInput {
-  seq: number;
+  step: number;
   // Actual timestamp is set at server, TS = ServerTime - AveragePing
   timestamp?: 0;
   input: PlayerInputs;

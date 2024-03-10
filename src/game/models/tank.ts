@@ -15,17 +15,15 @@ import type { Player } from '../state';
 import { type TankSounds, type TankSoundType } from '@/types/types';
 import { World } from '../main';
 import type { PlayerTank } from './player';
-import { InputManager } from '../input';
-import type { IMessageInput } from '@/types/interfaces';
 import type { EnemyTank } from './enemy';
 
 export class Tank {
   protected isPlayer = false;
   mesh!: AbstractMesh;
-  protected body!: TransformNode;
+  body!: TransformNode;
   barrel!: AbstractMesh;
   protected barrelTip!: TransformNode;
-  protected turret!: AbstractMesh;
+  turret!: AbstractMesh;
   protected leftTrack!: AbstractMesh;
   protected rightTrack!: AbstractMesh;
   protected leftExhaust!: AbstractMesh;

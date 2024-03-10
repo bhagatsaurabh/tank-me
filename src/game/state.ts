@@ -24,7 +24,7 @@ export class TurretRotation extends Schema {
   w!: number;
 }
 export class LastProcessedInput extends Schema {
-  seq!: number;
+  step!: number;
   timestamp!: number;
 }
 
@@ -44,6 +44,5 @@ export class Player extends Schema {
 
 export class RoomState extends Schema {
   status: 'matching' | 'ready' = 'matching';
-  step: number = 0;
   players = new MapSchema<Player>();
 }

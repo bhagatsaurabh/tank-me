@@ -71,7 +71,9 @@ export class PSShellExplosion {
   public stop() {
     //
   }
-  public dispose() {}
+  public dispose() {
+    this.unsub?.();
+  }
 
   static create(scene: Scene) {
     return new PSShellExplosion(scene);

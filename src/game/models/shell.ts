@@ -1,6 +1,6 @@
 import { Scene } from '@babylonjs/core';
 import { StandardMaterial, Texture } from '@babylonjs/core/Materials';
-import { Color3, Quaternion, Vector3 } from '@babylonjs/core/Maths';
+import { Axis, Color3, Space, Vector3 } from '@babylonjs/core/Maths';
 import { MeshBuilder, Mesh, LinesMesh, AbstractMesh } from '@babylonjs/core/Meshes';
 import { PhysicsAggregate, type IPhysicsCollisionEvent, PhysicsShapeSphere } from '@babylonjs/core/Physics';
 import { Sound } from '@babylonjs/core/Audio';
@@ -77,12 +77,11 @@ export class Shell {
   }
 
   private setTransform(mesh: AbstractMesh) {
-    mesh.position.z = 4.8;
-    this.tank.barrel.computeWorldMatrix();
-    mesh.rotationQuaternion = this.tank.barrel.rotationQuaternion!.clone();
+    this.tank.barrelTip.rotate(Axis.X, 0, Space.LOCAL);
+    mesh.rotationQuaternion = this.tank.barrelTip.rotationQuaternion!.clone();
     mesh.isVisible = false;
     mesh.material = Shell.refShellMaterial;
-    mesh.parent = this.tank.barrel;
+    mesh.parent = this.tank.barrelTip;
 
     const initialPos = mesh.absolutePosition.clone();
     this.trailOptions.points = new Array(this.trailLength).fill(null).map(() => initialPos.clone());
@@ -125,6 +124,9 @@ export class Shell {
     ) {
       return;
     }
+    const shellCollider = event.collider === this.mesh.physicsBody! ? event.collider : event.collidedAgainst;
+    const otherCollider = event.collider === shellCollider ? event.collidedAgainst : event.collider;
+    if (otherCollider.transformNode.name.includes('Player')) return;
 
     const explosionOrigin = this.mesh.absolutePosition.clone();
     this.particleSystem.start(explosionOrigin);
@@ -167,7 +169,11 @@ export class Shell {
     this.mesh.dispose();
   }
   public fire() {
-    this.mesh.rotationQuaternion = Quaternion.Identity();
+    this.mesh.parent = null;
+    this.mesh.position = this.tank.barrelTip.absolutePosition.clone();
+    this.mesh.rotationQuaternion = this.tank.barrelTip.absoluteRotationQuaternion.clone();
+    this.mesh.computeWorldMatrix();
+
     const firedPos = this.mesh.absolutePosition.clone();
     this.trailOptions.points.forEach((_, idx) => (this.trailOptions.points[idx] = firedPos.clone()));
 

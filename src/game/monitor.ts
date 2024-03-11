@@ -6,7 +6,7 @@ import { InputManager } from './input';
 
 export class Monitor {
   private static handle = -1;
-  private static _interval = 100;
+  private static _interval = 200;
   static set interval(ms: number) {
     Monitor._interval = clamp(ms, 500, Number.MAX_SAFE_INTEGER);
   }

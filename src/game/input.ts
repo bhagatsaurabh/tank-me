@@ -22,6 +22,7 @@ export interface IHistoryInfo {
   targetStep: number | undefined;
   history: Record<number, IInputHistory>;
 }
+
 export class InputManager {
   static history = new IndexedQueue<number, IInputHistory>([], 'step');
   static keys: PlayerInputs = {};
@@ -50,6 +51,7 @@ export class InputManager {
   }
   static addHistory(message: IMessageInput, player: PlayerTank, step: number) {
     if (InputManager.history.length >= InputManager.maxBufferSize) {
+      // TODO:
       // InputManager.history.pop();
     }
     InputManager.history.push({

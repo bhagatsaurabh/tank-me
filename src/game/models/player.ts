@@ -34,7 +34,7 @@ export class PlayerTank extends Tank {
     maxSpeed: 15,
     maxTurningSpeed: 3,
     maxTurretAngle: 1.17, // ~67.5 deg
-    maxBarrelAngle: 0.43, // ~25 deg
+    maxBarrelAngle: 0.34, // ~20 deg
     maxTurretSpeed: 14,
     maxBarrelSpeed: 14,
     bodyMass: 2,
@@ -88,8 +88,6 @@ export class PlayerTank extends Tank {
     cameras.fpp.parent = this.barrel;
 
     this.observers.push(this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
-    // this.observers.push(this.world.scene.onBeforePhysicsObservable.add(this.beforePhysics.bind(this)));
-    // this.observers.push(this.world.scene.onBeforeRenderObservable.add(this.beforeRender.bind(this)));
   }
   static async create(
     world: World,
@@ -674,9 +672,7 @@ export class PlayerTank extends Tank {
     this.isReconciling = false;
   }
   private replay(history: Record<number, IInputHistory>, currStepId: number, targetStepId: number) {
-    // console.log('Replaying: ', history);
     while (currStepId <= targetStepId) {
-      // console.log('Replay: ', currStepId, targetStepId);
       this.applyInputs(history[currStepId].message.input);
       this.world.scene._advancePhysicsEngineStep(World.deltaTime);
       if (currStepId !== targetStepId) {

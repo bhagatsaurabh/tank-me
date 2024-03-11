@@ -30,7 +30,7 @@ import { EnemyTank } from './models/enemy';
 export class World {
   static instance: World;
   private static timeStep = 1 / 60;
-  private static subTimeStep = 16;
+  private static subTimeStep = 12;
   private static lockstepMaxSteps = 4;
   static deltaTime = World.timeStep;
   static physicsViewer: PhysicsViewer;
@@ -147,8 +147,8 @@ export class World {
 
     this.observers.push(this.scene.onBeforeStepObservable.add(() => this.beforeStep()));
     this.observers.push(this.scene.onAfterStepObservable.add(() => this.update()));
-    this.client.state.onChange(() => this.update());
     this.observers.push(this.scene.onBeforeRenderObservable.add(() => this.beforeRender()));
+    this.client.state.onChange(() => this.update());
   }
   private initWindowListeners() {
     window.addEventListener('keydown', this.toggleInspect.bind(this));
@@ -184,10 +184,8 @@ export class World {
   }
   private setCameras() {
     // Set TPP Camera
-    this.tppCamera = new FreeCamera('tpp-cam', new Vector3(0, 0, 0), this.scene);
+    this.tppCamera = new FreeCamera('tpp-cam', new Vector3(0, 0, 0), this.scene, true);
     this.tppCamera.maxZ = 100000;
-    this.tppCamera.checkCollisions = true;
-    this.scene.activeCamera = this.tppCamera;
 
     // Set FPP Camera
     this.fppCamera = new FreeCamera('fpp-cam', new Vector3(0.3, -0.309, 1), this.scene);

@@ -22,7 +22,7 @@ export class Tank {
   mesh!: AbstractMesh;
   body!: TransformNode;
   barrel!: AbstractMesh;
-  protected barrelTip!: TransformNode;
+  barrelTip!: TransformNode;
   turret!: AbstractMesh;
   protected leftTrack!: AbstractMesh;
   protected rightTrack!: AbstractMesh;
@@ -255,7 +255,6 @@ export class Tank {
     // TODO
   }
   protected playSounds(isMoving: boolean, isTurretMoving: boolean) {
-    return;
     if (isMoving) {
       if (!this.sounds['move']?.isPlaying) this.sounds['move']?.play();
       if (this.sounds['idle']?.isPlaying) this.sounds['idle']?.pause();
@@ -271,7 +270,6 @@ export class Tank {
     }
   }
   playSound(type: TankSoundType) {
-    return;
     if (!this.sounds[type]?.isPlaying) this.sounds[type]?.play();
   }
 

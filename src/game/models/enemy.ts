@@ -27,9 +27,17 @@ export class EnemyTank extends Tank {
     const cloned = rootMesh.clone(`${rootMesh.name.replace(':Ref', '')}:${state.sid}`, null)!;
     const newTank = new EnemyTank(world, state, cloned, spawn);
     await newTank.init();
+    newTank.setTrackMaterial(state);
     return newTank;
   }
 
+  private setTrackMaterial(state: Player) {
+    // Because it's independently animated
+    const leftTrackMaterialName = this.leftTrack.material!.name;
+    const rightTrackMaterialName = this.rightTrack.material!.name;
+    this.leftTrack.material = this.leftTrack.material!.clone(`${leftTrackMaterialName}:${state.sid}`);
+    this.rightTrack.material = this.rightTrack.material!.clone(`${rightTrackMaterialName}:${state.sid}`);
+  }
   private setTransform(rootMesh: AbstractMesh, spawn: Vector3) {
     this.mesh = rootMesh;
     const body = new TransformNode(`Root:${rootMesh.name}`, this.world.scene);

@@ -44,5 +44,6 @@ export class Player extends Schema {
 
 export class RoomState extends Schema {
   status: 'matching' | 'ready' = 'matching';
+  startTimestamp: number = -1;
   players = new MapSchema<Player>();
 }

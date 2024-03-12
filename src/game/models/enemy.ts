@@ -58,6 +58,7 @@ export class EnemyTank extends Tank {
     this.barrelTip = new TransformNode(`Tip:${rootMesh.name}`, this.world.scene);
     this.barrelTip.position.z = 4.656;
     this.barrelTip.parent = this.barrel;
+
     for (
       let r = childMeshes.length - 1, l = childMeshes.length - 8;
       this.leftWheels.length < 7;
@@ -71,13 +72,13 @@ export class EnemyTank extends Tank {
     childMeshes.forEach((mesh) => (mesh.isVisible = true));
   }
   private setPhysics(rootMesh: Mesh) {
+    const bodyShape = new PhysicsShapeConvexHull(rootMesh, this.world.scene);
     const bodyShapeContainer = new PhysicsShapeContainer(this.world.scene);
+    bodyShapeContainer.addChildFromParent(this.body, bodyShape, rootMesh);
     const bodyPB = new PhysicsBody(this.body, PhysicsMotionType.STATIC, false, this.world.scene);
     bodyPB.shape = bodyShapeContainer;
     bodyPB.setMassProperties({ mass: 0 });
 
-    const bodyShape = new PhysicsShapeConvexHull(rootMesh, this.world.scene);
-    bodyShapeContainer.addChildFromParent(this.body, bodyShape, rootMesh);
 
     const turretShape = new PhysicsShapeConvexHull(this.turret as Mesh, this.world.scene);
     const turretPB = new PhysicsBody(this.turret, PhysicsMotionType.STATIC, false, this.world.scene);
@@ -105,6 +106,7 @@ export class EnemyTank extends Tank {
 
   fire() {
     this.loadedDummyShell.fire();
+    this.simulateRecoil();
     this.particleSystems['muzzle']?.start();
     this.sounds['cannon']?.play();
     Shell.create(this).then((shell) => (this.loadedDummyShell = shell));

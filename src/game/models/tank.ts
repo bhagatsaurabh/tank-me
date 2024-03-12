@@ -1,6 +1,6 @@
 import { Observer, Ray } from '@babylonjs/core';
 import { Sound } from '@babylonjs/core/Audio';
-import { Space, Axis, Quaternion } from '@babylonjs/core/Maths';
+import { Space, Axis, Quaternion, Vector3 } from '@babylonjs/core/Maths';
 import { AbstractMesh, TransformNode } from '@babylonjs/core/Meshes';
 import { PBRMaterial, Texture } from '@babylonjs/core/Materials';
 import { type IBasePhysicsCollisionEvent, PhysicsEventType } from '@babylonjs/core/Physics';
@@ -18,6 +18,9 @@ import type { PlayerTank } from './player';
 import type { EnemyTank } from './enemy';
 
 export class Tank {
+  private static commonConfig = {
+    recoilForce: 7.5
+  };
   protected isPlayer = false;
   mesh!: AbstractMesh;
   body!: TransformNode;
@@ -49,16 +52,16 @@ export class Tank {
   protected constructor(
     public world: World,
     public state: Player
-  ) {
-    this.setParticleSystems();
-  }
+  ) {}
+
   protected async init() {
     // eslint-disable-next-line no-empty-pattern
     [[], this.loadedDummyShell] = await Promise.all([this.setSoundSources(), Shell.create(this)]);
 
-    // this.sounds['idle']?.play();
+    this.setParticleSystems();
     this.particleSystems['exhaust-left']?.start();
     this.particleSystems['exhaust-right']?.start();
+    this.sounds['idle']?.play();
   }
 
   protected trigger(event: IBasePhysicsCollisionEvent) {
@@ -80,6 +83,18 @@ export class Tank {
         this.sounds[`whizz${Math.round(randInRange(1, 2))}` as TankSoundType]?.play();
       }
     }
+  }
+  protected simulateRecoil() {
+    const recoilVector = this.turret
+      .getDirection(new Vector3(0, 1, -1))
+      .normalize()
+      .scale(Tank.commonConfig.recoilForce);
+    const contactPoint = this.body.up
+      .normalize()
+      .scale(1)
+      .add(this.body.position)
+      .add(this.turret.forward.normalize().scale(1));
+    this.body.physicsBody!.applyImpulse(recoilVector, contactPoint);
   }
   private setParticleSystems() {
     this.particleSystems['exhaust-left'] = PSExhaust.create(this.leftExhaust, this.world.scene);

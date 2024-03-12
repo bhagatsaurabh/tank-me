@@ -38,7 +38,8 @@ export enum KeyInputType {
 export enum MessageType {
   INPUT = 'input',
   LOAD = 'load',
-  ENEMY_FIRE = 'enemy-fire'
+  ENEMY_FIRE = 'enemy-fire',
+  MATCH_END = 'match-end'
 }
 
 export type TankSoundType = 'idle' | 'move' | 'explode' | 'turret' | 'cannon' | 'load' | 'whizz1' | 'whizz2';

@@ -36,8 +36,8 @@ export class PSDust {
     particleSystem.emitRate = 20;
     particleSystem.minEmitPower = 0.1;
     particleSystem.maxEmitPower = 0.2;
-    particleSystem.minLifeTime = 3;
-    particleSystem.maxLifeTime = 4;
+    particleSystem.minLifeTime = 1.5;
+    particleSystem.maxLifeTime = 2;
     particleSystem.minScaleX = 1;
     particleSystem.maxScaleX = 1;
     particleSystem.minScaleY = 1;
@@ -86,7 +86,7 @@ export class PSDust {
     // Create new system immediately
     this.setProperties();
     // Disposing only when all the particles are invisible after sometime
-    if (!(await delay(8000, (clear) => this.unsub.push(clear)))) return;
+    if (!(await delay(5000, (clear) => this.unsub.push(clear)))) return;
     this.particleSystems[currId].dispose();
     delete this.particleSystems[currId];
   }

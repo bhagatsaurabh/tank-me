@@ -96,7 +96,7 @@ export class PlayerTank extends Tank {
     spawn: Vector3,
     cameras: Nullable<{ tpp: FreeCamera; fpp: FreeCamera }>
   ) {
-    const cloned = rootMesh.clone(`${rootMesh.name.replace(':Ref', '')}:Player`, null)!;
+    const cloned = rootMesh.clone(`${rootMesh.name.replace(':Ref', '')}:${state.sid}`, null)!;
     const newTank = new PlayerTank(world, state, cloned, spawn, cameras!);
     await newTank.init();
     newTank.setPreStep(false);
@@ -440,18 +440,6 @@ export class PlayerTank extends Tank {
     }
   }
 
-  private simulateRecoil() {
-    const recoilVector = this.turret
-      .getDirection(new Vector3(0, 1, -1))
-      .normalize()
-      .scale(PlayerTank.config.recoilForce);
-    const contactPoint = this.body.up
-      .normalize()
-      .scale(1)
-      .add(this.body.position)
-      .add(this.turret.forward.normalize().scale(1));
-    this.body.physicsBody!.applyImpulse(recoilVector, contactPoint);
-  }
   private accelerate(dt: number, turningDirection: -1 | 0 | 1) {
     if (turningDirection !== -1) {
       this.leftSpeed = clamp(
@@ -557,7 +545,7 @@ export class PlayerTank extends Tank {
   }
   private decelerate(dt: number, modifier: number = PlayerTank.config.decelerationModifier) {
     let speed = 0;
-    if (Math.abs(this.leftSpeed) < 0.001 && Math.abs(this.rightSpeed) < 0.001) {
+    if (Math.abs(this.leftSpeed) < 0.1 && Math.abs(this.rightSpeed) < 0.1) {
       this.leftSpeed = this.rightSpeed = 0;
       speed = 0;
     } else {

@@ -17,6 +17,7 @@ export class Shell {
   private static refShellMaterial: StandardMaterial;
   private static refTrailMaterial: StandardMaterial;
   private static refPhysicsShape: PhysicsShapeSphere;
+  private impactEnergy = 5;
   private playerId: string;
   private mesh!: AbstractMesh;
   private explosionSound!: Sound;
@@ -124,9 +125,16 @@ export class Shell {
     ) {
       return;
     }
+
     const shellCollider = event.collider === this.mesh.physicsBody! ? event.collider : event.collidedAgainst;
     const otherCollider = event.collider === shellCollider ? event.collidedAgainst : event.collider;
-    if (otherCollider.transformNode.name.includes('Player')) return;
+    if (otherCollider.transformNode.name.includes(this.playerId)) return;
+    if (otherCollider.transformNode.name.includes('Panzer')) {
+      otherCollider.applyImpulse(
+        shellCollider.transformNode.getDirection(forwardVector).normalize().scale(this.impactEnergy),
+        this.mesh.absolutePosition.clone()
+      );
+    }
 
     const explosionOrigin = this.mesh.absolutePosition.clone();
     this.particleSystem.start(explosionOrigin);

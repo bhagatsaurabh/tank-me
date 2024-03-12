@@ -19,7 +19,8 @@ export class Monitor {
       world.gui &&
         ((world.gui.getControlByName('stats') as TextBlock).text =
           `History Buffer: ${InputManager.history.length}\n
-          Step: ${world.scene.getStepId()}`);
+          Step: ${world.scene.getStepId()}\n
+          Health: ${world.player.state.health}`);
     }, this._interval);
   }
   static stop() {

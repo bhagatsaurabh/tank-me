@@ -4,7 +4,7 @@ import type { RoomState } from './state';
 import { World } from './main';
 import { MessageType } from '@/types/types';
 import { useLobbyStore } from '@/stores/lobby';
-import type { IMessageFire } from '@/types/interfaces';
+import type { IMessageEnd, IMessageFire } from '@/types/interfaces';
 import type { EnemyTank } from './models/enemy';
 import { Monitor } from './monitor';
 
@@ -13,6 +13,7 @@ export class GameClient {
   private client!: Client;
   private world?: World;
   private rooms: { lobby?: Room<any>; desert?: Room<RoomState> } = {};
+  isMatchEnded = false;
 
   get state() {
     return this.rooms.desert!.state;
@@ -51,10 +52,17 @@ export class GameClient {
 
     this.rooms.desert!.state.listen('status', (newVal) => newVal === 'ready' && (lobby.status = 'playing'));
     this.rooms.desert!.state.players.onRemove((_player, sessionId) => this.world?.removePlayer(sessionId));
-    this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: IMessageFire) =>
-      (this.world?.players[message.id] as EnemyTank).fire()
-    );
-    this.rooms.desert!.onMessage(MessageType.LOAD, () => this.world?.player.playSound('load'));
+    this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: IMessageFire) => {
+      if (this.isMatchEnded) return;
+      (this.world?.players[message.id] as EnemyTank).fire();
+    });
+    this.rooms.desert!.onMessage(MessageType.LOAD, () => {
+      if (this.isMatchEnded) return;
+      this.world?.player.playSound('load');
+    });
+    this.rooms.desert!.onMessage<IMessageEnd>(MessageType.MATCH_END, (_message) => {
+      this.world!.matchEnd();
+    });
   }
 
   async createWorld(canvasEl: HTMLCanvasElement) {

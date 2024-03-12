@@ -10,7 +10,7 @@ import { AbstractMesh, MeshBuilder, TransformNode } from '@babylonjs/core/Meshes
 import { PBRMaterial, StandardMaterial, Texture } from '@babylonjs/core/Materials';
 import { HavokPlugin, PhysicsAggregate, PhysicsShapeType } from '@babylonjs/core/Physics';
 import { DirectionalLight, CascadedShadowGenerator } from '@babylonjs/core/Lights';
-import { FreeCamera, ArcRotateCamera } from '@babylonjs/core/Cameras';
+import { FreeCamera, ArcRotateCamera, FollowCamera } from '@babylonjs/core/Cameras';
 import HavokPhysics from '@babylonjs/havok';
 import { AdvancedDynamicTexture, TextBlock, Control } from '@babylonjs/gui';
 
@@ -45,6 +45,7 @@ export class World {
   private tppCamera!: FreeCamera;
   private fppCamera!: FreeCamera;
   private endCamera!: ArcRotateCamera;
+  private specCamera!: FollowCamera;
   private playerMeshes: AbstractMesh[] = [];
   players: Record<string, Tank> = {};
   player!: PlayerTank;
@@ -158,6 +159,8 @@ export class World {
   private start() {
     this.engine.runRenderLoop(this.render.bind(this));
     this.physicsPlugin.setTimeStep(World.timeStep);
+    this.specCamera.lockedTarget = this.player.mesh;
+    this.specCamera.radius = 14;
   }
   private render() {
     this.scene.render();
@@ -192,8 +195,11 @@ export class World {
     this.fppCamera.minZ = 0.5;
     this.fppCamera.maxZ = 100000;
 
-    // Set Kill Camera
-    this.endCamera = new ArcRotateCamera('end-cam', 0, 0, 10, new Vector3(0, 0, 0), this.scene);
+    // Set End Camera
+    this.endCamera = new ArcRotateCamera('end-cam', 0, 0, 15, new Vector3(0, 0, 0), this.scene);
+
+    // Set Spec Camera
+    this.specCamera = new FollowCamera('spec-cam', new Vector3(0, 10, -10), this.scene);
 
     this.shadowGenerator.autoCalcDepthBounds = true;
   }
@@ -272,6 +278,12 @@ export class World {
     );
   }
   private beforeStep() {
+    if (this.client.isMatchEnded) {
+      this.endCamera.target = this.player.body.absolutePosition;
+      this.endCamera.alpha = 1.57;
+      this.endCamera.beta += World.deltaTime * 2;
+      return;
+    }
     if (this.client.isReady()) {
       // 1. Send input to server
       const step = this.scene.getStepId();
@@ -344,13 +356,17 @@ export class World {
     this.engine.resize();
   }
 
-  public dispose() {
+  matchEnd() {
+    this.client.isMatchEnded = true;
+    this.scene.activeCamera = this.endCamera;
+  }
+  dispose() {
     this.stateUnsubFns.forEach((unsubFn) => unsubFn());
     window.removeEventListener('keydown', this.toggleInspect);
     window.removeEventListener('resize', this.throttledResizeListener);
     this.engine.dispose();
   }
-  public removePlayer(id: string) {
+  removePlayer(id: string) {
     this.players[id].dispose();
   }
 }

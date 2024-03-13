@@ -6,20 +6,29 @@ import {
   PhysicsShapeConvexHull,
   PhysicsShapeContainer,
   PhysicsBody,
-  PhysicsMotionType
+  PhysicsMotionType,
+  Quaternion
 } from '@babylonjs/core';
 
-import type { World } from '../main';
+import { World } from '../main';
 import type { Player } from '../state';
 import { Tank } from './tank';
 import { Shell } from './shell';
 
 export class EnemyTank extends Tank {
+  private nextState = {
+    position: Vector3.Zero(),
+    rotation: Quaternion.Identity(),
+    turretRotation: Quaternion.Identity(),
+    barrelRotation: Quaternion.Identity()
+  };
+
   constructor(world: World, state: Player, rootMesh: AbstractMesh, spawn: Vector3) {
     super(world, state);
 
     this.setTransform(rootMesh, spawn);
     this.setPhysics(rootMesh as Mesh);
+    this.nextState.position = spawn.clone();
 
     this.observers.push(this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
   }
@@ -79,7 +88,6 @@ export class EnemyTank extends Tank {
     bodyPB.shape = bodyShapeContainer;
     bodyPB.setMassProperties({ mass: 0 });
 
-
     const turretShape = new PhysicsShapeConvexHull(this.turret as Mesh, this.world.scene);
     const turretPB = new PhysicsBody(this.turret, PhysicsMotionType.STATIC, false, this.world.scene);
     turretPB.shape = turretShape;
@@ -96,12 +104,53 @@ export class EnemyTank extends Tank {
   }
   private beforeStep() {
     this.animate();
+
+    if (this.world.client.isMatchEnded) return;
+
+    // Entity interpolation (bufferless, pretty basic for now)
+    this.body.position = Vector3.Lerp(this.body.position.clone(), this.nextState.position, World.deltaTime);
+    this.body.rotationQuaternion = Quaternion.Slerp(
+      this.body.rotationQuaternion!.clone(),
+      this.nextState.rotation,
+      World.deltaTime
+    );
+    this.turret.rotationQuaternion = Quaternion.Slerp(
+      this.turret.rotationQuaternion!.clone(),
+      this.nextState.turretRotation,
+      World.deltaTime
+    );
+    this.barrel.rotationQuaternion = Quaternion.Slerp(
+      this.barrel.rotationQuaternion!.clone(),
+      this.nextState.barrelRotation,
+      World.deltaTime
+    );
   }
 
   interpolate() {
-    // TODO: Entity Interpolation
     // Accept authoritative state
-    this.updateTransform();
+    this.nextState.position = new Vector3(
+      this.state.position.x,
+      this.state.position.y,
+      this.state.position.z
+    );
+    this.nextState.rotation = new Quaternion(
+      this.state.rotation.x,
+      this.state.rotation.y,
+      this.state.rotation.z,
+      this.state.rotation.w
+    );
+    this.nextState.turretRotation = new Quaternion(
+      this.state.turretRotation.x,
+      this.state.turretRotation.y,
+      this.state.turretRotation.z,
+      this.state.turretRotation.w
+    );
+    this.nextState.barrelRotation = new Quaternion(
+      this.state.barrelRotation.x,
+      this.state.barrelRotation.y,
+      this.state.barrelRotation.z,
+      this.state.barrelRotation.w
+    );
   }
 
   fire() {

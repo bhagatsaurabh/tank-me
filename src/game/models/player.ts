@@ -1,5 +1,5 @@
 import { TransformNode, type AbstractMesh, type Mesh, type Nullable, MeshBuilder } from '@babylonjs/core';
-import { Vector3, Axis, Space, Scalar } from '@babylonjs/core/Maths';
+import { Vector3, Axis, Space, Scalar, Quaternion } from '@babylonjs/core/Maths';
 import {
   PhysicsShapeConvexHull,
   PhysicsShapeContainer,
@@ -61,7 +61,7 @@ export class PlayerTank extends Tank {
   private axleMotors: Physics6DoFConstraint[] = [];
   private barrelMotor!: Physics6DoFConstraint;
   private turretMotor!: Physics6DoFConstraint;
-  private sights: (Control | Container)[] = [];
+  sights: (Control | Container)[] = [];
   leftSpeed: number = 0;
   rightSpeed: number = 0;
   private lastCameraToggle = 0;
@@ -431,6 +431,8 @@ export class PlayerTank extends Tank {
   private beforeStep() {
     this.animate(this.leftSpeed, this.rightSpeed);
 
+    if (this.world.client.isMatchEnded) return;
+
     if (InputManager.keys[GameInputType.FIRE] && this.state.canFire) {
       this.fire();
     }
@@ -632,12 +634,14 @@ export class PlayerTank extends Tank {
 
   reconcile() {
     const lastProcessedInput = this.state.lastProcessedInput;
+
     if (
       lastProcessedInput.step < 0 ||
       InputManager.history.length === 0 ||
       lastProcessedInput.step < InputManager.history.seek()!.step
-    )
+    ) {
       return;
+    }
 
     this.isReconciling = true;
 
@@ -686,6 +690,52 @@ export class PlayerTank extends Tank {
     ) {
       this.barrel.rotationQuaternion?.copyFrom(history[targetStepId].transform.barrelRotation.clone());
     } */
+  }
+  private updateTransform() {
+    this.leftSpeed = this.state.leftSpeed;
+    this.rightSpeed = this.state.rightSpeed;
+
+    this.body.position.set(this.state.position.x, this.state.position.y, this.state.position.z);
+    this.body.rotationQuaternion =
+      this.body.rotationQuaternion?.set(
+        this.state.rotation.x,
+        this.state.rotation.y,
+        this.state.rotation.z,
+        this.state.rotation.w
+      ) ??
+      new Quaternion(
+        this.state.rotation.x,
+        this.state.rotation.y,
+        this.state.rotation.z,
+        this.state.rotation.w
+      );
+
+    this.turret.rotationQuaternion =
+      this.turret.rotationQuaternion?.set(
+        this.state.turretRotation.x,
+        this.state.turretRotation.y,
+        this.state.turretRotation.z,
+        this.state.turretRotation.w
+      ) ??
+      new Quaternion(
+        this.state.turretRotation.x,
+        this.state.turretRotation.y,
+        this.state.turretRotation.z,
+        this.state.turretRotation.w
+      );
+    this.barrel.rotationQuaternion =
+      this.barrel.rotationQuaternion?.set(
+        this.state.barrelRotation.x,
+        this.state.barrelRotation.y,
+        this.state.barrelRotation.z,
+        this.state.barrelRotation.w
+      ) ??
+      new Quaternion(
+        this.state.barrelRotation.x,
+        this.state.barrelRotation.y,
+        this.state.barrelRotation.z,
+        this.state.barrelRotation.w
+      );
   }
 
   applyInputs(input: PlayerInputs) {

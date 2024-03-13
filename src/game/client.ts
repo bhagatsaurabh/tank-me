@@ -60,8 +60,8 @@ export class GameClient {
       if (this.isMatchEnded) return;
       this.world?.player.playSound('load');
     });
-    this.rooms.desert!.onMessage<IMessageEnd>(MessageType.MATCH_END, (_message) => {
-      this.world!.matchEnd();
+    this.rooms.desert!.onMessage<IMessageEnd>(MessageType.MATCH_END, (message) => {
+      this.world!.matchEnd(message);
     });
   }
 
@@ -79,6 +79,7 @@ export class GameClient {
     return this.rooms.desert!.state.players;
   }
   sendEvent<T>(type: MessageType, message: T) {
+    if (this.isMatchEnded) return;
     this.rooms.desert?.send(type, message);
   }
 }

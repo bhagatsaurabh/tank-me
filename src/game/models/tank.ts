@@ -267,7 +267,6 @@ export class Tank {
     this.particleSystems['explosion']?.start();
     this.particleSystems['exhaust-left']?.stop();
     this.particleSystems['exhaust-right']?.stop();
-    // TODO
   }
   protected playSounds(isMoving: boolean, isTurretMoving: boolean) {
     if (isMoving) {
@@ -294,54 +293,6 @@ export class Tank {
     } else {
       (this as unknown as EnemyTank).interpolate();
     }
-  }
-  protected updateTransform() {
-    if (this.isPlayer) {
-      (this as unknown as PlayerTank).leftSpeed = this.state.leftSpeed;
-      (this as unknown as PlayerTank).rightSpeed = this.state.rightSpeed;
-    }
-
-    this.body.position.set(this.state.position.x, this.state.position.y, this.state.position.z);
-    this.body.rotationQuaternion =
-      this.body.rotationQuaternion?.set(
-        this.state.rotation.x,
-        this.state.rotation.y,
-        this.state.rotation.z,
-        this.state.rotation.w
-      ) ??
-      new Quaternion(
-        this.state.rotation.x,
-        this.state.rotation.y,
-        this.state.rotation.z,
-        this.state.rotation.w
-      );
-
-    this.turret.rotationQuaternion =
-      this.turret.rotationQuaternion?.set(
-        this.state.turretRotation.x,
-        this.state.turretRotation.y,
-        this.state.turretRotation.z,
-        this.state.turretRotation.w
-      ) ??
-      new Quaternion(
-        this.state.turretRotation.x,
-        this.state.turretRotation.y,
-        this.state.turretRotation.z,
-        this.state.turretRotation.w
-      );
-    this.barrel.rotationQuaternion =
-      this.barrel.rotationQuaternion?.set(
-        this.state.barrelRotation.x,
-        this.state.barrelRotation.y,
-        this.state.barrelRotation.z,
-        this.state.barrelRotation.w
-      ) ??
-      new Quaternion(
-        this.state.barrelRotation.x,
-        this.state.barrelRotation.y,
-        this.state.barrelRotation.z,
-        this.state.barrelRotation.w
-      );
   }
 
   dispose() {

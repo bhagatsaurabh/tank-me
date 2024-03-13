@@ -23,7 +23,7 @@ import { Ground } from './models/ground';
 import { AssetLoader } from './loader';
 import { Skybox } from './skybox';
 import { MessageType } from '@/types/types';
-import type { IMessageInput } from '@/types/interfaces';
+import type { IMessageEnd, IMessageInput } from '@/types/interfaces';
 import { PlayerTank } from './models/player';
 import { EnemyTank } from './models/enemy';
 
@@ -279,9 +279,7 @@ export class World {
   }
   private beforeStep() {
     if (this.client.isMatchEnded) {
-      this.endCamera.target = this.player.body.absolutePosition;
-      this.endCamera.alpha = 1.57;
-      this.endCamera.beta += World.deltaTime * 2;
+      this.animateEndCam();
       return;
     }
     if (this.client.isReady()) {
@@ -355,10 +353,21 @@ export class World {
   private resize() {
     this.engine.resize();
   }
+  private animateEndCam() {
+    this.endCamera.target = this.player.body.absolutePosition;
+    this.endCamera.radius = 50;
+    let alpha = this.endCamera.alpha + World.deltaTime * 0.1;
+    if (alpha >= 6.28) alpha = 0;
+    this.endCamera.alpha = alpha;
+    this.endCamera.beta = 0.75;
+  }
 
-  matchEnd() {
+  matchEnd(message: IMessageEnd) {
     this.client.isMatchEnded = true;
     this.scene.activeCamera = this.endCamera;
+    this.player.sights.forEach((ui) => (ui.isVisible = false));
+
+    this.players[message.loser].explode();
   }
   dispose() {
     this.stateUnsubFns.forEach((unsubFn) => unsubFn());

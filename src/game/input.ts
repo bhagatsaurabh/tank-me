@@ -26,7 +26,7 @@ export interface IHistoryInfo {
 export class InputManager {
   static history = new IndexedQueue<number, IInputHistory>([], 'step');
   static keys: PlayerInputs = {};
-  private static maxBufferSize = 20;
+  private static maxBufferSize = 30;
 
   static create(scene: Scene) {
     const actionManager = new ActionManager(scene);
@@ -51,8 +51,7 @@ export class InputManager {
   }
   static addHistory(message: IMessageInput, player: PlayerTank, step: number) {
     if (InputManager.history.length >= InputManager.maxBufferSize) {
-      // TODO:
-      // InputManager.history.pop();
+      InputManager.history.pop();
     }
     InputManager.history.push({
       step,

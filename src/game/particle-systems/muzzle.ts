@@ -161,7 +161,7 @@ export class PSMuzzle {
     this.psDelayedSmoke.onDisposeObservable.add(() => this.setDelayedSmoke());
   } */
 
-  public async start() {
+  async start() {
     this.psExplosion.start();
     this.psSmoke.start();
 
@@ -174,10 +174,10 @@ export class PSMuzzle {
     console.log('disposing');
     this.psDelayedSmoke.dispose(false); */
   }
-  public stop() {
+  stop() {
     //
   }
-  public dispose() {
+  dispose() {
     // this.unsub.forEach((clear) => clear?.());
   }
 

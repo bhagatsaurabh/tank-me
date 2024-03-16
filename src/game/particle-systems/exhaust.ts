@@ -60,10 +60,10 @@ export class PSExhaust {
     this.particleSystem.preventAutoStart = true;
   }
 
-  public start() {
+  start() {
     this.particleSystem.start();
   }
-  public stop() {
+  stop() {
     this.particleSystem.stop();
   }
 

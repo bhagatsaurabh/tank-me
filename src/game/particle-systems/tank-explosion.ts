@@ -85,7 +85,7 @@ export class PSTankExplosion {
       this.scene
     );
     this.psFire.emitter = this.emitter;
-    this.psFire.worldOffset.y = 3;
+    this.psFire.worldOffset.y = 2.5;
     this.psFire.gravity.y = 1;
     this.psFire.isBillboardBased = true;
     this.psFire.blendMode = GPUParticleSystem.BLENDMODE_MULTIPLYADD;
@@ -125,15 +125,15 @@ export class PSTankExplosion {
     this.psFire.preventAutoStart = true;
   }
 
-  public start() {
+  start() {
     this.psExplosion.start();
     this.psFire.start();
   }
 
-  public stop() {
+  stop() {
     //
   }
-  public dispose() {
+  dispose() {
     //
   }
 

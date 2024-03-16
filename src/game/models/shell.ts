@@ -176,7 +176,7 @@ export class Shell {
     this.trail.dispose();
     this.mesh.dispose();
   }
-  public fire() {
+  fire() {
     this.mesh.parent = null;
     this.mesh.position = this.tank.barrelTip.absolutePosition.clone();
     this.mesh.rotationQuaternion = this.tank.barrelTip.absoluteRotationQuaternion.clone();

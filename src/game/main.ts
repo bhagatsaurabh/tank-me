@@ -12,11 +12,11 @@ import { HavokPlugin, PhysicsAggregate, PhysicsShapeType } from '@babylonjs/core
 import { DirectionalLight, CascadedShadowGenerator } from '@babylonjs/core/Lights';
 import { FreeCamera, ArcRotateCamera, FollowCamera } from '@babylonjs/core/Cameras';
 import HavokPhysics from '@babylonjs/havok';
-import { AdvancedDynamicTexture, TextBlock, Control } from '@babylonjs/gui';
+import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, Image } from '@babylonjs/gui';
 
 import { GameClient } from '@/game/client';
 import type { Player } from './state';
-import { gravityVector, noop, nzpyVector, throttle } from '@/utils/utils';
+import { clamp, gravityVector, noop, nzpyVector, throttle } from '@/utils/utils';
 import { InputManager } from './input';
 import { Tank } from './models/tank';
 import { Ground } from './models/ground';
@@ -50,6 +50,7 @@ export class World {
   players: Record<string, Tank> = {};
   player!: PlayerTank;
   gui!: AdvancedDynamicTexture;
+  guiRefs!: { health: Rectangle; healthBorder: Rectangle; shell: Image };
   debugStats = false;
   private observers: Observer<Scene>[] = [];
   private fpsLabel!: TextBlock;
@@ -88,7 +89,8 @@ export class World {
         { path: '/assets/game/audio/whizz1.mp3', format: 'arraybuffer' },
         { path: '/assets/game/audio/whizz2.mp3', format: 'arraybuffer' },
         { path: '/assets/game/gui/ads.png' },
-        { path: '/assets/game/gui/overlay.png' }
+        { path: '/assets/game/gui/overlay.png' },
+        { path: '/assets/game/gui/shell.png' }
       ]);
 
       // Init engine
@@ -227,6 +229,34 @@ export class World {
     fpsLabel.fontSize = 14;
     this.gui.addControl(fpsLabel);
     this.fpsLabel = fpsLabel;
+
+    const renderWidth = this.engine.getRenderWidth(true);
+    const healthBarBorder = new Rectangle('health-border');
+    healthBarBorder.width = `${renderWidth * 0.3}px`;
+    healthBarBorder.height = '20px';
+    healthBarBorder.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    healthBarBorder.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+    healthBarBorder.top = '-20px';
+    healthBarBorder.color = '#d3d3d3cc';
+    healthBarBorder.thickness = 1;
+    const healthBar = new Rectangle('health');
+    healthBar.height = '20px';
+    healthBar.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    healthBar.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+    healthBar.background = '#d3d3d3cc';
+    healthBar.color = 'transparent';
+    healthBarBorder.addControl(healthBar);
+    this.gui.addControl(healthBarBorder);
+
+    const shell = new Image('shell', AssetLoader.assets['/assets/game/gui/shell.png'] as string);
+    shell.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    shell.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+    shell.height = '24px';
+    shell.top = '-20px';
+    shell.fixedRatio = 1;
+    this.gui.addControl(shell);
+
+    this.guiRefs = { health: healthBar, healthBorder: healthBarBorder, shell };
   }
   private setBarriers() {
     const barrier = new TransformNode('barrier', this.scene);
@@ -265,7 +295,31 @@ export class World {
     new PhysicsAggregate(barrier3, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
     new PhysicsAggregate(barrier4, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
   }
+  fadeDir = -1;
   private beforeRender() {
+    const renderWidth = this.engine.getRenderWidth(true);
+
+    let health = this.player.state.health;
+    if (this.client.isMatchEnded && !this.client.didWin) health = 0;
+    this.guiRefs.health.width = `${renderWidth * 0.3 * (health / 100)}px`;
+
+    this.guiRefs.healthBorder.width = `${renderWidth * 0.3}px`;
+    if (this.player.state.health <= 75) {
+      this.guiRefs.health.background = '#e97451cc';
+    } else if (this.player.state.health <= 25) {
+      this.guiRefs.health.background = '#ee4b2bcc';
+    }
+
+    this.guiRefs.shell.left = `${(renderWidth * 0.3) / 2 + 15}px`;
+    if (this.player.canFire) {
+      this.guiRefs.shell.alpha = 1;
+    } else {
+      this.guiRefs.shell.alpha = clamp(this.guiRefs.shell.alpha + World.deltaTime * 3 * this.fadeDir, 0, 1);
+      if (this.guiRefs.shell.alpha <= 0 || this.guiRefs.shell.alpha >= 1) {
+        this.fadeDir *= -1;
+      }
+    }
+
     this.tppCamera.position = Vector3.Lerp(
       this.tppCamera.position,
       this.player.body.getDirection(nzpyVector).normalize().scale(15).add(this.player.body.position),
@@ -366,6 +420,7 @@ export class World {
     this.client.isMatchEnded = true;
     this.scene.activeCamera = this.endCamera;
     this.player.sights.forEach((ui) => (ui.isVisible = false));
+    this.client.didWin = message.winner === this.player.state.sid;
 
     this.players[message.loser].explode();
   }

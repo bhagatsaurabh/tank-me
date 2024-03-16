@@ -1,6 +1,6 @@
 import { Observer, Ray } from '@babylonjs/core';
 import { Sound } from '@babylonjs/core/Audio';
-import { Space, Axis, Quaternion, Vector3 } from '@babylonjs/core/Maths';
+import { Space, Axis, Vector3 } from '@babylonjs/core/Maths';
 import { AbstractMesh, TransformNode } from '@babylonjs/core/Meshes';
 import { PBRMaterial, Texture } from '@babylonjs/core/Materials';
 import { type IBasePhysicsCollisionEvent, PhysicsEventType } from '@babylonjs/core/Physics';
@@ -47,7 +47,6 @@ export class Tank {
   } = {};
   private isStuck = false;
   protected observers: Observer<any>[] = [];
-  health: number = 100.0;
 
   protected constructor(
     public world: World,
@@ -263,7 +262,7 @@ export class Tank {
     }
   }
 
-  public explode() {
+  explode() {
     this.particleSystems['explosion']?.start();
     this.particleSystems['exhaust-left']?.stop();
     this.particleSystems['exhaust-right']?.stop();

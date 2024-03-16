@@ -14,6 +14,7 @@ export class GameClient {
   private world?: World;
   private rooms: { lobby?: Room<any>; desert?: Room<RoomState> } = {};
   isMatchEnded = false;
+  didWin = false;
 
   get state() {
     return this.rooms.desert!.state;
@@ -55,10 +56,6 @@ export class GameClient {
     this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: IMessageFire) => {
       if (this.isMatchEnded) return;
       (this.world?.players[message.id] as EnemyTank).fire();
-    });
-    this.rooms.desert!.onMessage(MessageType.LOAD, () => {
-      if (this.isMatchEnded) return;
-      this.world?.player.playSound('load');
     });
     this.rooms.desert!.onMessage<IMessageEnd>(MessageType.MATCH_END, (message) => {
       this.world!.matchEnd(message);

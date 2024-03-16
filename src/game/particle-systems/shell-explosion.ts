@@ -61,17 +61,17 @@ export class PSShellExplosion {
       .addLimitVelocityGradient(1, 1);
   }
 
-  public async start(origin: Vector3) {
+  async start(origin: Vector3) {
     this.particleSystem.emitter = origin;
     this.particleSystem.start();
 
     if (!(await delay(4000, (clear) => (this.unsub = clear)))) return;
     this.particleSystem.dispose();
   }
-  public stop() {
+  stop() {
     //
   }
-  public dispose() {
+  dispose() {
     this.unsub?.();
   }
 

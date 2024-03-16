@@ -53,7 +53,8 @@ export class PlayerTank extends Tank {
     noOfWheels: 10,
     recoilForce: 7.5,
     // Less than actual cooldown, to avoid sync issues, state.canFire is used together
-    cooldown: 2500
+    cooldown: 5000,
+    loadCooldown: 2500
   };
   private axleJoints: TransformNode[] = [];
   axles: Mesh[] = [];
@@ -69,6 +70,7 @@ export class PlayerTank extends Tank {
   private lastFiredTS = 0;
   physicsBodies: PhysicsBody[] = [];
   isReconciling = false;
+  canFire = false;
 
   constructor(
     world: World,
@@ -393,6 +395,7 @@ export class PlayerTank extends Tank {
     scope.isVisible = false;
     scope.scaleX = 1.5;
     scope.scaleY = 1.5;
+    scope.zIndex = -1;
     this.world.gui.addControl(scope);
 
     const overlay = new Image('overlay', AssetLoader.assets['/assets/game/gui/overlay.png'] as string);
@@ -401,6 +404,7 @@ export class PlayerTank extends Tank {
     overlay.height = '100%';
     overlay.fixedRatio = 1;
     overlay.isVisible = false;
+    overlay.zIndex = -1;
     this.world.gui.addControl(overlay);
 
     const padWidth = (this.world.engine.getRenderWidth(true) - this.world.engine.getRenderHeight(true)) / 2;
@@ -410,6 +414,7 @@ export class PlayerTank extends Tank {
     padLeft.color = '#000';
     padLeft.background = '#000';
     padLeft.isVisible = false;
+    padLeft.zIndex = -1;
     this.world.gui.addControl(padLeft);
     const padRight = new Rectangle('right-pad');
     padRight.width = `${padWidth}px`;
@@ -417,11 +422,12 @@ export class PlayerTank extends Tank {
     padRight.color = '#000';
     padRight.background = '#000';
     padRight.isVisible = false;
+    padRight.zIndex = -1;
     this.world.gui.addControl(padRight);
 
     this.sights.push(scope, overlay, padLeft, padRight);
   }
-  setPreStep(value: boolean) {
+  private setPreStep(value: boolean) {
     this.body.physicsBody!.disablePreStep = value;
     this.turret.physicsBody!.disablePreStep = value;
     this.barrel.physicsBody!.disablePreStep = value;
@@ -429,12 +435,18 @@ export class PlayerTank extends Tank {
     (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = value));
   }
   private beforeStep() {
+    const now = performance.now();
+    this.canFire = now - this.lastFiredTS > PlayerTank.config.cooldown;
+    if (now - this.lastFiredTS > PlayerTank.config.loadCooldown && !this.canFire) {
+      this.playSound('load');
+    }
+
     this.animate(this.leftSpeed, this.rightSpeed);
 
     if (this.world.client.isMatchEnded) return;
 
-    if (InputManager.keys[GameInputType.FIRE] && this.state.canFire) {
-      this.fire();
+    if (InputManager.keys[GameInputType.FIRE]) {
+      this.fire(now);
     }
     if (InputManager.keys[GameInputType.CHANGE_PERSPECTIVE]) {
       this.toggleCamera();
@@ -618,8 +630,7 @@ export class PlayerTank extends Tank {
       this.lastCameraToggle = performance.now();
     }
   }
-  private fire() {
-    const now = performance.now();
+  private fire(now: number) {
     if (now - this.lastFiredTS <= PlayerTank.config.cooldown) return false;
 
     this.loadedDummyShell.fire();

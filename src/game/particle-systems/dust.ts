@@ -70,13 +70,13 @@ export class PSDust {
     this.currParticleSystem = particleSystem.name;
   }
 
-  public start() {
+  start() {
     if (this.isStarted) return;
 
     this.particleSystems[this.currParticleSystem].start();
     this.isStarted = true;
   }
-  public async stop() {
+  async stop() {
     if (!this.isStarted) return;
 
     this.particleSystems[this.currParticleSystem].stop();

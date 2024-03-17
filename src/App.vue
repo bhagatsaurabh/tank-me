@@ -1,12 +1,36 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
+import type { Nullable } from '@babylonjs/core';
 
 import { closeDB, openDB } from './database/indexeddb';
 import { useAuthStore } from './stores/auth';
 import { useBroadcastStore } from './stores/broadcast';
+import Modal from './components/Modal/Modal.vue';
+import { useNotificationStore } from './stores/notification';
 
 const auth = useAuthStore();
 const broadcast = useBroadcastStore();
+const notifyStore = useNotificationStore();
+
+const modal = ref<Nullable<{ title: string; controls: string[]; message: string }>>(null);
+
+const handleModalDismiss = () => {
+  modal.value = null;
+  const isReload = notifyStore.active?.action === 'reload';
+  notifyStore.clear();
+  if (isReload) {
+    location.reload();
+  }
+};
+
+watch(
+  () => notifyStore.active,
+  () => {
+    if (notifyStore.active?.type === 'popup') {
+      modal.value = { title: notifyStore.active.title, controls: [], message: notifyStore.active.message };
+    }
+  }
+);
 
 onMounted(async () => {
   await openDB();
@@ -21,6 +45,9 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <Modal v-if="modal" :title="modal.title" :controls="modal.controls" @dismiss="handleModalDismiss">
+    {{ modal.message }}
+  </Modal>
   <RouterView />
 </template>
 

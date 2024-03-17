@@ -1,3 +1,5 @@
+@import './transitions.css';
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -20,6 +22,7 @@
   margin: 0;
   position: relative;
   font-weight: normal;
+  font-family: zen, Arial, Helvetica, sans-serif;
 }
 
 body {
@@ -47,4 +50,19 @@ body {
   font-weight: normal;
   min-height: 100vh;
   overflow: hidden;
+}
+
+@font-face {
+  font-family: zen;
+  src: url('/assets/fonts/ZenDots-Regular.ttf');
+}
+
+.ml-0p5 {
+  margin-left: 0.5rem;
+}
+.mr-0p5 {
+  margin-right: 0.5rem;
+}
+.fs-0p75 {
+  font-size: 0.75rem;
 }

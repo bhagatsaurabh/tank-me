@@ -14,13 +14,15 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { sendSignInLinkToEmail, linkWithCredential } from 'firebase/auth';
+import type { Nullable } from '@babylonjs/core';
 
 import { useRemoteDBStore } from './remote';
 import { useBroadcastStore } from './broadcast';
 import * as local from '@/database/driver';
 import { app, remoteDB } from '@/config/firebase';
 import { type Profile } from '@/types/auth';
-import type { AuthStatus, AuthType, Null } from '@/types/types';
+import type { AuthStatus, AuthType } from '@/types/types';
+import { useNotificationStore } from './notification';
 
 const auth = getAuth(app);
 auth.useDeviceLanguage();
@@ -28,10 +30,11 @@ auth.useDeviceLanguage();
 export const useAuthStore = defineStore('auth', () => {
   const remote = useRemoteDBStore();
   const broadcast = useBroadcastStore();
-  const user = ref<Null<User>>(null);
-  const profile = ref<Null<Profile>>(null);
+  const notify = useNotificationStore();
+  const user = ref<Nullable<User>>(null);
+  const profile = ref<Nullable<Profile>>(null);
   const status = ref<AuthStatus>('pending');
-  const unsubFn = ref<Null<Unsubscribe>>(null);
+  const unsubFn = ref<Nullable<Unsubscribe>>(null);
   const stateCheck = ref(false);
 
   function registerAuthListener() {
@@ -120,12 +123,13 @@ export const useAuthStore = defineStore('auth', () => {
       return true;
     } catch (error) {
       console.log(error);
-      // TODO: Notify
-      /* notify.push({
-          type: 'snackbar',
-          status: 'warn',
-          message: 'Something went wrong, please try again'
-        }); */
+      notify.push({
+        type: 'popup',
+        title: 'Error',
+        status: 'warn',
+        message: 'Something went wrong, please try again',
+        action: 'reload'
+      });
     }
     return false;
   }
@@ -157,12 +161,12 @@ export const useAuthStore = defineStore('auth', () => {
       profile.value = null;
     } catch (error) {
       console.log(error);
-      // TODO: Notify
-      /* notify.push({
-        type: 'snackbar',
+      notify.push({
+        type: 'popup',
+        title: 'Error',
         status: 'warn',
         message: 'Something went wrong, please try again'
-      }); */
+      });
     }
   }
   function isVerificationLink(link: string) {

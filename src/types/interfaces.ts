@@ -1,4 +1,4 @@
-import type { PlayerInputs } from './types';
+import type { NotificationAction, NotificationStatus, NotificationType, PlayerInputs } from './types';
 
 export interface IMessageInput {
   step: number;
@@ -13,4 +13,17 @@ export interface IMessageFire {
 export interface IMessageEnd {
   winner: string;
   loser: string;
+}
+
+export interface ITrapBounds {
+  first: Node | null;
+  last: Node | null;
+}
+
+export interface INotification {
+  type: NotificationType;
+  title: string;
+  status: NotificationStatus;
+  message: string;
+  action?: NotificationAction;
 }

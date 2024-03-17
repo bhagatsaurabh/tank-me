@@ -1,3 +1,4 @@
+import type { ITrapBounds } from '@/types/interfaces';
 import { Vector3, type Nullable } from '@babylonjs/core';
 
 export const throttle = (cb: (...argmts: any) => void, delay: number) => {
@@ -70,3 +71,44 @@ export const randInRange = (min: number, max: number) => {
   window.crypto.getRandomValues(buf);
   return denormalize(buf[0] / (0xffffffff + 1), min, max);
 };
+export const trapFocus = (event: KeyboardEvent, el: HTMLElement, bound: ITrapBounds) => {
+  if (event.key === 'Tab') {
+    if (!el.contains(document.activeElement)) {
+      (bound.first as HTMLElement)?.focus();
+      return;
+    }
+
+    if (event.shiftKey) {
+      if (document.activeElement === bound.first) {
+        (bound.last as HTMLElement)?.focus();
+        event.preventDefault();
+      }
+    } else {
+      if (document.activeElement === bound.last) {
+        (bound.first as HTMLElement)?.focus();
+        event.preventDefault();
+      }
+    }
+  }
+};
+export const trapBetween = (root: HTMLElement): ITrapBounds => {
+  if (!root) return { first: null, last: null };
+
+  const treeWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
+    acceptNode: (node) =>
+      (node as HTMLElement).tabIndex >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
+  });
+
+  let currNode = null,
+    lastTabbableNode = null;
+  const firstTabbableNode = treeWalker.nextNode();
+
+  while ((currNode = treeWalker.nextNode()) !== null) {
+    lastTabbableNode = currNode;
+  }
+
+  if (!lastTabbableNode) lastTabbableNode = firstTabbableNode;
+
+  return { first: firstTabbableNode, last: lastTabbableNode };
+};
+export const getSlug = (title: string) => `#pop-${title.toLowerCase().replaceAll(' ', '-')}`;

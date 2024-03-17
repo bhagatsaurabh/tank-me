@@ -5,9 +5,11 @@ import { remoteDB } from '@/config/firebase';
 import { useAuthStore } from './auth';
 import * as local from '@/database/driver';
 import type { Profile } from '@/types/auth';
+import { useNotificationStore } from './notification';
 
 export const useRemoteDBStore = defineStore('remote', () => {
   const auth = useAuthStore();
+  const notify = useNotificationStore();
 
   async function storeProfile(profile: Profile): Promise<boolean> {
     if (!auth.user) return false;
@@ -17,7 +19,12 @@ export const useRemoteDBStore = defineStore('remote', () => {
       return true;
     } catch (error) {
       console.log(error);
-      // TODO: Notify
+      notify.push({
+        type: 'popup',
+        title: 'Error',
+        status: 'error',
+        message: 'Something went wrong, please try again'
+      });
     }
     return false;
   }
@@ -30,7 +37,12 @@ export const useRemoteDBStore = defineStore('remote', () => {
       return true;
     } catch (error) {
       console.log(error);
-      // TODO: Notify
+      notify.push({
+        type: 'popup',
+        title: 'Error',
+        status: 'error',
+        message: 'Something went wrong, please try again'
+      });
     }
     return false;
   }
@@ -42,7 +54,12 @@ export const useRemoteDBStore = defineStore('remote', () => {
       return snap.data().count;
     } catch (error) {
       console.log(error);
-      // TODO: Notify
+      notify.push({
+        type: 'popup',
+        title: 'Error',
+        status: 'error',
+        message: 'Something went wrong, please try again'
+      });
     }
     return -1;
   }

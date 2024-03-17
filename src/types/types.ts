@@ -48,3 +48,7 @@ export type TankSounds = {
 };
 
 export type PlayerInputs = Partial<Record<GameInputType, boolean>>;
+
+export type NotificationType = 'popup';
+export type NotificationStatus = 'info' | 'warn' | 'error' | 'success';
+export type NotificationAction = 'reload';

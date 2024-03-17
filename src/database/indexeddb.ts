@@ -1,6 +1,6 @@
-import type { Null } from '@/types/types';
+import type { Nullable } from '@babylonjs/core';
 
-let localDB: Null<IDBDatabase> = null;
+let localDB: Nullable<IDBDatabase> = null;
 
 const openDB = async () => {
   return new Promise((resolve, reject) => {
@@ -43,7 +43,7 @@ const closeListener = () => {
   console.log('tankmedb closed');
 };
 
-const getObject = async <T>(objStoreName: 'users' | 'files', key: string): Promise<Null<T>> => {
+const getObject = async <T>(objStoreName: 'users' | 'files', key: string): Promise<Nullable<T>> => {
   return new Promise((resolve, reject) => {
     if (!localDB) resolve(null);
     else

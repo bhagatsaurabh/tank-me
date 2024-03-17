@@ -1,14 +1,14 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
+import type { Nullable } from '@babylonjs/core';
 
 import { useAuthStore } from './auth';
-import type { Null } from '@/types/types';
 import type { BroadcastMessage } from '@/types/auth';
 
 // For cross-tab communication
 export const useBroadcastStore = defineStore('broadcast', () => {
   const auth = useAuthStore();
-  const channel = ref<Null<BroadcastChannel>>(null);
+  const channel = ref<Nullable<BroadcastChannel>>(null);
 
   function registerBroadcastListener(name: string) {
     channel.value = new BroadcastChannel(name);

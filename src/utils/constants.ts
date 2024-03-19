@@ -15,3 +15,5 @@ export const keyMap: Record<KeyInputType, GameInputType> = {
   ControlLeft: GameInputType.FIRE,
   ControlRight: GameInputType.FIRE
 };
+
+export const userNameRegex = /^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/;

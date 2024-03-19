@@ -4,16 +4,50 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn(request) {
-    	return request.auth != null;
+      return request.auth != null;
     }
     function signedInUser(request, userId) {
-    	return signedIn(request) && request.auth.uid == userId;
+      return signedIn(request) && request.auth.uid == userId;
+    }
+    function validateProfileCreation(request) {
+      let input = request.resource.data;
+      let validKeys = ['id', 'username', 'email'];
+      let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
+                    input.id is string && input.id == request.auth.uid &&
+                    (input.email != null
+                      ? (input.email is string && input.email == request.auth.token.email && request.auth.token.email_verified == true)
+                      : true
+                    ) &&
+                    input.username == null;
+      return isValid;
+    }
+    function validateProfileUpdation(request, resource) {
+      let input = request.resource.data;
+      let existing = resource.data;
+      let validKeys = ['id', 'username', 'email'];
+      return input.keys().hasOnly(validKeys) && input.keys().hasAny(validKeys) &&
+                    ('id' in input
+                      ? (input.id is string && input.id == request.auth.uid && input.id == existing.id)
+                      : true
+                    ) &&
+                    ('email' in input
+                      ? ((!('provider_id' in request.auth.token) || request.auth.token.provider_id != 'anonymous')
+                          ? (input.email is string && input.email == request.auth.token.email && request.auth.token.email_verified == true)
+                          : true
+                        )
+                      : true
+                    ) && 
+                    ('username' in input
+                      ? (input.username is string && input.username.matches('^.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{3,}$'))
+                      : true
+                    );
     }
 
     match /users/{userId} {
+      allow create: if signedInUser(request, userId) && validateProfileCreation(request)
       allow read: if signedIn(request)
-      allow create, delete: if signedInUser(request, userId)
-      allow update: if signedInUser(request, userId)
+      allow update: if signedInUser(request, userId) && validateProfileUpdation(request, resource)
+      allow delete: if signedInUser(request, userId)
     }
   }
 }

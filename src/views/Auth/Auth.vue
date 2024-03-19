@@ -8,6 +8,7 @@ import type { Nullable } from '@babylonjs/core';
 import Button from '@/components/Common/Button/Button.vue';
 import InputText from '@/components/Common/InputText/InputText.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
+import { userNameRegex } from '@/utils/constants';
 // import Modal from '@/components/Modal/Modal.vue';
 
 const auth = useAuthStore();
@@ -16,29 +17,31 @@ const router = useRouter();
 
 const email = ref<string>('');
 const username = ref<string>('');
-const busy = ref(false);
 const errorMsg = ref<Nullable<string>>(null);
-const emailEl = ref<Nullable<InputText>>(null);
+const emailEl = ref<Nullable<InstanceType<typeof InputText>>>(null);
+const usernameEl = ref<Nullable<InstanceType<typeof InputText>>>(null);
 const didSignIn = ref(false);
 // const modal = ref<Nullable<{ title: string; controls: string[]; message: string }>>(null);
 // const showModal = ref<boolean>(false);
 
 const handleSignIn = async (provider: 'email' | 'guest') => {
-  if (provider === 'email' && emailEl.value.validate(email.value)) {
+  if (provider === 'email' && emailEl.value?.validate(email.value)) {
     return;
   }
   await auth.signIn(provider, email.value);
   didSignIn.value = true;
 };
 const handleUsername = async () => {
-  busy.value = true;
+  if (usernameEl.value?.validate(username.value)) {
+    return;
+  }
+
   const existingCount = await remote.usersCountByName(username.value);
   if (existingCount !== 0) {
-    errorMsg.value = 'Username already exists';
+    usernameEl.value?.invalidate('Username is already taken');
   } else {
     await auth.updateUserProfile({ username: username.value });
   }
-  busy.value = false;
   router.push('/lobby');
 };
 const validateEmail = (val: string) => {
@@ -46,6 +49,11 @@ const validateEmail = (val: string) => {
   // eslint-disable-next-line no-useless-escape
   if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return null;
   return 'Not a valid e-mail';
+};
+const validateUsername = (val: string) => {
+  if (!val) return 'Please enter a username';
+  if (!userNameRegex.test(val)) return 'Not a valid username';
+  return null;
 };
 
 watch(
@@ -85,10 +93,10 @@ watch(
     </Modal> -->
   <main class="auth-container">
     <div class="background"></div>
-    <Transition name="fade-slide-ltr">
+    <Transition name="fade">
       <div class="auth-card" v-if="auth.status === 'signed-out'">
+        <h3 class="mb-2 c-0">Sign In</h3>
         <InputText
-          class="mb-2p5"
           ref="emailEl"
           v-model="email"
           type="email"
@@ -97,11 +105,11 @@ watch(
           :validator="(val: string) => validateEmail(val)"
         />
         <span v-if="errorMsg">{{ errorMsg }}</span>
-        <Button :action="() => handleSignIn('email')" async>Verify</Button>
+        <Button class="mt-1" :action="() => handleSignIn('email')" async>Verify</Button>
         <br />
-        <Button :action="() => handleSignIn('guest')" async>Guest</Button>
+        <Button :action="() => handleSignIn('guest')" async>Sign In as Guest</Button>
       </div>
-      <div class="auth-card" v-else-if="(auth.status === 'pending' || busy) && didSignIn">
+      <div class="auth-card" v-else-if="auth.status === 'pending' && didSignIn">
         <span>Please check your provided e-mail for verification link</span>
         <br />
         <span class="fs-0p75">Waiting for verification...</span>
@@ -110,9 +118,16 @@ watch(
         Please open the verification link on same device
       </div>
       <div class="auth-card" v-else-if="auth.status === 'signed-in' && !auth.profile?.username">
-        Enter username:
-        <input v-model="username" type="text" spellcheck="false" />
-        <button @click="handleUsername">Proceed</button>
+        <h3 class="mb-2 c-0">New Username</h3>
+        <InputText
+          ref="usernameEl"
+          v-model="username"
+          type="text"
+          placeholder="Username"
+          :attrs="{ spellCheck: false }"
+          :validator="(val: string) => validateUsername(val)"
+        />
+        <Button class="mt-1" :action="() => handleUsername()" async>Play</Button>
       </div>
       <div class="auth-card" v-else-if="auth.status === 'verified'">Verified successfully</div>
       <div class="auth-card" v-else>

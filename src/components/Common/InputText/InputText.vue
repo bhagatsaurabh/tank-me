@@ -91,9 +91,10 @@ defineExpose({ native, validate, invalidate });
   width: 100%;
   font-size: 1rem;
   border: none;
-  padding: 0.5rem 0 0.5rem 0;
+  padding: 0.5rem;
   background-color: transparent;
   color: #dedede;
+  transition: all 0.1s linear;
 }
 
 .input::after {
@@ -118,6 +119,9 @@ defineExpose({ native, validate, invalidate });
 }
 .input input:focus {
   outline: none;
+  background-color: #d9d9d9cc;
+  color: #1f1f1f;
+  box-shadow: 0px -8px 10px -6px inset;
 }
 .errormsg {
   position: absolute;

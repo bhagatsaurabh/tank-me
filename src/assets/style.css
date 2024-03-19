@@ -66,3 +66,15 @@ body {
 .fs-0p75 {
   font-size: 0.75rem;
 }
+.mb-2 {
+  margin-bottom: 2rem;
+}
+.mb-2p5 {
+  margin-bottom: 2.5rem;
+}
+.mt-1 {
+  margin-top: 1rem;
+}
+.c-0 {
+  color: #d9d9d9;
+}

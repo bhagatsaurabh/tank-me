@@ -35,6 +35,7 @@ defineProps({
   animation-timing-function: linear;
   animation-fill-mode: forwards;
   animation-iteration-count: infinite;
+  filter: invert(1);
 }
 
 .tank-icon {

@@ -70,28 +70,7 @@ export class World {
   static async create(client: GameClient, canvas: HTMLCanvasElement): Promise<World> {
     if (!World.instance && client?.getSessionId()) {
       // Pre-fetch all assets
-      await AssetLoader.load([
-        { path: '/assets/game/models/Panzer I/Panzer_I.glb' },
-        { path: '/assets/game/map/desert/height.png' },
-        { path: '/assets/game/map/desert/diffuse.png' },
-        { path: '/assets/game/textures/explosion.jpg' },
-        { path: '/assets/game/textures/flare.png' },
-        { path: '/assets/game/textures/fire.jpg' },
-        { path: '/assets/game/textures/grass.png' },
-        { path: '/assets/game/spritesheets/smoke_dust_cloud.png' },
-        { path: '/assets/game/spritesheets/explosion.png' },
-        { path: '/assets/game/spritesheets/fire.png' },
-        { path: '/assets/game/audio/explosion.mp3', format: 'arraybuffer' },
-        { path: '/assets/game/audio/cannon.mp3', format: 'arraybuffer' },
-        { path: '/assets/game/audio/idle.mp3', format: 'arraybuffer' },
-        { path: '/assets/game/audio/run.mp3', format: 'arraybuffer' },
-        { path: '/assets/game/audio/load.mp3', format: 'arraybuffer' },
-        { path: '/assets/game/audio/whizz1.mp3', format: 'arraybuffer' },
-        { path: '/assets/game/audio/whizz2.mp3', format: 'arraybuffer' },
-        { path: '/assets/game/gui/ads.png' },
-        { path: '/assets/game/gui/overlay.png' },
-        { path: '/assets/game/gui/shell.png' }
-      ]);
+      await AssetLoader.load();
 
       // Init engine
       const engine = new Engine(canvas, true, {

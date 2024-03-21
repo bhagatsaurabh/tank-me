@@ -33,9 +33,13 @@ export class GameClient {
     return GameClient.instance;
   }
   static disconnect() {
+    const lobby = useLobbyStore();
+
     const instance = GameClient.instance;
     instance.rooms.desert?.removeAllListeners();
     instance.rooms.desert?.leave(true);
+
+    lobby.status = 'idle';
   }
 
   async joinRoom(name: 'lobby' | 'desert', accessToken: string) {

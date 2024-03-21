@@ -1,6 +1,8 @@
 @import './transitions.css';
 
 :root {
+  --header-height: 3rem;
+
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -78,3 +80,7 @@ body {
 .c-0 {
   color: #d9d9d9;
 }
+.ml-1 {
+  margin-left: 1rem;
+}
+

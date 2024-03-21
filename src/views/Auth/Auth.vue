@@ -107,7 +107,8 @@ watch(
         <span v-if="errorMsg">{{ errorMsg }}</span>
         <Button class="mt-1" :action="() => handleSignIn('email')" async>Verify</Button>
         <br />
-        <Button :action="() => handleSignIn('guest')" async>Sign In as Guest</Button>
+        <br />
+        <Button class="guest-control" :action="() => handleSignIn('guest')" async>Sign In as Guest</Button>
       </div>
       <div class="auth-card" v-else-if="auth.status === 'pending' && didSignIn">
         <span>Please check your provided e-mail for verification link</span>
@@ -199,5 +200,12 @@ watch(
 .wait {
   width: 10rem;
   height: 2rem;
+  overflow: hidden;
+  background-color: #000;
+}
+.guest-control {
+  width: min-content;
+  margin-left: auto;
+  text-wrap: nowrap;
 }
 </style>

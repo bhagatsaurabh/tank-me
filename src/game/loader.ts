@@ -1,5 +1,7 @@
 import { getFile, storeFile } from '@/database/driver';
 import { useLoaderStore } from '@/stores/loader';
+import { useNotificationStore } from '@/stores/notification';
+import { Notifications } from '@/utils/constants';
 import { readAsArrayBuffer, readAsDataURL } from '@/utils/utils';
 
 export class AssetLoader {
@@ -30,6 +32,7 @@ export class AssetLoader {
 
   static async load() {
     const loaderStore = useLoaderStore();
+    const notify = useNotificationStore();
     loaderStore.isLoading = true;
 
     try {
@@ -107,7 +110,7 @@ export class AssetLoader {
         }
       }
     } catch (error) {
-      console.log(error);
+      notify.push(Notifications.ASSET_LOAD_FAILED({ error }));
     } finally {
       loaderStore.isLoading = false;
     }

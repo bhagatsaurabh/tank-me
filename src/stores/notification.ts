@@ -9,6 +9,9 @@ export const useNotificationStore = defineStore('notification', () => {
 
   function push(notification: INotification) {
     active.value = notification;
+    if (notification.error) {
+      console.log(notification.error);
+    }
   }
   function clear() {
     active.value = null;

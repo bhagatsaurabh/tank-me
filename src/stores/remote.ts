@@ -6,6 +6,7 @@ import { useAuthStore } from './auth';
 import * as local from '@/database/driver';
 import type { Profile } from '@/types/auth';
 import { useNotificationStore } from './notification';
+import { Notifications } from '@/utils/constants';
 
 export const useRemoteDBStore = defineStore('remote', () => {
   const auth = useAuthStore();
@@ -18,13 +19,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
       await local.updateProfile(profile);
       return true;
     } catch (error) {
-      console.log(error);
-      notify.push({
-        type: 'popup',
-        title: 'Error',
-        status: 'error',
-        message: 'Something went wrong, please try again'
-      });
+      notify.push(Notifications.GENERIC({ error }));
     }
     return false;
   }
@@ -36,13 +31,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
       await local.updateProfile({ ...auth.profile });
       return true;
     } catch (error) {
-      console.log(error);
-      notify.push({
-        type: 'popup',
-        title: 'Error',
-        status: 'error',
-        message: 'Something went wrong, please try again'
-      });
+      notify.push(Notifications.GENERIC({ error }));
     }
     return false;
   }
@@ -53,13 +42,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
       );
       return snap.data().count;
     } catch (error) {
-      console.log(error);
-      notify.push({
-        type: 'popup',
-        title: 'Error',
-        status: 'error',
-        message: 'Something went wrong, please try again'
-      });
+      notify.push(Notifications.GENERIC({ error }));
     }
     return -1;
   }

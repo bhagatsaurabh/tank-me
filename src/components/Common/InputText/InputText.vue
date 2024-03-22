@@ -76,7 +76,9 @@ defineExpose({ native, validate, invalidate });
       v-bind="attrs"
     />
     <Transition name="slide-down">
-      <span v-if="validation !== 'Off' && !!errormsg" class="errormsg">{{ errormsg }}</span>
+      <div v-if="validation !== 'Off' && !!errormsg" class="errormsg">
+        <span>{{ errormsg }}</span>
+      </div>
     </Transition>
   </span>
 </template>
@@ -133,12 +135,19 @@ defineExpose({ native, validate, invalidate });
   white-space: nowrap;
   font-weight: 600;
   font-size: 0.75rem;
-  color: #ed6e6e;
+  color: red;
   transform-origin: top;
+  background-color: #ffffff5e;
 }
-
-/* background-color: transparent;#676767
-color: #e6e6e6;
-border: 1px solid black;
-padding: 0.5rem; */
+.errormsg::before {
+  content: '';
+  display: block;
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  background-color: red;
+}
+.errormsg span {
+  margin-left: 0.5rem;
+}
 </style>

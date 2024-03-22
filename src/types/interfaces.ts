@@ -26,4 +26,5 @@ export interface INotification {
   status: NotificationStatus;
   message: string;
   action?: NotificationAction;
+  error?: unknown;
 }

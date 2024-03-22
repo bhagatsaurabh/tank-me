@@ -46,7 +46,7 @@ onUnmounted(() => {
 
 <template>
   <Modal v-if="modal" :title="modal.title" :controls="modal.controls" @dismiss="handleModalDismiss">
-    {{ modal.message }}
+    <template v-html="modal.message"></template>
   </Modal>
   <RouterView />
 </template>

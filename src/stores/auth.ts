@@ -23,6 +23,7 @@ import { app, remoteDB } from '@/config/firebase';
 import { type Profile } from '@/types/auth';
 import type { AuthStatus, AuthType } from '@/types/types';
 import { useNotificationStore } from './notification';
+import { Notifications } from '@/utils/constants';
 
 const auth = getAuth(app);
 auth.useDeviceLanguage();
@@ -122,14 +123,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
       return true;
     } catch (error) {
-      console.log(error);
-      notify.push({
-        type: 'popup',
-        title: 'Error',
-        status: 'warn',
-        message: 'Something went wrong, please try again',
-        action: 'reload'
-      });
+      notify.push(Notifications.SIGN_IN_FAILED({ error }));
     }
     return false;
   }
@@ -159,15 +153,11 @@ export const useAuthStore = defineStore('auth', () => {
       await auth.signOut();
       user.value = null;
       profile.value = null;
+      return true;
     } catch (error) {
-      console.log(error);
-      notify.push({
-        type: 'popup',
-        title: 'Error',
-        status: 'warn',
-        message: 'Something went wrong, please try again'
-      });
+      notify.push(Notifications.GENERIC({ error }));
     }
+    return false;
   }
   function isVerificationLink(link: string) {
     return isSignInWithEmailLink(auth, link);

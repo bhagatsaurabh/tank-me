@@ -1,3 +1,4 @@
+import { noop } from '@/utils/utils';
 import type { Nullable } from '@babylonjs/core';
 
 let localDB: Nullable<IDBDatabase> = null;
@@ -39,9 +40,7 @@ const closeDB = () => {
   localDB?.removeEventListener('close', closeListener);
   localDB?.close();
 };
-const closeListener = () => {
-  console.log('tankmedb closed');
-};
+const closeListener = noop;
 
 const getObject = async <T>(objStoreName: 'users' | 'files', key: string): Promise<Nullable<T>> => {
   return new Promise((resolve, reject) => {

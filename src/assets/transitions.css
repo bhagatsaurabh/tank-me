@@ -8,6 +8,19 @@
   opacity: 0;
 }
 
+/* fade-down */
+.fade-down-enter-active,
+.fade-down-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+.fade-down-enter-from,
+.fade-down-leave-to {
+  opacity: 0;
+  transform: translateY(-1rem);
+}
+
 /* scale-fade */
 .scale-fade-enter-active,
 .scale-fade-leave-active {

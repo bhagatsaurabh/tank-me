@@ -147,7 +147,7 @@ defineExpose({
   }
   .control:active:hover {
     box-shadow:
-      2px 2px 4px 0 #000,
+      0px 0px 0px 0 #000,
       2.5px 2.5px 5px 0 black inset;
   }
 }

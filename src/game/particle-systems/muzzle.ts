@@ -168,10 +168,8 @@ export class PSMuzzle {
     /* this.psDelayedSmoke.start();
     // Workaround since GPUParticles are one-off & continuous
     if (!(await delay(3000, (clear) => this.unsub.push(clear)))) return;
-    console.log('stopping');
     this.psDelayedSmoke.stop();
     if (!(await delay(3000, (clear) => this.unsub.push(clear)))) return;
-    console.log('disposing');
     this.psDelayedSmoke.dispose(false); */
   }
   stop() {

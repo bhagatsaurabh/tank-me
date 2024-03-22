@@ -44,13 +44,7 @@ onUpdated(() => {
 
 <template>
   <span class="icon-container">
-    <img
-      :alt="alt"
-      :style="{ ...config, maxWidth: `${size}rem` }"
-      class="icon"
-      :src="source"
-      :draggable="false"
-    />
+    <img :alt="alt" :style="{ maxWidth: `${size}rem` }" class="icon" :src="source" :draggable="false" />
   </span>
 </template>
 

@@ -7,6 +7,8 @@ import type { LobbyStatus } from '@/types/types';
 import type { RoomState } from '@/game/state';
 import { GameClient } from '@/game/client';
 import type { Nullable } from '@babylonjs/core';
+import { useNotificationStore } from './notification';
+import { Notifications } from '@/utils/constants';
 
 export const useLobbyStore = defineStore('lobby', () => {
   const auth = useAuthStore();
@@ -18,6 +20,7 @@ export const useLobbyStore = defineStore('lobby', () => {
   const allRooms = ref<Colyseus.RoomAvailable[]>([]);
 
   async function connect() {
+    const notify = useNotificationStore();
     client.value = GameClient.connect();
     if (!client.value) return;
 
@@ -40,7 +43,7 @@ export const useLobbyStore = defineStore('lobby', () => {
       status.value = 'idle';
       return true;
     } catch (error) {
-      console.log(error);
+      notify.push(Notifications.ROOM_JOIN_FAILED({ error }));
     }
     status.value = 'failed';
     return false;
@@ -48,12 +51,13 @@ export const useLobbyStore = defineStore('lobby', () => {
   async function match(map: 'desert') {
     if (!client.value) return false;
 
+    const notify = useNotificationStore();
     status.value = 'matchmaking';
     try {
       gameRoom.value = await client.value.joinRoom(map, (auth.user as any).accessToken);
       return true;
     } catch (error) {
-      console.log(error);
+      notify.push(Notifications.ROOM_JOIN_FAILED({ error }));
     }
     status.value = 'idle';
     return false;

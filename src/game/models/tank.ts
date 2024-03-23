@@ -16,6 +16,7 @@ import { type TankSounds, type TankSoundType } from '@/types/types';
 import { World } from '../main';
 import type { PlayerTank } from './player';
 import type { EnemyTank } from './enemy';
+import type { EnemyAITank } from './enemy-ai';
 
 export class Tank {
   private static commonConfig = {
@@ -45,8 +46,8 @@ export class Tank {
     'dust-right'?: PSDust;
     explosion?: PSTankExplosion;
   } = {};
-  private isStuck = false;
   protected observers: Observer<any>[] = [];
+  lid!: string;
 
   protected constructor(
     public world: World,
@@ -300,5 +301,14 @@ export class Tank {
   dispose() {
     this.observers.forEach((observer) => observer.remove());
     this.body.dispose();
+  }
+
+  damage(amount: number) {
+    if (!this.world.vsAI) return;
+    (this as unknown as PlayerTank | EnemyAITank).health -= amount;
+
+    if ((this as unknown as PlayerTank | EnemyAITank).health <= 0) {
+      this.world.matchEnd({ loser: this.lid, winner: this.lid === 'Player' ? 'Enemy' : 'Player' });
+    }
   }
 }

@@ -1,5 +1,5 @@
-import { TransformNode, type AbstractMesh, type Mesh, type Nullable, MeshBuilder } from '@babylonjs/core';
-import { Vector3, Axis, Space, Scalar, Quaternion } from '@babylonjs/core/Maths';
+import { TransformNode, type AbstractMesh, type Mesh, MeshBuilder } from '@babylonjs/core';
+import { Vector3, Axis, Space, Scalar } from '@babylonjs/core/Maths';
 import {
   PhysicsShapeConvexHull,
   PhysicsShapeContainer,
@@ -8,25 +8,18 @@ import {
   Physics6DoFConstraint,
   PhysicsShapeSphere,
   PhysicsAggregate,
-  LockConstraint,
   PhysicsConstraintAxis,
-  PhysicsConstraintMotorType,
-  HavokPlugin
+  PhysicsConstraintMotorType
 } from '@babylonjs/core/Physics';
-import { type FreeCamera } from '@babylonjs/core/Cameras';
-import { Control, Container, Image, Rectangle } from '@babylonjs/gui';
 
 import { World } from '../main';
-import type { Player } from '../state';
 import { Tank } from './tank';
-import { avg, clamp, forwardVector, nzpyVector } from '@/utils/utils';
-import { AssetLoader } from '../loader';
+import { avg, clamp } from '@/utils/utils';
 import { GameInputType, type PlayerInputs } from '@/types/types';
 import { Shell } from './shell';
-import { InputManager, type IInputHistory } from '../input';
 import { Ground } from './ground';
 
-export class PlayerTank extends Tank {
+export class EnemyAITank extends Tank {
   private static config = {
     maxEnginePower: 100,
     speedModifier: 10,
@@ -57,66 +50,37 @@ export class PlayerTank extends Tank {
   };
   private axleJoints: TransformNode[] = [];
   axles: Mesh[] = [];
-  innerWheels!: AbstractMesh;
   private axleMotors: Physics6DoFConstraint[] = [];
   private barrelMotor!: Physics6DoFConstraint;
   private turretMotor!: Physics6DoFConstraint;
-  sights: (Control | Container)[] = [];
   leftSpeed: number = 0;
   rightSpeed: number = 0;
-  private lastCameraToggle = 0;
-  private cameraToggleDelay = 1000;
   private lastFiredTS = 0;
   physicsBodies: PhysicsBody[] = [];
-  isReconciling = false;
   canFire = false;
   health: number = 100;
-  loadSoundPlayed = false;
 
-  constructor(
-    world: World,
-    state: Nullable<Player>,
-    rootMesh: AbstractMesh,
-    spawn: Vector3,
-    public cameras: { tpp: FreeCamera; fpp: FreeCamera }
-  ) {
-    super(world, state);
+  constructor(world: World, rootMesh: AbstractMesh, spawn: Vector3) {
+    super(world, null);
 
-    if (world.vsAI) this.lid = 'Player';
-    this.isPlayer = true;
+    if (world.vsAI) this.lid = 'Enemy';
     this.setTransform(rootMesh, spawn);
     this.setPhysics(rootMesh as Mesh);
-    this.setGUI();
-
-    cameras.tpp.position = this.body.getDirection(nzpyVector).normalize().scale(15).add(spawn);
-    cameras.fpp.parent = this.barrel;
 
     this.observers.push(this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
   }
-  static async create(
-    world: World,
-    state: Nullable<Player>,
-    rootMesh: AbstractMesh,
-    spawn: Vector3,
-    cameras: Nullable<{ tpp: FreeCamera; fpp: FreeCamera }>
-  ) {
-    const cloned = rootMesh.clone(
-      `${rootMesh.name.replace(':Ref', '')}:${world.vsAI ? 'Player' : state!.sid}`,
-      null
-    )!;
-    const newTank = new PlayerTank(world, state, cloned, spawn, cameras!);
+  static async create(world: World, rootMesh: AbstractMesh, spawn: Vector3) {
+    const cloned = rootMesh.clone(`${rootMesh.name.replace(':Ref', '')}:Enemy`, null)!;
+    const newTank = new EnemyAITank(world, cloned, spawn);
     await newTank.init();
-    newTank.setPreStep(false);
-    /* newTank.observers.push(
-      newTank.sounds['load']!.onEndedObservable.add(() => (newTank.isLoadSoundEnded = true))
-    ); */
+    newTank.setPreStep(true);
     return newTank;
   }
 
   private setTransform(rootMesh: AbstractMesh, spawn: Vector3) {
     this.mesh = rootMesh;
     const body = new TransformNode(`Root:${rootMesh.name}`, this.world.scene);
-    for (let i = 0; i < PlayerTank.config.noOfWheels; i += 1) {
+    for (let i = 0; i < EnemyAITank.config.noOfWheels; i += 1) {
       const axleJoint = new TransformNode(`axlejoint${i}`, this.world.scene);
       const axleMesh = MeshBuilder.CreateSphere(
         `axle${i}`,
@@ -135,7 +99,6 @@ export class PlayerTank extends Tank {
     this.barrel = childMeshes[0];
     this.rightExhaust = childMeshes[1];
     this.leftExhaust = childMeshes[2];
-    this.innerWheels = childMeshes[3];
     this.leftTrack = childMeshes[4];
     this.rightTrack = childMeshes[5];
     this.turret = childMeshes[6];
@@ -167,17 +130,17 @@ export class PlayerTank extends Tank {
     bodyShapeContainer.addChildFromParent(this.body, bodyShape, rootMesh);
     const bodyPB = new PhysicsBody(this.body, PhysicsMotionType.DYNAMIC, false, this.world.scene);
     bodyShapeContainer.material = {
-      friction: PlayerTank.config.bodyFriction,
-      restitution: PlayerTank.config.bodyRestitution
+      friction: EnemyAITank.config.bodyFriction,
+      restitution: EnemyAITank.config.bodyRestitution
     };
     bodyPB.shape = bodyShapeContainer;
-    bodyPB.setMassProperties({ mass: PlayerTank.config.bodyMass, centerOfMass: Vector3.Zero() });
+    bodyPB.setMassProperties({ mass: EnemyAITank.config.bodyMass, centerOfMass: Vector3.Zero() });
 
     const turretShape = new PhysicsShapeConvexHull(this.turret as Mesh, this.world.scene);
     turretShape.material = { friction: 0, restitution: 0 };
     const turretPB = new PhysicsBody(this.turret, PhysicsMotionType.DYNAMIC, false, this.world.scene);
     turretPB.shape = turretShape;
-    turretPB.setMassProperties({ mass: PlayerTank.config.turretMass, centerOfMass: Vector3.Zero() });
+    turretPB.setMassProperties({ mass: EnemyAITank.config.turretMass, centerOfMass: Vector3.Zero() });
     this.turretMotor = this.createTurretConstraint(
       this.turret.position,
       Vector3.Zero(),
@@ -193,7 +156,7 @@ export class PlayerTank extends Tank {
     barrelShape.material = { friction: 0, restitution: 0 };
     const barrelPB = new PhysicsBody(this.barrel, PhysicsMotionType.DYNAMIC, false, this.world.scene);
     barrelPB.shape = barrelShape;
-    barrelPB.setMassProperties({ mass: PlayerTank.config.barrelMass, centerOfMass: Vector3.Zero() });
+    barrelPB.setMassProperties({ mass: EnemyAITank.config.barrelMass, centerOfMass: Vector3.Zero() });
     this.barrelMotor = this.createBarrelConstraint(
       this.barrel.position,
       Vector3.Zero(),
@@ -219,7 +182,7 @@ export class PlayerTank extends Tank {
     ];
 
     const axleShape = new PhysicsShapeSphere(Vector3.Zero(), 0.375, this.world.scene);
-    for (let i = 0; i < PlayerTank.config.noOfWheels; i += 1) {
+    for (let i = 0; i < EnemyAITank.config.noOfWheels; i += 1) {
       const axleJoint = this.axleJoints[i];
       const axle = this.axles[i];
 
@@ -231,9 +194,9 @@ export class PlayerTank extends Tank {
         axle,
         axleShape,
         {
-          mass: PlayerTank.config.wheelMass,
-          friction: PlayerTank.config.wheelFriction,
-          restitution: PlayerTank.config.wheelRestitution
+          mass: EnemyAITank.config.wheelMass,
+          friction: EnemyAITank.config.wheelFriction,
+          restitution: EnemyAITank.config.wheelRestitution
         },
         this.world.scene
       );
@@ -245,26 +208,10 @@ export class PlayerTank extends Tank {
       this.axles.push(axle);
     }
 
-    const triggerShape = new PhysicsShapeSphere(Vector3.Zero(), 5, this.world.scene);
-    triggerShape.isTrigger = true;
-    const refPB = new PhysicsBody(this.innerWheels, PhysicsMotionType.DYNAMIC, false, this.world.scene);
-    this.innerWheels.physicsBody!.setMassProperties({ mass: 0.1 });
-    this.body.physicsBody!.addConstraint(
-      this.innerWheels.physicsBody!,
-      new LockConstraint(Vector3.Zero(), Vector3.Zero(), forwardVector, forwardVector, this.world.scene)
-    );
-    this.innerWheels.physicsBody!.shape = triggerShape;
-    this.observers.push(
-      (
-        this.world.scene.getPhysicsEngine()?.getPhysicsPlugin() as HavokPlugin
-      ).onTriggerCollisionObservable.add((event) => this.trigger(event))
-    );
-
     this.physicsBodies.push(
       bodyPB,
       turretPB,
       barrelPB,
-      refPB,
       ...this.axles.map((axle) => axle.physicsBody!),
       Ground.mesh.physicsBody!
     );
@@ -288,10 +235,10 @@ export class PlayerTank extends Tank {
         { axis: PhysicsConstraintAxis.LINEAR_X, minLimit: 0, maxLimit: 0 },
         {
           axis: PhysicsConstraintAxis.LINEAR_Y,
-          minLimit: PlayerTank.config.suspensionMinLimit,
-          maxLimit: PlayerTank.config.suspensionMaxLimit,
-          stiffness: PlayerTank.config.suspensionStiffness,
-          damping: PlayerTank.config.suspensionDamping
+          minLimit: EnemyAITank.config.suspensionMinLimit,
+          maxLimit: EnemyAITank.config.suspensionMaxLimit,
+          stiffness: EnemyAITank.config.suspensionStiffness,
+          damping: EnemyAITank.config.suspensionDamping
         },
         { axis: PhysicsConstraintAxis.LINEAR_Z, minLimit: 0, maxLimit: 0 },
         { axis: PhysicsConstraintAxis.ANGULAR_Y, minLimit: 0, maxLimit: 0 },
@@ -301,9 +248,9 @@ export class PlayerTank extends Tank {
     );
 
     parent.addConstraint(child, _6dofConstraint);
-    _6dofConstraint.setAxisFriction(PhysicsConstraintAxis.ANGULAR_X, PlayerTank.config.axleFriction);
+    _6dofConstraint.setAxisFriction(PhysicsConstraintAxis.ANGULAR_X, EnemyAITank.config.axleFriction);
     _6dofConstraint.setAxisMotorType(PhysicsConstraintAxis.ANGULAR_X, PhysicsConstraintMotorType.VELOCITY);
-    _6dofConstraint.setAxisMotorMaxForce(PhysicsConstraintAxis.ANGULAR_X, PlayerTank.config.maxEnginePower);
+    _6dofConstraint.setAxisMotorMaxForce(PhysicsConstraintAxis.ANGULAR_X, EnemyAITank.config.maxEnginePower);
 
     return _6dofConstraint;
   }
@@ -332,8 +279,8 @@ export class PlayerTank extends Tank {
         { axis: PhysicsConstraintAxis.LINEAR_Z, minLimit: 0, maxLimit: 0 },
         {
           axis: PhysicsConstraintAxis.ANGULAR_X,
-          minLimit: -PlayerTank.config.maxBarrelAngle,
-          maxLimit: PlayerTank.config.maxBarrelAngle
+          minLimit: -EnemyAITank.config.maxBarrelAngle,
+          maxLimit: EnemyAITank.config.maxBarrelAngle
         },
         { axis: PhysicsConstraintAxis.ANGULAR_Y, minLimit: 0, maxLimit: 0 },
         { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 }
@@ -374,8 +321,8 @@ export class PlayerTank extends Tank {
         { axis: PhysicsConstraintAxis.ANGULAR_X, minLimit: 0, maxLimit: 0 },
         {
           axis: PhysicsConstraintAxis.ANGULAR_Y,
-          minLimit: -PlayerTank.config.maxTurretAngle,
-          maxLimit: PlayerTank.config.maxTurretAngle
+          minLimit: -EnemyAITank.config.maxTurretAngle,
+          maxLimit: EnemyAITank.config.maxTurretAngle
         },
         { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 }
       ],
@@ -389,97 +336,31 @@ export class PlayerTank extends Tank {
 
     return _6dofConstraint;
   }
-  private setGUI() {
-    const scope = new Image('ads', AssetLoader.assets['/assets/game/gui/ads.png'] as string);
-    scope.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    scope.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    scope.autoScale = true;
-    scope.width = '50%';
-    scope.fixedRatio = 1;
-    scope.stretch = Image.STRETCH_FILL;
-    scope.shadowBlur = 3;
-    scope.shadowColor = '#AFE1AF';
-    scope.alpha = 0.8;
-    scope.isVisible = false;
-    scope.scaleX = 1.5;
-    scope.scaleY = 1.5;
-    scope.zIndex = -1;
-    this.world.gui.addControl(scope);
-
-    const overlay = new Image('overlay', AssetLoader.assets['/assets/game/gui/overlay.png'] as string);
-    overlay.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    overlay.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    overlay.height = '100%';
-    overlay.fixedRatio = 1;
-    overlay.isVisible = false;
-    overlay.zIndex = -1;
-    this.world.gui.addControl(overlay);
-
-    const padWidth = (this.world.engine.getRenderWidth(true) - this.world.engine.getRenderHeight(true)) / 2;
-    const padLeft = new Rectangle('left-pad');
-    padLeft.width = `${padWidth}px`;
-    padLeft.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    padLeft.color = '#000';
-    padLeft.background = '#000';
-    padLeft.isVisible = false;
-    padLeft.zIndex = -1;
-    this.world.gui.addControl(padLeft);
-    const padRight = new Rectangle('right-pad');
-    padRight.width = `${padWidth}px`;
-    padRight.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    padRight.color = '#000';
-    padRight.background = '#000';
-    padRight.isVisible = false;
-    padRight.zIndex = -1;
-    this.world.gui.addControl(padRight);
-
-    this.sights.push(scope, overlay, padLeft, padRight);
-  }
   private setPreStep(value: boolean) {
     this.body.physicsBody!.disablePreStep = value;
     this.turret.physicsBody!.disablePreStep = value;
     this.barrel.physicsBody!.disablePreStep = value;
-    (this as unknown as PlayerTank).innerWheels.physicsBody!.disablePreStep = value;
-    (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = value));
+    (this as unknown as EnemyAITank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = value));
   }
   private beforeStep() {
-    const now = performance.now();
-    this.canFire = now - this.lastFiredTS > PlayerTank.config.cooldown;
-    if (this.canFire) {
-      // Reset
-      this.loadSoundPlayed = false;
-    }
-    if (now - this.lastFiredTS > PlayerTank.config.loadCooldown && !this.canFire && !this.loadSoundPlayed) {
-      this.playSound('load');
-      this.loadSoundPlayed = true;
-    }
-
     this.animate(this.leftSpeed, this.rightSpeed);
 
     if (this.world.client.isMatchEnded) return;
-
-    if (InputManager.keys[GameInputType.FIRE]) {
-      this.fire(now);
-    }
-    if (InputManager.keys[GameInputType.CHANGE_PERSPECTIVE]) {
-      this.toggleCamera();
-      this.sights.forEach((ui) => (ui.isVisible = this.world.scene.activeCamera === this.cameras?.fpp));
-    }
   }
 
   private accelerate(dt: number, turningDirection: -1 | 0 | 1) {
     if (turningDirection !== -1) {
       this.leftSpeed = clamp(
-        this.leftSpeed + dt * PlayerTank.config.speedModifier,
-        -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        this.leftSpeed + dt * EnemyAITank.config.speedModifier,
+        -EnemyAITank.config.maxSpeed,
+        EnemyAITank.config.maxSpeed
       );
     }
     if (turningDirection !== 1) {
       this.rightSpeed = clamp(
-        this.rightSpeed + dt * PlayerTank.config.speedModifier,
-        -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        this.rightSpeed + dt * EnemyAITank.config.speedModifier,
+        -EnemyAITank.config.maxSpeed,
+        EnemyAITank.config.maxSpeed
       );
     }
 
@@ -490,16 +371,16 @@ export class PlayerTank extends Tank {
   private reverse(dt: number, turningDirection: -1 | 0 | 1) {
     if (turningDirection !== -1) {
       this.leftSpeed = clamp(
-        this.leftSpeed - dt * PlayerTank.config.speedModifier,
-        -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        this.leftSpeed - dt * EnemyAITank.config.speedModifier,
+        -EnemyAITank.config.maxSpeed,
+        EnemyAITank.config.maxSpeed
       );
     }
     if (turningDirection !== 1) {
       this.rightSpeed = clamp(
-        this.rightSpeed - dt * PlayerTank.config.speedModifier,
-        -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        this.rightSpeed - dt * EnemyAITank.config.speedModifier,
+        -EnemyAITank.config.maxSpeed,
+        EnemyAITank.config.maxSpeed
       );
     }
 
@@ -512,23 +393,27 @@ export class PlayerTank extends Tank {
       // If not accelerating, even-out speeds to prevent sudden halt
       this.leftSpeed = clamp(
         this.leftSpeed +
-          (this.leftSpeed > -PlayerTank.config.maxTurningSpeed ? -1 : 1) *
+          (this.leftSpeed > -EnemyAITank.config.maxTurningSpeed ? -1 : 1) *
             dt *
-            PlayerTank.config.speedModifier,
-        -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+            EnemyAITank.config.speedModifier,
+        -EnemyAITank.config.maxSpeed,
+        EnemyAITank.config.maxSpeed
       );
       this.rightSpeed = clamp(
         this.rightSpeed +
-          (this.rightSpeed > PlayerTank.config.maxTurningSpeed ? -1 : 1) *
+          (this.rightSpeed > EnemyAITank.config.maxTurningSpeed ? -1 : 1) *
             dt *
-            PlayerTank.config.decelerationModifier,
-        -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+            EnemyAITank.config.decelerationModifier,
+        -EnemyAITank.config.maxSpeed,
+        EnemyAITank.config.maxSpeed
       );
     } else {
       // Reduce power of left axle to half of right axle
-      this.leftSpeed = Scalar.Lerp(this.leftSpeed, this.rightSpeed / 2, dt * PlayerTank.config.speedModifier);
+      this.leftSpeed = Scalar.Lerp(
+        this.leftSpeed,
+        this.rightSpeed / 2,
+        dt * EnemyAITank.config.speedModifier
+      );
     }
 
     this.axleMotors.forEach((motor, idx) => {
@@ -540,26 +425,26 @@ export class PlayerTank extends Tank {
       // If not accelerating, even out speeds
       this.leftSpeed = clamp(
         this.leftSpeed +
-          (this.leftSpeed > PlayerTank.config.maxTurningSpeed ? -1 : 1) *
+          (this.leftSpeed > EnemyAITank.config.maxTurningSpeed ? -1 : 1) *
             dt *
-            PlayerTank.config.decelerationModifier,
-        -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+            EnemyAITank.config.decelerationModifier,
+        -EnemyAITank.config.maxSpeed,
+        EnemyAITank.config.maxSpeed
       );
       this.rightSpeed = clamp(
         this.rightSpeed +
-          (this.rightSpeed > -PlayerTank.config.maxTurningSpeed ? -1 : 1) *
+          (this.rightSpeed > -EnemyAITank.config.maxTurningSpeed ? -1 : 1) *
             dt *
-            PlayerTank.config.speedModifier,
-        -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+            EnemyAITank.config.speedModifier,
+        -EnemyAITank.config.maxSpeed,
+        EnemyAITank.config.maxSpeed
       );
     } else {
       // Reduce power of right axle to half of left axle
       this.rightSpeed = Scalar.Lerp(
         this.rightSpeed,
         this.leftSpeed / 2,
-        dt * PlayerTank.config.speedModifier
+        dt * EnemyAITank.config.speedModifier
       );
     }
 
@@ -568,9 +453,9 @@ export class PlayerTank extends Tank {
     );
   }
   private brake(dt: number) {
-    this.decelerate(dt, PlayerTank.config.speedModifier);
+    this.decelerate(dt, EnemyAITank.config.speedModifier);
   }
-  private decelerate(dt: number, modifier: number = PlayerTank.config.decelerationModifier) {
+  private decelerate(dt: number, modifier: number = EnemyAITank.config.decelerationModifier) {
     let speed = 0;
     if (Math.abs(this.leftSpeed) < 0.1 && Math.abs(this.rightSpeed) < 0.1) {
       this.leftSpeed = this.rightSpeed = 0;
@@ -578,13 +463,13 @@ export class PlayerTank extends Tank {
     } else {
       this.leftSpeed = clamp(
         this.leftSpeed + Math.sign(this.leftSpeed) * -1 * dt * modifier,
-        -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        -EnemyAITank.config.maxSpeed,
+        EnemyAITank.config.maxSpeed
       );
       this.rightSpeed = clamp(
         this.rightSpeed + Math.sign(this.rightSpeed) * -1 * dt * modifier,
-        -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        -EnemyAITank.config.maxSpeed,
+        EnemyAITank.config.maxSpeed
       );
       // Even out while decelerating
       speed = avg([this.leftSpeed, this.rightSpeed]);
@@ -595,13 +480,13 @@ export class PlayerTank extends Tank {
   private turretLeft(dt: number) {
     this.turretMotor.setAxisMotorTarget(
       PhysicsConstraintAxis.ANGULAR_Y,
-      -dt * PlayerTank.config.maxTurretSpeed
+      -dt * EnemyAITank.config.maxTurretSpeed
     );
   }
   private turretRight(dt: number) {
     this.turretMotor.setAxisMotorTarget(
       PhysicsConstraintAxis.ANGULAR_Y,
-      dt * PlayerTank.config.maxTurretSpeed
+      dt * EnemyAITank.config.maxTurretSpeed
     );
   }
   private stopTurret() {
@@ -610,13 +495,13 @@ export class PlayerTank extends Tank {
   private barrelUp(dt: number) {
     this.barrelMotor.setAxisMotorTarget(
       PhysicsConstraintAxis.ANGULAR_X,
-      -dt * PlayerTank.config.maxBarrelSpeed
+      -dt * EnemyAITank.config.maxBarrelSpeed
     );
   }
   private barrelDown(dt: number) {
     this.barrelMotor.setAxisMotorTarget(
       PhysicsConstraintAxis.ANGULAR_X,
-      dt * PlayerTank.config.maxBarrelSpeed
+      dt * EnemyAITank.config.maxBarrelSpeed
     );
   }
   private stopBarrel() {
@@ -633,18 +518,8 @@ export class PlayerTank extends Tank {
       barrelEuler.x < 0 ? this.barrelDown(dt) : this.barrelUp(dt);
     }
   }
-  private toggleCamera() {
-    if (performance.now() - this.lastCameraToggle > this.cameraToggleDelay) {
-      if (this.world.scene.activeCamera?.name === 'tpp-cam') {
-        this.world.scene.activeCamera = this.cameras.fpp;
-      } else {
-        this.world.scene.activeCamera = this.cameras.tpp;
-      }
-      this.lastCameraToggle = performance.now();
-    }
-  }
   private fire(now: number) {
-    if (now - this.lastFiredTS <= PlayerTank.config.cooldown) return false;
+    if (now - this.lastFiredTS <= EnemyAITank.config.cooldown) return false;
 
     this.loadedShell.fire();
     this.simulateRecoil();
@@ -654,112 +529,6 @@ export class PlayerTank extends Tank {
 
     this.lastFiredTS = now;
     return true;
-  }
-
-  reconcile() {
-    const lastProcessedInput = this.state!.lastProcessedInput;
-
-    if (
-      lastProcessedInput.step < 0 ||
-      InputManager.history.length === 0 ||
-      lastProcessedInput.step < InputManager.history.seek()!.step
-    ) {
-      return;
-    }
-
-    this.isReconciling = true;
-
-    // 1. Accept authoritative state
-    this.world.scene.setStepId(lastProcessedInput.step);
-    this.updateTransform();
-    this.axleMotors.forEach((motor, idx) =>
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed)
-    );
-
-    // 2. Discard all historical messages upto last-processed-message
-    const startStepId = InputManager.cull(lastProcessedInput);
-
-    // 3. Replay all messages till present (Prediction)
-    const historyInfo = InputManager.getHistory();
-    if (typeof historyInfo.targetStep !== 'undefined') {
-      this.replay(historyInfo.history, startStepId, historyInfo.targetStep);
-    }
-
-    this.isReconciling = false;
-  }
-  private replay(history: Record<number, IInputHistory>, currStepId: number, targetStepId: number) {
-    while (currStepId <= targetStepId) {
-      this.applyInputs(history[currStepId].message.input);
-      this.world.scene._advancePhysicsEngineStep(World.deltaTime);
-      if (currStepId !== targetStepId) {
-        this.world.scene.setStepId(currStepId);
-      }
-      currStepId += 1;
-    }
-
-    /* // Correction if prediction error is acceptable, < 0.005
-    if (history[targetStepId].transform.position.equalsWithEpsilon(this.body.position, 0.005)) {
-      this.body.position.copyFrom(history[targetStepId].transform.position.clone());
-    }
-    if (history[targetStepId].transform.rotation.equalsWithEpsilon(this.body.rotationQuaternion!, 0.005)) {
-      this.body.rotationQuaternion?.copyFrom(history[targetStepId].transform.rotation.clone());
-    }
-    if (
-      history[targetStepId].transform.turretRotation.equalsWithEpsilon(this.turret.rotationQuaternion!, 0.005)
-    ) {
-      this.turret.rotationQuaternion?.copyFrom(history[targetStepId].transform.turretRotation.clone());
-    }
-    if (
-      history[targetStepId].transform.barrelRotation.equalsWithEpsilon(this.barrel.rotationQuaternion!, 0.005)
-    ) {
-      this.barrel.rotationQuaternion?.copyFrom(history[targetStepId].transform.barrelRotation.clone());
-    } */
-  }
-  private updateTransform() {
-    this.leftSpeed = this.state!.leftSpeed;
-    this.rightSpeed = this.state!.rightSpeed;
-
-    this.body.position.set(this.state!.position.x, this.state!.position.y, this.state!.position.z);
-    this.body.rotationQuaternion =
-      this.body.rotationQuaternion?.set(
-        this.state!.rotation.x,
-        this.state!.rotation.y,
-        this.state!.rotation.z,
-        this.state!.rotation.w
-      ) ??
-      new Quaternion(
-        this.state!.rotation.x,
-        this.state!.rotation.y,
-        this.state!.rotation.z,
-        this.state!.rotation.w
-      );
-
-    this.turret.rotationQuaternion =
-      this.turret.rotationQuaternion?.set(
-        this.state!.turretRotation.x,
-        this.state!.turretRotation.y,
-        this.state!.turretRotation.z,
-        this.state!.turretRotation.w
-      ) ??
-      new Quaternion(
-        this.state!.turretRotation.x,
-        this.state!.turretRotation.y,
-        this.state!.turretRotation.z,
-        this.state!.turretRotation.w
-      );
-    this.barrel.rotationQuaternion =
-      this.barrel.rotationQuaternion?.set(
-        this.state!.barrelRotation.x,
-        this.state!.barrelRotation.y,
-        this.state!.barrelRotation.z,
-        this.state!.barrelRotation.w
-      ) ??
-      new Quaternion(
-        this.state!.barrelRotation.x,
-        this.state!.barrelRotation.y,
-        this.state!.barrelRotation.z,
-        this.state!.barrelRotation.w
-      );
   }
 
   applyInputs(input: PlayerInputs) {

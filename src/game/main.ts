@@ -26,6 +26,7 @@ import { MessageType } from '@/types/types';
 import type { IMessageEnd, IMessageInput } from '@/types/interfaces';
 import { PlayerTank } from './models/player';
 import { EnemyTank } from './models/enemy';
+import { EnemyAITank } from './models/enemy-ai';
 
 export class World {
   static instance: World;
@@ -132,7 +133,7 @@ export class World {
     this.observers.push(this.scene.onBeforeStepObservable.add(() => this.beforeStep()));
     this.observers.push(this.scene.onAfterStepObservable.add(() => this.update()));
     this.observers.push(this.scene.onBeforeRenderObservable.add(() => this.beforeRender()));
-    this.client.state.onChange(() => this.update());
+    !this.vsAI && this.client.state.onChange(() => this.update());
   }
   private initWindowListeners() {
     window.addEventListener('keydown', this.toggleInspect.bind(this));
@@ -190,7 +191,7 @@ export class World {
     this.gui = AdvancedDynamicTexture.CreateFullscreenUI('UI');
 
     const statsControl = new TextBlock('stats');
-    statsControl.text = 'Hello world';
+    statsControl.text = '';
     statsControl.color = 'white';
     statsControl.fontSize = 24;
     statsControl.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -355,7 +356,7 @@ export class World {
           tpp: this.tppCamera,
           fpp: this.fppCamera
         }),
-        EnemyTank.create(this, null, this.playerMeshes[0], new Vector3(-1 * spawn.x, 14, -1 * spawn.z), true)
+        EnemyAITank.create(this, this.playerMeshes[0], new Vector3(-1 * spawn.x, 14, -1 * spawn.z))
       ]);
 
       this.players = {

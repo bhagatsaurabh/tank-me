@@ -11,6 +11,8 @@ import { Debug } from '../debug';
 import type { Tank } from './tank';
 import { PSShellExplosion } from '../particle-systems/shell-explosion';
 import { forwardVector, luid } from '@/utils/utils';
+import type { PlayerTank } from './player';
+import type { EnemyAITank } from './enemy-ai';
 
 export class Shell {
   private static refShell: Mesh;
@@ -44,7 +46,11 @@ export class Shell {
     public tank: Tank,
     mesh: AbstractMesh
   ) {
-    this.playerId = tank.state.sid;
+    if (tank.world.vsAI) {
+      this.playerId = tank.lid;
+    } else {
+      this.playerId = tank.state!.sid;
+    }
     this.setTransform(mesh);
     this.setParticleSystem();
 
@@ -126,6 +132,7 @@ export class Shell {
       return;
     }
 
+    // Determine which physics body is which, in case two dynamically moving bodies collide
     const shellCollider = event.collider === this.mesh.physicsBody! ? event.collider : event.collidedAgainst;
     const otherCollider = event.collider === shellCollider ? event.collidedAgainst : event.collider;
     if (otherCollider.transformNode.name.includes(this.playerId)) return;
@@ -134,6 +141,19 @@ export class Shell {
         shellCollider.transformNode.getDirection(forwardVector).normalize().scale(this.impactEnergy),
         this.mesh.absolutePosition.clone()
       );
+
+      if (this.tank.world.vsAI) {
+        const hitPlayer = Object.values(this.tank.world.players).find((tank) =>
+          (tank as PlayerTank | EnemyAITank).physicsBodies.includes(otherCollider)
+        );
+        if (hitPlayer?.barrel === otherCollider.transformNode) {
+          hitPlayer.damage(10);
+        } else if (hitPlayer?.turret === otherCollider.transformNode) {
+          hitPlayer.damage(25);
+        } else if (hitPlayer?.body === otherCollider.transformNode) {
+          hitPlayer.damage(30);
+        }
+      }
     }
 
     const explosionOrigin = this.mesh.absolutePosition.clone();

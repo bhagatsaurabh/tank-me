@@ -52,7 +52,6 @@ export class PlayerTank extends Tank {
     suspensionDamping: 7,
     noOfWheels: 10,
     recoilForce: 7.5,
-    // Less than actual cooldown, to avoid sync issues, state.canFire is used together
     cooldown: 5000,
     loadCooldown: 2500
   };
@@ -71,10 +70,11 @@ export class PlayerTank extends Tank {
   physicsBodies: PhysicsBody[] = [];
   isReconciling = false;
   canFire = false;
+  health: number = 100;
 
   constructor(
     world: World,
-    state: Player,
+    state: Nullable<Player>,
     rootMesh: AbstractMesh,
     spawn: Vector3,
     public cameras: { tpp: FreeCamera; fpp: FreeCamera }
@@ -93,12 +93,15 @@ export class PlayerTank extends Tank {
   }
   static async create(
     world: World,
-    state: Player,
+    state: Nullable<Player>,
     rootMesh: AbstractMesh,
     spawn: Vector3,
     cameras: Nullable<{ tpp: FreeCamera; fpp: FreeCamera }>
   ) {
-    const cloned = rootMesh.clone(`${rootMesh.name.replace(':Ref', '')}:${state.sid}`, null)!;
+    const cloned = rootMesh.clone(
+      `${rootMesh.name.replace(':Ref', '')}:${world.vsAI ? 'Player' : state!.sid}`,
+      null
+    )!;
     const newTank = new PlayerTank(world, state, cloned, spawn, cameras!);
     await newTank.init();
     newTank.setPreStep(false);
@@ -633,18 +636,18 @@ export class PlayerTank extends Tank {
   private fire(now: number) {
     if (now - this.lastFiredTS <= PlayerTank.config.cooldown) return false;
 
-    this.loadedDummyShell.fire();
+    this.loadedShell.fire();
     this.simulateRecoil();
     this.particleSystems['muzzle']?.start();
     this.sounds['cannon']?.play();
-    Shell.create(this).then((shell) => (this.loadedDummyShell = shell));
+    Shell.create(this).then((shell) => (this.loadedShell = shell));
 
     this.lastFiredTS = now;
     return true;
   }
 
   reconcile() {
-    const lastProcessedInput = this.state.lastProcessedInput;
+    const lastProcessedInput = this.state!.lastProcessedInput;
 
     if (
       lastProcessedInput.step < 0 ||
@@ -703,49 +706,49 @@ export class PlayerTank extends Tank {
     } */
   }
   private updateTransform() {
-    this.leftSpeed = this.state.leftSpeed;
-    this.rightSpeed = this.state.rightSpeed;
+    this.leftSpeed = this.state!.leftSpeed;
+    this.rightSpeed = this.state!.rightSpeed;
 
-    this.body.position.set(this.state.position.x, this.state.position.y, this.state.position.z);
+    this.body.position.set(this.state!.position.x, this.state!.position.y, this.state!.position.z);
     this.body.rotationQuaternion =
       this.body.rotationQuaternion?.set(
-        this.state.rotation.x,
-        this.state.rotation.y,
-        this.state.rotation.z,
-        this.state.rotation.w
+        this.state!.rotation.x,
+        this.state!.rotation.y,
+        this.state!.rotation.z,
+        this.state!.rotation.w
       ) ??
       new Quaternion(
-        this.state.rotation.x,
-        this.state.rotation.y,
-        this.state.rotation.z,
-        this.state.rotation.w
+        this.state!.rotation.x,
+        this.state!.rotation.y,
+        this.state!.rotation.z,
+        this.state!.rotation.w
       );
 
     this.turret.rotationQuaternion =
       this.turret.rotationQuaternion?.set(
-        this.state.turretRotation.x,
-        this.state.turretRotation.y,
-        this.state.turretRotation.z,
-        this.state.turretRotation.w
+        this.state!.turretRotation.x,
+        this.state!.turretRotation.y,
+        this.state!.turretRotation.z,
+        this.state!.turretRotation.w
       ) ??
       new Quaternion(
-        this.state.turretRotation.x,
-        this.state.turretRotation.y,
-        this.state.turretRotation.z,
-        this.state.turretRotation.w
+        this.state!.turretRotation.x,
+        this.state!.turretRotation.y,
+        this.state!.turretRotation.z,
+        this.state!.turretRotation.w
       );
     this.barrel.rotationQuaternion =
       this.barrel.rotationQuaternion?.set(
-        this.state.barrelRotation.x,
-        this.state.barrelRotation.y,
-        this.state.barrelRotation.z,
-        this.state.barrelRotation.w
+        this.state!.barrelRotation.x,
+        this.state!.barrelRotation.y,
+        this.state!.barrelRotation.z,
+        this.state!.barrelRotation.w
       ) ??
       new Quaternion(
-        this.state.barrelRotation.x,
-        this.state.barrelRotation.y,
-        this.state.barrelRotation.z,
-        this.state.barrelRotation.w
+        this.state!.barrelRotation.x,
+        this.state!.barrelRotation.y,
+        this.state!.barrelRotation.z,
+        this.state!.barrelRotation.w
       );
   }
 

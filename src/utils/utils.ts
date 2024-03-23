@@ -1,5 +1,7 @@
 import type { ITrapBounds } from '@/types/interfaces';
+import { SpawnAxis } from '@/types/types';
 import { Vector3, type Nullable } from '@babylonjs/core';
+import { spawnAxes } from './constants';
 
 export const throttle = (cb: (...argmts: any) => void, delay: number) => {
   let timerHandle: Nullable<Number>, args: any;
@@ -112,3 +114,18 @@ export const trapBetween = (root: HTMLElement): ITrapBounds => {
   return { first: firstTabbableNode, last: lastTabbableNode };
 };
 export const getSlug = (title: string) => `#pop-${title.toLowerCase().replaceAll(' ', '-')}`;
+export const choose = <T>(vals: T[]): T => vals[Math.round(randInRange(0, vals.length - 1))];
+export const getSpawnPoint = (): Vector3 => {
+  switch (choose<SpawnAxis>(spawnAxes)) {
+    case SpawnAxis.PX:
+      return new Vector3(240, 15, Math.round(randInRange(-240, 240)));
+    case SpawnAxis.NX:
+      return new Vector3(-240, 15, Math.round(randInRange(-240, 240)));
+    case SpawnAxis.PZ:
+      return new Vector3(Math.round(randInRange(-240, 240)), 15, 240);
+    case SpawnAxis.NZ:
+      return new Vector3(Math.round(randInRange(-240, 240)), 15, -240);
+    default:
+      return new Vector3(240, 15, Math.round(randInRange(-240, 240)));
+  }
+};

@@ -4,6 +4,9 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { throttle } from '@/utils/utils';
 import type { Nullable } from '@babylonjs/core';
 import { GameClient } from '@/game/client';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
 
 const containerEl = ref<Nullable<HTMLDivElement>>(null);
 const canvasEl = ref<Nullable<HTMLCanvasElement>>(null);
@@ -27,7 +30,7 @@ onMounted(async () => {
 
     // Initialize the game
     isLoading.value = true;
-    await GameClient.get().createWorld(canvasEl.value);
+    await GameClient.get().createWorld(canvasEl.value, route.hash === '#ai');
     isLoading.value = false;
   }
 });

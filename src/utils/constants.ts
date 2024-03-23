@@ -1,6 +1,6 @@
 import { Converter } from 'showdown';
 
-import { GameInputType, type ErrorInfo, type KeyInputType } from '@/types/types';
+import { GameInputType, type ErrorInfo, type KeyInputType, SpawnAxis } from '@/types/types';
 import type { INotification } from '@/types/interfaces';
 
 const converter = new Converter();
@@ -73,3 +73,5 @@ export const Notifications = Object.freeze({
     error: meta.error
   })
 });
+
+export const spawnAxes: SpawnAxis[] = [SpawnAxis.PX, SpawnAxis.NX, SpawnAxis.PZ, SpawnAxis.NZ];

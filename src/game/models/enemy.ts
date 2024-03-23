@@ -7,7 +7,8 @@ import {
   PhysicsShapeContainer,
   PhysicsBody,
   PhysicsMotionType,
-  Quaternion
+  Quaternion,
+  type Nullable
 } from '@babylonjs/core';
 
 import { World } from '../main';
@@ -32,7 +33,13 @@ export class EnemyTank extends Tank {
 
     this.observers.push(this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
   }
-  static async create(world: World, state: Player, rootMesh: AbstractMesh, spawn: Vector3) {
+  static async create(
+    world: World,
+    state: Nullable<Player>,
+    rootMesh: AbstractMesh,
+    spawn: Vector3,
+    isAI = false
+  ) {
     const cloned = rootMesh.clone(`${rootMesh.name.replace(':Ref', '')}:${state.sid}`, null)!;
     const newTank = new EnemyTank(world, state, cloned, spawn);
     await newTank.init();
@@ -154,10 +161,10 @@ export class EnemyTank extends Tank {
   }
 
   fire() {
-    this.loadedDummyShell.fire();
+    this.loadedShell.fire();
     this.simulateRecoil();
     this.particleSystems['muzzle']?.start();
     this.sounds['cannon']?.play();
-    Shell.create(this).then((shell) => (this.loadedDummyShell = shell));
+    Shell.create(this).then((shell) => (this.loadedShell = shell));
   }
 }

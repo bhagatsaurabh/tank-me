@@ -24,10 +24,11 @@ export const lobbyGuard: NavigationGuard = async (_to, _from, next) => {
   }
 };
 
-export const gameGuard: NavigationGuard = async (_to, _from, next) => {
+export const gameGuard: NavigationGuard = async (to, _from, next) => {
   const auth = useAuthStore();
   const lobby = useLobbyStore();
-  if (auth.profile?.username && lobby.status === 'playing') {
+
+  if (auth.profile?.username && (lobby.status === 'playing' || to.hash === '#ai')) {
     next();
   } else {
     next(auth.profile?.username ? '/lobby' : '/');

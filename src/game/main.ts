@@ -16,7 +16,7 @@ import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, Image } from '@b
 
 import { GameClient } from '@/game/client';
 import type { Player } from './state';
-import { clamp, gravityVector, noop, nzpyVector, throttle } from '@/utils/utils';
+import { clamp, getSpawnPoint, gravityVector, noop, nzpyVector, throttle } from '@/utils/utils';
 import { InputManager } from './input';
 import { Tank } from './models/tank';
 import { Ground } from './models/ground';
@@ -35,7 +35,7 @@ export class World {
   static deltaTime = World.timeStep;
   static physicsViewer: PhysicsViewer;
 
-  private id: string;
+  private id: string | undefined;
   scene: Scene;
   private throttledResizeListener = noop;
   private stateUnsubFns: (() => boolean)[] = [];
@@ -58,17 +58,18 @@ export class World {
   private constructor(
     public engine: Engine,
     public client: GameClient,
-    public physicsPlugin: HavokPlugin
+    public physicsPlugin: HavokPlugin,
+    public vsAI: boolean
   ) {
-    this.id = client.getSessionId()!;
+    this.id = client.getSessionId();
     this.scene = new Scene(this.engine);
     this.scene.enablePhysics(gravityVector, physicsPlugin);
     World.physicsViewer = new PhysicsViewer(this.scene);
     physicsPlugin.setTimeStep(0);
     this.scene.getPhysicsEngine()?.setSubTimeStep(World.subTimeStep);
   }
-  static async create(client: GameClient, canvas: HTMLCanvasElement): Promise<World> {
-    if (!World.instance && client?.getSessionId()) {
+  static async create(client: GameClient, canvas: HTMLCanvasElement, vsAI = false): Promise<World> {
+    if (client?.getSessionId() || vsAI) {
       // Pre-fetch all assets
       await AssetLoader.load();
 
@@ -78,7 +79,7 @@ export class World {
         lockstepMaxSteps: World.lockstepMaxSteps
       });
       const physicsPlugin = new HavokPlugin(false, await HavokPhysics());
-      const world = new World(engine, client, physicsPlugin);
+      const world = new World(engine, client, physicsPlugin, vsAI);
       await world.importPlayerMesh(world);
       await world.initScene();
       world.initWindowListeners();
@@ -86,8 +87,9 @@ export class World {
 
       World.instance = world;
       return world;
+    } else {
+      return World.instance;
     }
-    return World.instance;
   }
   private async importPlayerMesh(world: World) {
     const { meshes } = await SceneLoader.ImportMeshAsync(
@@ -278,14 +280,16 @@ export class World {
   private beforeRender() {
     const renderWidth = this.engine.getRenderWidth(true);
 
-    let health = this.player.state.health;
+    let health = this.vsAI ? this.player.health : this.player.state!.health;
+    const orgHealth = health;
+
     if (this.client.isMatchEnded && !this.client.didWin) health = 0;
     this.guiRefs.health.width = `${renderWidth * 0.3 * (health / 100)}px`;
 
     this.guiRefs.healthBorder.width = `${renderWidth * 0.3}px`;
-    if (this.player.state.health <= 75) {
+    if (orgHealth <= 75) {
       this.guiRefs.health.background = '#e97451cc';
-    } else if (this.player.state.health <= 25) {
+    } else if (orgHealth <= 25) {
       this.guiRefs.health.background = '#ee4b2bcc';
     }
 
@@ -329,6 +333,10 @@ export class World {
 
       InputManager.addHistory(message, this.player, step);
     }
+
+    if (this.vsAI) {
+      this.player.applyInputs(InputManager.keys);
+    }
   }
   private update() {
     if (this.client.isReady()) {
@@ -340,39 +348,56 @@ export class World {
     this.client.sendEvent<IMessageInput>(MessageType.INPUT, message);
   }
   private async createTanks() {
-    const players: Player[] = [];
-    this.client.getPlayers().forEach((player) => players.push(player));
+    if (this.vsAI) {
+      const spawn = getSpawnPoint();
+      const tanks = await Promise.all([
+        PlayerTank.create(this, null, this.playerMeshes[0], spawn, {
+          tpp: this.tppCamera,
+          fpp: this.fppCamera
+        }),
+        EnemyTank.create(this, null, this.playerMeshes[0], new Vector3(-1 * spawn.x, 14, -1 * spawn.z), true)
+      ]);
 
-    const tanks = await Promise.all(
-      players.map((player) => {
-        const isPlayer = this.id === player.sid;
+      this.players = {
+        Player: tanks[0],
+        Enemy: tanks[1]
+      };
+      this.player = tanks[0];
+      tanks.forEach((tank) => this.shadowGenerator.addShadowCaster(tank.mesh));
+    } else {
+      const players: Player[] = [];
+      this.client.getPlayers().forEach((player) => players.push(player));
 
-        if (!isPlayer) {
-          return EnemyTank.create(
-            this,
-            player,
-            this.playerMeshes[0],
-            new Vector3(player.position.x, player.position.y, player.position.z)
-          );
-        } else {
-          return PlayerTank.create(
-            this,
-            player,
-            this.playerMeshes[0],
-            new Vector3(player.position.x, player.position.y, player.position.z),
-            { tpp: this.tppCamera, fpp: this.fppCamera }
-          );
+      const tanks = await Promise.all(
+        players.map((player) => {
+          const isPlayer = this.id === player.sid;
+
+          if (!isPlayer) {
+            return EnemyTank.create(
+              this,
+              player,
+              this.playerMeshes[0],
+              new Vector3(player.position.x, player.position.y, player.position.z)
+            );
+          } else {
+            return PlayerTank.create(
+              this,
+              player,
+              this.playerMeshes[0],
+              new Vector3(player.position.x, player.position.y, player.position.z),
+              { tpp: this.tppCamera, fpp: this.fppCamera }
+            );
+          }
+        })
+      );
+      tanks.forEach((tank) => {
+        this.players[tank.state!.sid] = tank;
+        this.shadowGenerator.addShadowCaster(this.players[tank.state!.sid].mesh);
+        if (this.id === tank.state!.sid) {
+          this.player = tank as PlayerTank;
         }
-      })
-    );
-
-    tanks.forEach((tank) => {
-      this.players[tank.state.sid] = tank;
-      this.shadowGenerator.addShadowCaster(this.players[tank.state.sid].mesh);
-      if (this.id === tank.state.sid) {
-        this.player = tank as PlayerTank;
-      }
-    });
+      });
+    }
   }
   private toggleInspect(ev: KeyboardEvent) {
     // Sfhit+Alt+I
@@ -399,7 +424,8 @@ export class World {
     this.client.isMatchEnded = true;
     this.scene.activeCamera = this.endCamera;
     this.player.sights.forEach((ui) => (ui.isVisible = false));
-    this.client.didWin = message.winner === this.player.state.sid;
+    const id = this.vsAI ? 'Player' : this.player.state!.sid;
+    this.client.didWin = message.winner === id;
 
     this.players[message.loser].explode();
   }

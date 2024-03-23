@@ -91,6 +91,7 @@ onBeforeUnmount(unregisterGuard);
   <Backdrop :dismissable="!waitForAction" :show="show" @dismiss="handleDismiss" />
   <Transition @after-leave="handleLeave" v-bind="$attrs" name="scale-fade" appear>
     <div v-if="show" ref="el" class="modal" role="dialog">
+      <div class="bg"></div>
       <Icon
         v-if="!controls.length"
         class="close-icon"
@@ -125,13 +126,13 @@ onBeforeUnmount(unregisterGuard);
   position: fixed;
   z-index: 102;
   border: 1px solid white;
-  box-shadow: 0 0 10px 0px darkgray;
+  box-shadow: 0 0 10px 0px #000;
   left: 50%;
   top: 50%;
-  background-color: #e8e8e8;
+  background-color: #434343;
   transform: translate(-50%, -50%) scale(1);
   padding: 1rem;
-  color: #000;
+  color: #f3f3f3;
   transform-origin: center;
 }
 
@@ -151,6 +152,15 @@ onBeforeUnmount(unregisterGuard);
 .close-icon {
   margin-left: calc(100% - 1.1rem);
   vertical-align: unset;
+}
+.modal .bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  background-image: url('/assets/images/background.jpg');
+  opacity: 0.1;
 }
 
 @media (min-width: 768px) {

@@ -54,3 +54,10 @@ export type NotificationStatus = 'info' | 'warn' | 'error' | 'success';
 export type NotificationAction = 'reload';
 
 export type ErrorInfo = { error: unknown; isCritical?: boolean };
+
+export enum SpawnAxis {
+  PX = 0,
+  NX = 1,
+  PZ = 2,
+  NZ = 3
+}

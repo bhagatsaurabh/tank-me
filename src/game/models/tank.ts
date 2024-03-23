@@ -1,4 +1,4 @@
-import { Observer, Ray } from '@babylonjs/core';
+import { Observer, Ray, type Nullable } from '@babylonjs/core';
 import { Sound } from '@babylonjs/core/Audio';
 import { Space, Axis, Vector3 } from '@babylonjs/core/Maths';
 import { AbstractMesh, TransformNode } from '@babylonjs/core/Meshes';
@@ -35,7 +35,7 @@ export class Tank {
   protected rightWheels: AbstractMesh[] = [];
 
   // Actual shell with physics enabled just for effects, the server is still the authority
-  protected loadedDummyShell!: Shell;
+  protected loadedShell!: Shell;
   protected sounds: TankSounds = {};
   protected particleSystems: {
     muzzle?: PSMuzzle;
@@ -50,12 +50,12 @@ export class Tank {
 
   protected constructor(
     public world: World,
-    public state: Player
+    public state: Nullable<Player>
   ) {}
 
   protected async init() {
     // eslint-disable-next-line no-empty-pattern
-    [[], this.loadedDummyShell] = await Promise.all([this.setSoundSources(), Shell.create(this)]);
+    [[], this.loadedShell] = await Promise.all([this.setSoundSources(), Shell.create(this)]);
 
     this.setParticleSystems();
     this.particleSystems['exhaust-left']?.start();
@@ -77,7 +77,10 @@ export class Tank {
       if (
         !info?.hit ||
         !info.pickedMesh ||
-        (info.pickedMesh && !info.pickedMesh.name.includes(this.state.sid))
+        (info.pickedMesh &&
+          (this.world.vsAI
+            ? !info.pickedMesh.name.includes(this.state!.sid)
+            : !info.pickedMesh.name.includes('Player')))
       ) {
         this.sounds[`whizz${Math.round(randInRange(1, 2))}` as TankSoundType]?.play();
       }
@@ -240,8 +243,8 @@ export class Tank {
     return Promise.all(promises);
   }
   protected animate(leftTrackSpeed?: number, rightTrackSpeed?: number) {
-    const leftSpeed = leftTrackSpeed ?? this.state.leftSpeed;
-    const rightSpeed = rightTrackSpeed ?? this.state.rightSpeed;
+    const leftSpeed = leftTrackSpeed ?? this.state!.leftSpeed;
+    const rightSpeed = rightTrackSpeed ?? this.state!.rightSpeed;
 
     if (leftSpeed !== 0) {
       ((this.leftTrack.material as PBRMaterial).albedoTexture as Texture).vOffset += leftSpeed * 0.0009;

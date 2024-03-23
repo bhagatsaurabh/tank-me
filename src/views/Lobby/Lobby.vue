@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
@@ -15,6 +15,7 @@ import { GameClient } from '@/game/client';
 import { noop } from '@/utils/utils';
 import type { Nullable } from '@babylonjs/core';
 import type { AuthStatus } from '@/types/types';
+import Modal from '@/components/Modal/Modal.vue';
 
 const auth = useAuthStore();
 const lobby = useLobbyStore();
@@ -27,6 +28,8 @@ const timer = ref('');
 const showProfile = ref(false);
 const emailEl = ref<Nullable<InstanceType<typeof InputText>>>(null);
 const isGuestUpgrading = ref<boolean>(false);
+const suggestAI = ref(false);
+const isSuggestionRejected = ref<Nullable<boolean>>(false);
 
 const validateEmail = (val: string) => {
   if (!val) return 'Please enter an e-mail';
@@ -53,14 +56,26 @@ const handleStart = async () => {
     startTS.value = Date.now();
     timer.value = '00:00';
     handle = setInterval(() => {
-      timer.value = `${new Date(Date.now() - startTS.value).toISOString().substring(14, 19)}`;
+      const mark = new Date(Date.now() - startTS.value);
+      if (mark.getTime() / 1000 > 10 && !isSuggestionRejected.value) {
+        suggestAI.value = true;
+      }
+      timer.value = `${mark.toISOString().substring(14, 19)}`;
     }, 1000);
     await lobby.match('desert');
   } else {
-    GameClient.disconnect();
-    startTS.value = -1;
-    clearInterval(handle);
+    handleReset(true);
   }
+};
+const handleStartAI = () => {
+  handleReset(true);
+  router.push({ path: '/game', hash: '#ai' });
+};
+const handleReset = (disconnect = false) => {
+  disconnect && GameClient.disconnect();
+  startTS.value = -1;
+  clearInterval(handle);
+  isSuggestionRejected.value = false;
 };
 const handleSignOut = async () => {
   if (await auth.signOut()) {
@@ -72,14 +87,22 @@ const handleUpgradeRetry = () => {
   isGuestUpgrading.value = false;
   auth.status = oldStatus;
 };
+const handleAction = (action: { text: string }) => {
+  if (action.text === 'Yes') {
+    handleStartAI();
+  } else {
+    isSuggestionRejected.value = true;
+  }
+
+  suggestAI.value = false;
+};
 
 watch(
   () => lobby.status,
   () => {
     if (lobby.status === 'playing') {
-      startTS.value = -1;
-      clearInterval(handle);
-      router.push('/game');
+      handleReset();
+      router.push({ path: '/game' });
     }
   }
 );
@@ -151,6 +174,15 @@ onMounted(async () => {
     </div>
   </Backdrop>
   <main class="lobby">
+    <Modal
+      v-if="suggestAI"
+      title="Play vs. AI ?"
+      :controls="[{ text: 'Yes' }, { text: 'No' }]"
+      @dismiss="() => handleAction({ text: 'No' })"
+      @action="handleAction"
+    >
+      Match-making is slow and taking longer than expected.
+    </Modal>
     <div class="match">
       <Button class="match-control" @click="handleStart">
         <template v-if="lobby.status === 'idle'">
@@ -161,6 +193,7 @@ onMounted(async () => {
           <div class="fs-0p75">{{ timer }}</div>
         </template>
       </Button>
+      <Button @click="handleStartAI" :size="0.75" :disabled="lobby.status === 'matchmaking'">vs. AI </Button>
     </div>
   </main>
 </template>
@@ -204,6 +237,9 @@ onMounted(async () => {
   bottom: 0;
   left: 0;
   padding: 1rem;
+  display: flex;
+  align-items: flex-end;
+  column-gap: 1.5rem;
 }
 .match-control {
   padding: 1rem 2rem;

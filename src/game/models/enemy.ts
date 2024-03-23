@@ -33,17 +33,11 @@ export class EnemyTank extends Tank {
 
     this.observers.push(this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
   }
-  static async create(
-    world: World,
-    state: Nullable<Player>,
-    rootMesh: AbstractMesh,
-    spawn: Vector3,
-    isAI = false
-  ) {
-    const cloned = rootMesh.clone(`${rootMesh.name.replace(':Ref', '')}:${state.sid}`, null)!;
-    const newTank = new EnemyTank(world, state, cloned, spawn);
+  static async create(world: World, state: Nullable<Player>, rootMesh: AbstractMesh, spawn: Vector3) {
+    const cloned = rootMesh.clone(`${rootMesh.name.replace(':Ref', '')}:${state!.sid}`, null)!;
+    const newTank = new EnemyTank(world, state!, cloned, spawn);
     await newTank.init();
-    newTank.setTrackMaterial(state);
+    newTank.setTrackMaterial(state!);
     return newTank;
   }
 
@@ -136,27 +130,27 @@ export class EnemyTank extends Tank {
   interpolate() {
     // Accept authoritative state
     this.nextState.position = new Vector3(
-      this.state.position.x,
-      this.state.position.y,
-      this.state.position.z
+      this.state!.position.x,
+      this.state!.position.y,
+      this.state!.position.z
     );
     this.nextState.rotation = new Quaternion(
-      this.state.rotation.x,
-      this.state.rotation.y,
-      this.state.rotation.z,
-      this.state.rotation.w
+      this.state!.rotation.x,
+      this.state!.rotation.y,
+      this.state!.rotation.z,
+      this.state!.rotation.w
     );
     this.nextState.turretRotation = new Quaternion(
-      this.state.turretRotation.x,
-      this.state.turretRotation.y,
-      this.state.turretRotation.z,
-      this.state.turretRotation.w
+      this.state!.turretRotation.x,
+      this.state!.turretRotation.y,
+      this.state!.turretRotation.z,
+      this.state!.turretRotation.w
     );
     this.nextState.barrelRotation = new Quaternion(
-      this.state.barrelRotation.x,
-      this.state.barrelRotation.y,
-      this.state.barrelRotation.z,
-      this.state.barrelRotation.w
+      this.state!.barrelRotation.x,
+      this.state!.barrelRotation.y,
+      this.state!.barrelRotation.z,
+      this.state!.barrelRotation.w
     );
   }
 

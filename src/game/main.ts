@@ -55,6 +55,7 @@ export class World {
   debugStats = false;
   private observers: Observer<Scene>[] = [];
   private fpsLabel!: TextBlock;
+  ground!: Ground;
 
   private constructor(
     public engine: Engine,
@@ -124,7 +125,7 @@ export class World {
     this.scene.actionManager = InputManager.create(this.scene);
 
     await Skybox.create(this.scene);
-    await Ground.create(this.scene);
+    this.ground = await Ground.create(this.scene);
     this.shadowGenerator?.addShadowCaster(Ground.mesh);
     this.setGUI();
     await this.createTanks();

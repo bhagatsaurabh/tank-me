@@ -1,4 +1,12 @@
-import { TransformNode, type AbstractMesh, type Mesh, MeshBuilder } from '@babylonjs/core';
+import {
+  TransformNode,
+  type AbstractMesh,
+  type Mesh,
+  MeshBuilder,
+  Tools,
+  FreeCamera,
+  Ray
+} from '@babylonjs/core';
 import { Vector3, Axis, Space, Scalar } from '@babylonjs/core/Maths';
 import {
   PhysicsShapeConvexHull,
@@ -14,8 +22,8 @@ import {
 
 import { World } from '../main';
 import { Tank } from './tank';
-import { avg, clamp } from '@/utils/utils';
-import { GameInputType, type PlayerInputs } from '@/types/types';
+import { avg, clamp, forwardVector } from '@/utils/utils';
+import { GameInputType, type EnemyAIState, type PlayerInputs } from '@/types/types';
 import { Shell } from './shell';
 import { Ground } from './ground';
 
@@ -46,7 +54,8 @@ export class EnemyAITank extends Tank {
     noOfWheels: 10,
     recoilForce: 7.5,
     cooldown: 5000,
-    loadCooldown: 2500
+    loadCooldown: 2500,
+    headingCorrectionCooldown: 1000
   };
   private axleJoints: TransformNode[] = [];
   axles: Mesh[] = [];
@@ -59,6 +68,11 @@ export class EnemyAITank extends Tank {
   physicsBodies: PhysicsBody[] = [];
   canFire = false;
   health: number = 100;
+  memory: { nextPosition?: Vector3; lastKnownPlayerPosition?: Vector3; lastHeadingCorrectionTS: number } = {
+    lastHeadingCorrectionTS: 0
+  };
+  aiState: EnemyAIState = 'roam';
+  camera!: FreeCamera;
 
   constructor(world: World, rootMesh: AbstractMesh, spawn: Vector3) {
     super(world, null);
@@ -66,15 +80,42 @@ export class EnemyAITank extends Tank {
     if (world.vsAI) this.lid = 'Enemy';
     this.setTransform(rootMesh, spawn);
     this.setPhysics(rootMesh as Mesh);
+    this.setCamera();
 
     this.observers.push(this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
+    this.observers.push(this.world.scene.onAfterRenderObservable.add(this.afterRender.bind(this)));
   }
   static async create(world: World, rootMesh: AbstractMesh, spawn: Vector3) {
     const cloned = rootMesh.clone(`${rootMesh.name.replace(':Ref', '')}:Enemy`, null)!;
     const newTank = new EnemyAITank(world, cloned, spawn);
     await newTank.init();
     newTank.setPreStep(true);
+    newTank.memory.nextPosition = spawn.clone();
+
     return newTank;
+  }
+
+  private forwardToRefAngle(object: TransformNode, ref: Vector3) {
+    const forwardRef = object.getDirection(forwardVector).normalize().scaleInPlace(10);
+
+    const p1 = forwardRef.add(object.position);
+    p1.y = object.position.y;
+    const p2 = object.position.clone();
+    const p3 = ref.clone();
+    p3.y = object.position.y;
+
+    // Reference point is to the left or right of object, 0 = exactly to the front
+    let toLeftOrRight = ref.subtract(object.position).cross(forwardRef).dot(Vector3.Up());
+    if (Math.abs(toLeftOrRight) <= 0.001) {
+      toLeftOrRight = 0;
+    } else {
+      toLeftOrRight = Math.sign(toLeftOrRight);
+    }
+    return {
+      // +1 = Left, -1 = Right, 0 = Front
+      orientation: toLeftOrRight,
+      angle: Tools.ToDegrees(Math.acos(Vector3.Dot(p1.subtract(p2).normalize(), p3.subtract(p2).normalize())))
+    };
   }
 
   private setTransform(rootMesh: AbstractMesh, spawn: Vector3) {
@@ -216,6 +257,10 @@ export class EnemyAITank extends Tank {
       Ground.mesh.physicsBody!
     );
   }
+  private setCamera() {
+    this.camera = new FreeCamera('enemy-cam', new Vector3(1, 2, 2), this.world.scene);
+    this.camera.parent = this.body;
+  }
   private createWheelConstraint(
     pivotA: Vector3,
     pivotB: Vector3,
@@ -342,7 +387,31 @@ export class EnemyAITank extends Tank {
     this.barrel.physicsBody!.disablePreStep = value;
     (this as unknown as EnemyAITank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = value));
   }
+  private afterRender() {
+    if (this.world.client.isMatchEnded) return;
+
+    if (this.camera.isInFrustum(this.world.player.mesh)) {
+      this.memory.lastKnownPlayerPosition = this.world.player.turret.absolutePosition.clone();
+      const ray = new Ray(
+        this.turret.absolutePosition,
+        this.memory.lastKnownPlayerPosition.subtract(this.turret.absolutePosition).normalize(),
+        700
+      );
+
+      const info = this.world.scene.pickWithRay(
+        ray,
+        (mesh: AbstractMesh) => mesh.name.includes('Player') || mesh.name.includes('ground')
+      );
+      this.aiState = info?.hit && info.pickedMesh?.name.includes('Player') ? 'combat' : 'track';
+    } else {
+      this.aiState = 'track';
+    }
+  }
   private beforeStep() {
+    if (this.world.client.isMatchEnded) return;
+
+    this.applyInputs(this.computeInputs());
+
     this.animate(this.leftSpeed, this.rightSpeed);
 
     if (this.world.client.isMatchEnded) return;
@@ -584,5 +653,56 @@ export class EnemyAITank extends Tank {
     }
 
     this.playSounds(isMoving, !!isBarrelMoving || !!isTurretMoving);
+  }
+
+  computeInputs(): PlayerInputs {
+    const now = performance.now();
+    const inputs: PlayerInputs = {};
+
+    if (this.aiState === 'roam' || this.aiState === 'track') {
+      // If tracking and player's last known position doesn't exist, switch to roam
+      if (this.aiState === 'track' && !this.memory.lastKnownPlayerPosition) {
+        this.aiState = 'roam';
+        return inputs;
+      }
+
+      // Player's last known position if tracking or a random position on map if roaming
+      const targetPos =
+        this.aiState === 'roam'
+          ? this.memory.nextPosition!.clone()
+          : this.memory.lastKnownPlayerPosition!.clone();
+
+      // If reached to the target position, switch to next random position on map
+      if (Vector3.Distance(this.body.absolutePosition, targetPos) <= 2) {
+        // This will also work if in tracking state and player's last known position is reached
+        this.memory.nextPosition = Vector3.Random(-230, 230);
+        this.memory.nextPosition!.y = Ground.mesh.getHeightAtCoordinates(
+          this.memory.nextPosition!.x,
+          this.memory.nextPosition!.z
+        );
+        this.aiState = 'roam';
+      }
+
+      const info = this.forwardToRefAngle(this.body, targetPos);
+
+      inputs[GameInputType.FORWARD] = true;
+      if (
+        now - this.memory.lastHeadingCorrectionTS! > EnemyAITank.config.headingCorrectionCooldown ||
+        info.angle > 2.5
+      ) {
+        if (info.orientation < 0) inputs[GameInputType.RIGHT] = true;
+        else if (info.orientation > 0) inputs[GameInputType.LEFT] = true;
+        this.memory.lastHeadingCorrectionTS = now;
+      }
+    } else if (this.aiState === 'combat') {
+      // TODO
+      // 1. Stop
+      // 2. Align body if not aligned
+      // 3. Align turret if not aligned
+      // 4. Predict barrel alignment
+      this.fire(now);
+    }
+
+    return inputs;
   }
 }

@@ -61,3 +61,5 @@ export enum SpawnAxis {
   PZ = 2,
   NZ = 3
 }
+
+export type EnemyAIState = 'roam' | 'combat' | 'track';

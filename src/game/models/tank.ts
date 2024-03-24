@@ -6,7 +6,7 @@ import { PBRMaterial, Texture } from '@babylonjs/core/Materials';
 import { type IBasePhysicsCollisionEvent, PhysicsEventType } from '@babylonjs/core/Physics';
 
 import { Shell } from './shell';
-import { randInRange } from '@/utils/utils';
+import { forwardVector, randInRange } from '@/utils/utils';
 import { PSExhaust } from '../particle-systems/exhaust';
 import { PSDust } from '../particle-systems/dust';
 import { PSMuzzle } from '../particle-systems/muzzle';
@@ -71,7 +71,7 @@ export class Tank {
     ) {
       const ray = new Ray(
         event.collidedAgainst.transformNode.absolutePosition,
-        event.collidedAgainst.transformNode.forward.normalize(),
+        event.collidedAgainst.transformNode.getDirection(forwardVector).normalize(),
         10
       );
       const info = this.world.scene.pickWithRay(ray, undefined, true);
@@ -79,7 +79,7 @@ export class Tank {
         !info?.hit ||
         !info.pickedMesh ||
         (info.pickedMesh &&
-          (this.world.vsAI
+          (!this.world.vsAI
             ? !info.pickedMesh.name.includes(this.state!.sid)
             : !info.pickedMesh.name.includes('Player')))
       ) {

@@ -307,7 +307,7 @@ export class World {
 
     this.tppCamera.position = Vector3.Lerp(
       this.tppCamera.position,
-      this.player.body.getDirection(nzpyVector).normalize().scale(15).add(this.player.body.position),
+      this.player.turret.getDirection(nzpyVector).normalize().scale(15).add(this.player.body.position),
       World.deltaTime
     );
     this.tppCamera.target = Vector3.Lerp(

@@ -129,3 +129,4 @@ export const getSpawnPoint = (): Vector3 => {
       return new Vector3(240, 15, Math.round(randInRange(-240, 240)));
   }
 };
+export const isInRange = (val: number, min: number, max: number) => val >= min && val <= max;

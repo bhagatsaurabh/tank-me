@@ -1,4 +1,10 @@
-import { TransformNode, type AbstractMesh, type Mesh, type Nullable, MeshBuilder } from '@babylonjs/core';
+import {
+  TransformNode,
+  type AbstractMesh,
+  type Mesh,
+  type Nullable,
+  MeshBuilder,
+} from '@babylonjs/core';
 import { Vector3, Axis, Space, Scalar, Quaternion } from '@babylonjs/core/Maths';
 import {
   PhysicsShapeConvexHull,
@@ -34,7 +40,8 @@ export class PlayerTank extends Tank {
     maxSpeed: 15,
     maxTurningSpeed: 3,
     maxTurretAngle: 1.17, // ~67.5 deg
-    maxBarrelAngle: 0.34, // ~20 deg
+    maxBarrelAngleUp: 0.34, // ~20 deg
+    maxBarrelAngleDown: 0.104, // ~6 deg
     maxTurretSpeed: 14,
     maxBarrelSpeed: 14,
     bodyMass: 2,
@@ -332,8 +339,8 @@ export class PlayerTank extends Tank {
         { axis: PhysicsConstraintAxis.LINEAR_Z, minLimit: 0, maxLimit: 0 },
         {
           axis: PhysicsConstraintAxis.ANGULAR_X,
-          minLimit: -PlayerTank.config.maxBarrelAngle,
-          maxLimit: PlayerTank.config.maxBarrelAngle
+          minLimit: -PlayerTank.config.maxBarrelAngleUp,
+          maxLimit: PlayerTank.config.maxBarrelAngleDown
         },
         { axis: PhysicsConstraintAxis.ANGULAR_Y, minLimit: 0, maxLimit: 0 },
         { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 }
@@ -443,6 +450,8 @@ export class PlayerTank extends Tank {
     (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = value));
   }
   private beforeStep() {
+    if (this.world.client.isMatchEnded) return;
+
     const now = performance.now();
     this.canFire = now - this.lastFiredTS > PlayerTank.config.cooldown;
     if (this.canFire) {
@@ -455,8 +464,6 @@ export class PlayerTank extends Tank {
     }
 
     this.animate(this.leftSpeed, this.rightSpeed);
-
-    if (this.world.client.isMatchEnded) return;
 
     if (InputManager.keys[GameInputType.FIRE]) {
       this.fire(now);

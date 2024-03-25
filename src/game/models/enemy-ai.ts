@@ -22,12 +22,20 @@ import {
 
 import { World } from '../main';
 import { Tank } from './tank';
-import { avg, clamp, forwardVector } from '@/utils/utils';
+import { avg, clamp, forwardVector, gravityVector, isInRange } from '@/utils/utils';
 import { GameInputType, type EnemyAIState, type PlayerInputs } from '@/types/types';
 import { Shell } from './shell';
 import { Ground } from './ground';
 
 export class EnemyAITank extends Tank {
+  /* targetBarrelAngleD = 0;
+  currentBarrelAngleD = 0;
+  deltaBarrelAngleD = 0;
+  deltaTurretAngleD = 0;
+  leadAngleD = 0;
+  barrelInfoAngleD = 0;
+  barrelInfoOrientD = 0; */
+
   private static config = {
     maxEnginePower: 100,
     speedModifier: 10,
@@ -35,7 +43,8 @@ export class EnemyAITank extends Tank {
     maxSpeed: 15,
     maxTurningSpeed: 3,
     maxTurretAngle: 1.17, // ~67.5 deg
-    maxBarrelAngle: 0.34, // ~20 deg
+    maxBarrelAngleUp: 0.34, // ~20 deg
+    maxBarrelAngleDown: 0.104, // ~6 deg
     maxTurretSpeed: 14,
     maxBarrelSpeed: 14,
     bodyMass: 2,
@@ -55,7 +64,16 @@ export class EnemyAITank extends Tank {
     recoilForce: 7.5,
     cooldown: 5000,
     loadCooldown: 2500,
-    headingCorrectionCooldown: 1000
+    rotationCorrectionCooldown: 500,
+    bodyAlignmentTolerance: 50,
+    turretAlignmentTolerance: 0.1,
+    barrelAlignmentTolerance: 0.1,
+    bodyAlignmentEpsilon: 0.05,
+    turretAlignmentEpsilon: 0.05,
+    barrelAlignmentEpsilon: 0.05,
+    wayPointEpsilon: 3,
+    stillCombatDistance: 75,
+    leadAngleCorrection: 1.15
   };
   private axleJoints: TransformNode[] = [];
   axles: Mesh[] = [];
@@ -68,8 +86,14 @@ export class EnemyAITank extends Tank {
   physicsBodies: PhysicsBody[] = [];
   canFire = false;
   health: number = 100;
-  memory: { nextPosition?: Vector3; lastKnownPlayerPosition?: Vector3; lastHeadingCorrectionTS: number } = {
-    lastHeadingCorrectionTS: 0
+  memory: {
+    nextPosition?: Vector3;
+    lastKnownPlayerPosition?: Vector3;
+    lastRotationCorrectionTS: number;
+    lastTurretRotationCorrectionTS: number;
+  } = {
+    lastRotationCorrectionTS: 0,
+    lastTurretRotationCorrectionTS: 0
   };
   aiState: EnemyAIState = 'roam';
   camera!: FreeCamera;
@@ -95,26 +119,39 @@ export class EnemyAITank extends Tank {
     return newTank;
   }
 
-  private forwardToRefAngle(object: TransformNode, ref: Vector3) {
-    const forwardRef = object.getDirection(forwardVector).normalize().scaleInPlace(10);
+  private forwardToRefAngle(object: TransformNode, ref: Vector3, normal: 'x' | 'y' | 'z', threshold: number) {
+    const forwardRef = object.getDirection(forwardVector).normalize();
 
-    const p1 = forwardRef.add(object.position);
-    p1.y = object.position.y;
-    const p2 = object.position.clone();
+    const p1 = forwardRef.add(object.absolutePosition);
+    const p2 = object.absolutePosition.clone();
     const p3 = ref.clone();
-    p3.y = object.position.y;
 
-    // Reference point is to the left or right of object, 0 = exactly to the front
-    let toLeftOrRight = ref.subtract(object.position).cross(forwardRef).dot(Vector3.Up());
-    if (Math.abs(toLeftOrRight) <= 0.001) {
-      toLeftOrRight = 0;
+    let normalVector;
+    if (normal === 'x') {
+      normalVector = Vector3.Right();
+      p1.x = p2.x = p3.x = forwardRef.x = 0;
+    } else if (normal === 'y') {
+      normalVector = Vector3.Up();
+      p1.y = p2.y = p3.y = forwardRef.y = 0;
     } else {
-      toLeftOrRight = Math.sign(toLeftOrRight);
+      normalVector = Vector3.Forward();
+      p1.z = p2.z = p3.z = forwardRef.z = 0;
+    }
+
+    // Reference point is to the left/up/forward or right/down/backward of object, 0 = exactly to the front
+    let orientation = p3.subtract(p2).cross(forwardRef).dot(normalVector);
+    const angle = Tools.ToDegrees(
+      Math.acos(Vector3.Dot(p1.subtract(p2).normalize(), p3.subtract(p2).normalize()))
+    );
+    if (Math.abs(angle) <= threshold) {
+      orientation = 0;
+    } else {
+      orientation = Math.sign(orientation);
     }
     return {
-      // +1 = Left, -1 = Right, 0 = Front
-      orientation: toLeftOrRight,
-      angle: Tools.ToDegrees(Math.acos(Vector3.Dot(p1.subtract(p2).normalize(), p3.subtract(p2).normalize())))
+      // +1 = Left/Up/Forward, -1 = Right/Down/Backward, 0 = Negligible delta
+      orientation,
+      angle
     };
   }
 
@@ -324,8 +361,8 @@ export class EnemyAITank extends Tank {
         { axis: PhysicsConstraintAxis.LINEAR_Z, minLimit: 0, maxLimit: 0 },
         {
           axis: PhysicsConstraintAxis.ANGULAR_X,
-          minLimit: -EnemyAITank.config.maxBarrelAngle,
-          maxLimit: EnemyAITank.config.maxBarrelAngle
+          minLimit: -EnemyAITank.config.maxBarrelAngleUp,
+          maxLimit: EnemyAITank.config.maxBarrelAngleDown
         },
         { axis: PhysicsConstraintAxis.ANGULAR_Y, minLimit: 0, maxLimit: 0 },
         { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 }
@@ -673,9 +710,9 @@ export class EnemyAITank extends Tank {
           : this.memory.lastKnownPlayerPosition!.clone();
 
       // If reached to the target position, switch to next random position on map
-      if (Vector3.Distance(this.body.absolutePosition, targetPos) <= 2) {
+      if (Vector3.Distance(this.turret.absolutePosition, targetPos) <= EnemyAITank.config.wayPointEpsilon) {
         // This will also work if in tracking state and player's last known position is reached
-        this.memory.nextPosition = Vector3.Random(-230, 230);
+        this.memory.nextPosition = Vector3.Random(-220, 220);
         this.memory.nextPosition!.y = Ground.mesh.getHeightAtCoordinates(
           this.memory.nextPosition!.x,
           this.memory.nextPosition!.z
@@ -683,24 +720,115 @@ export class EnemyAITank extends Tank {
         this.aiState = 'roam';
       }
 
-      const info = this.forwardToRefAngle(this.body, targetPos);
+      const info = this.forwardToRefAngle(this.body, targetPos, 'y', EnemyAITank.config.bodyAlignmentEpsilon);
 
       inputs[GameInputType.FORWARD] = true;
       if (
-        now - this.memory.lastHeadingCorrectionTS! > EnemyAITank.config.headingCorrectionCooldown ||
+        now - this.memory.lastRotationCorrectionTS! > EnemyAITank.config.rotationCorrectionCooldown ||
         info.angle > 2.5
       ) {
         if (info.orientation < 0) inputs[GameInputType.RIGHT] = true;
         else if (info.orientation > 0) inputs[GameInputType.LEFT] = true;
-        this.memory.lastHeadingCorrectionTS = now;
+        this.memory.lastRotationCorrectionTS = now;
       }
     } else if (this.aiState === 'combat') {
-      // TODO
-      // 1. Stop
-      // 2. Align body if not aligned
-      // 3. Align turret if not aligned
-      // 4. Predict barrel alignment
-      this.fire(now);
+      if (
+        Vector3.Distance(this.turret.absolutePosition, this.world.player.turret.absolutePosition) >=
+        EnemyAITank.config.stillCombatDistance
+      ) {
+        inputs[GameInputType.BRAKE] = true;
+      } else {
+        // TODO: If Player is close enough, reverse while in combat to create separation
+        inputs[GameInputType.BRAKE] = true;
+      }
+
+      // Align body if not aligned
+      const info = this.forwardToRefAngle(
+        this.body,
+        this.world.player.turret.absolutePosition,
+        'y',
+        EnemyAITank.config.bodyAlignmentEpsilon
+      );
+      if (info.angle > EnemyAITank.config.bodyAlignmentTolerance) {
+        if (info.orientation < 0) inputs[GameInputType.RIGHT] = true;
+        else if (info.orientation > 0) inputs[GameInputType.LEFT] = true;
+      }
+
+      // Align turret if not aligned
+      const turretInfo = this.forwardToRefAngle(
+        this.turret,
+        this.world.player.turret.absolutePosition,
+        'y',
+        EnemyAITank.config.turretAlignmentEpsilon
+      );
+      if (turretInfo.angle >= EnemyAITank.config.turretAlignmentTolerance) {
+        if (turretInfo.orientation < 0) inputs[GameInputType.TURRET_RIGHT] = true;
+        else if (turretInfo.orientation > 0) inputs[GameInputType.TURRET_LEFT] = true;
+      }
+
+      // Align barrel
+      const barrelInfo = this.forwardToRefAngle(
+        this.barrelTip,
+        this.world.player.turret.absolutePosition,
+        'x',
+        EnemyAITank.config.barrelAlignmentEpsilon
+      );
+      const currentBarrelAngle = Tools.ToDegrees(this.barrel.rotationQuaternion!.toEulerAngles().x);
+      let targetBarrelAngle = currentBarrelAngle;
+      if (barrelInfo.orientation !== 0) {
+        targetBarrelAngle =
+          barrelInfo.orientation < 0
+            ? currentBarrelAngle + barrelInfo.angle
+            : currentBarrelAngle - barrelInfo.angle;
+      }
+
+      // Calculate leadAngle (compensation for shell drop due to gravity) (Parabolic path's range formula)
+      let leadAngle = Tools.ToDegrees(
+        Math.asin(
+          (Vector3.Distance(this.world.player.turret.absolutePosition, this.turret.absolutePosition) *
+            gravityVector.y) /
+            (Shell.config.initialVelocity * Shell.config.initialVelocity)
+        ) / 2
+      );
+
+      // Not sure what is causing this bug, but the leadAngle is a bit shy than expected
+      leadAngle -= EnemyAITank.config.leadAngleCorrection;
+
+      targetBarrelAngle += leadAngle;
+
+      if (Math.abs(targetBarrelAngle - currentBarrelAngle) > EnemyAITank.config.barrelAlignmentTolerance) {
+        if (targetBarrelAngle > currentBarrelAngle) inputs[GameInputType.BARREL_DOWN] = true;
+        else inputs[GameInputType.BARREL_UP] = true;
+      }
+
+      if (
+        !isInRange(
+          targetBarrelAngle,
+          -Tools.ToDegrees(EnemyAITank.config.maxBarrelAngleUp),
+          Tools.ToDegrees(EnemyAITank.config.maxBarrelAngleDown)
+        )
+      ) {
+        // TODO: Move towards player while aiming in hopes that the barrel can be aligned
+        // this.aiState = 'combat-advanced';
+        this.aiState = 'track';
+      }
+
+      // Debug
+      /* this.currentBarrelAngleD = currentBarrelAngle;
+      this.targetBarrelAngleD = targetBarrelAngle;
+      this.leadAngleD = leadAngle;
+      this.deltaBarrelAngleD = Math.abs(targetBarrelAngle - currentBarrelAngle);
+      this.deltaTurretAngleD = turretInfo.angle;
+      this.barrelInfoAngleD = barrelInfo.angle;
+      this.barrelInfoOrientD = barrelInfo.orientation; */
+
+      // If alignment is satisfactory, fire
+      if (
+        turretInfo.angle <= EnemyAITank.config.turretAlignmentTolerance &&
+        Math.abs(targetBarrelAngle - currentBarrelAngle) <= EnemyAITank.config.barrelAlignmentTolerance
+      ) {
+        this.fire(now);
+      }
     }
 
     return inputs;

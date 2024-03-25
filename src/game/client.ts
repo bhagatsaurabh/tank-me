@@ -68,9 +68,7 @@ export class GameClient {
 
   async createWorld(canvasEl: HTMLCanvasElement, vsAI = false) {
     this.world = await World.create(this, canvasEl, vsAI);
-    if (!vsAI) {
-      Monitor.start(this.world!);
-    }
+    Monitor.start(this.world!);
   }
   getSessionId() {
     return this.rooms.desert?.sessionId;

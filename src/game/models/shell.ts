@@ -4,7 +4,7 @@ import { Axis, Color3, Space, Vector3 } from '@babylonjs/core/Maths';
 import { MeshBuilder, Mesh, LinesMesh, AbstractMesh } from '@babylonjs/core/Meshes';
 import { PhysicsAggregate, type IPhysicsCollisionEvent, PhysicsShapeSphere } from '@babylonjs/core/Physics';
 import { Sound } from '@babylonjs/core/Audio';
-import { Observer } from '@babylonjs/core/Misc';
+import { Observer, Tools } from '@babylonjs/core/Misc';
 
 import { AssetLoader } from '../loader';
 import { Debug } from '../debug';
@@ -15,16 +15,20 @@ import type { PlayerTank } from './player';
 import type { EnemyAITank } from './enemy-ai';
 
 export class Shell {
+  static config = {
+    impactEnergy: 5,
+    energy: 0.02,
+    trailLength: 3,
+    initialVelocity: 199
+  };
   private static refShell: Mesh;
   private static refShellMaterial: StandardMaterial;
   private static refTrailMaterial: StandardMaterial;
   private static refPhysicsShape: PhysicsShapeSphere;
-  private impactEnergy = 5;
   private playerId: string;
   private mesh!: AbstractMesh;
   private explosionSound!: Sound;
   private isSpent: boolean = false;
-  private energy = 0.02;
   private debugTrajectory: Vector3[] = [];
   private debug = false;
   private observers: Observer<any>[] = [];
@@ -39,7 +43,6 @@ export class Shell {
     updatable: true,
     material: Shell.refTrailMaterial
   };
-  private trailLength = 3;
   private particleSystem!: PSShellExplosion;
 
   private constructor(
@@ -91,7 +94,7 @@ export class Shell {
     mesh.parent = this.tank.barrelTip;
 
     const initialPos = mesh.absolutePosition.clone();
-    this.trailOptions.points = new Array(this.trailLength).fill(null).map(() => initialPos.clone());
+    this.trailOptions.points = new Array(Shell.config.trailLength).fill(null).map(() => initialPos.clone());
     this.trail = MeshBuilder.CreateLines(`Trail:${mesh.name}`, this.trailOptions, this.tank.world.scene);
 
     this.mesh = mesh;
@@ -138,7 +141,7 @@ export class Shell {
     if (otherCollider.transformNode.name.includes(this.playerId)) return;
     if (otherCollider.transformNode.name.includes('Panzer')) {
       otherCollider.applyImpulse(
-        shellCollider.transformNode.getDirection(forwardVector).normalize().scale(this.impactEnergy),
+        shellCollider.transformNode.getDirection(forwardVector).normalize().scale(Shell.config.impactEnergy),
         this.mesh.absolutePosition.clone()
       );
 
@@ -163,6 +166,16 @@ export class Shell {
       true;
     this.explosionSound.play();
 
+    /* if (otherCollider.transformNode.name === 'ground') {
+      console.log(
+        `R=${Vector3.Distance(explosionOrigin, this.tank.body.absolutePosition)}`,
+        'V=~200',
+        'g=~-9.8',
+        Tools.ToDegrees(this.tank.barrel.rotationQuaternion!.toEulerAngles().x),
+        `Lead=${Tools.ToDegrees(Math.asin((Vector3.Distance(explosionOrigin, this.tank.body.absolutePosition) * -9.8) / (200 * 200)) / 2)}`
+      );
+    } */
+
     this.dispose();
   }
   private beforeStep() {
@@ -180,10 +193,10 @@ export class Shell {
     if (this.trail && !this.trail.isDisposed()) {
       this.trailOptions.instance = this.trail;
       this.trail = MeshBuilder.CreateLines(`Trail:${this.mesh.name}`, this.trailOptions);
-      for (let i = 0; i < this.trailLength - 1; i += 1) {
+      for (let i = 0; i < Shell.config.trailLength - 1; i += 1) {
         this.trailOptions.points[i] = this.trailOptions.points[i + 1];
       }
-      this.trailOptions.points[this.trailLength - 1] = this.mesh.absolutePosition.clone();
+      this.trailOptions.points[Shell.config.trailLength - 1] = this.mesh.absolutePosition.clone();
     }
   }
   private dispose() {
@@ -208,7 +221,7 @@ export class Shell {
     this.setPhysics();
     this.mesh.isVisible = true;
     this.mesh.physicsBody?.applyImpulse(
-      this.mesh.getDirection(forwardVector).normalize().scale(this.energy),
+      this.mesh.getDirection(forwardVector).normalize().scale(Shell.config.energy),
       this.mesh.getAbsolutePosition()
     );
     this.isSpent = true;

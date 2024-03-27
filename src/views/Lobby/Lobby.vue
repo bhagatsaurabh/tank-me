@@ -114,7 +114,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <Header>
+  <Header class="header">
     <template #left>
       <div class="header-hero">
         <img class="hero" alt="tankme logo" src="/assets/images/logo192.png" />
@@ -183,6 +183,9 @@ onMounted(async () => {
     >
       Match-making is slow and taking longer than expected.
     </Modal>
+    <div class="background">
+      <video src="/assets/videos/dynamic-background.mp4" autoplay loop playsinline muted></video>
+    </div>
     <div class="match">
       <Button class="match-control" @click="handleStart">
         <template v-if="lobby.status === 'idle'">
@@ -199,6 +202,9 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.header {
+  opacity: 0.8;
+}
 .hero {
   max-height: 80%;
 }
@@ -240,6 +246,7 @@ onMounted(async () => {
   display: flex;
   align-items: flex-end;
   column-gap: 1.5rem;
+  opacity: 0.8;
 }
 .match-control {
   padding: 1rem 2rem;
@@ -301,5 +308,22 @@ onMounted(async () => {
   color: #ffffff;
   background-color: #00000066;
   padding: 0.1rem 0.5rem;
+}
+.background {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  top: 0;
+  left: 0;
+}
+.background video {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 </style>

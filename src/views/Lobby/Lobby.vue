@@ -215,7 +215,7 @@ onMounted(async () => {
   height: 100%;
 }
 .header-hero img {
-  filter: drop-shadow(0px 0px 10px #000);
+  filter: drop-shadow(0px 0px 4px #000);
 }
 .header-hero span {
   color: #000;
@@ -247,6 +247,9 @@ onMounted(async () => {
   align-items: flex-end;
   column-gap: 1.5rem;
   opacity: 0.8;
+  width: 100%;
+  background: url('/assets/images/dirt-overlay.png');
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0));
 }
 .match-control {
   padding: 1rem 2rem;
@@ -316,6 +319,7 @@ onMounted(async () => {
   z-index: -1;
   top: 0;
   left: 0;
+  filter: blur(1px);
 }
 .background video {
   position: absolute;

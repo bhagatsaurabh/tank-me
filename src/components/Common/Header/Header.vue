@@ -2,6 +2,7 @@
 
 <template>
   <header class="header">
+    <div class="background"></div>
     <div class="left">
       <slot name="left"></slot>
     </div>
@@ -18,9 +19,15 @@
   height: var(--header-height);
   top: 0;
   z-index: 10;
-  background-color: #c9b18b;
-  box-shadow: 0 0 5px 0 #000;
+}
+.header .background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background-image: url('/assets/images/dirt-overlay.png');
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 75%, rgba(0, 0, 0, 0));
   background-size: auto;
 }
 

@@ -426,8 +426,11 @@ export class World {
     this.client.isMatchEnded = true;
     this.scene.activeCamera = this.endCamera;
     this.player.sights.forEach((ui) => (ui.isVisible = false));
+    Object.values(this.guiRefs).forEach((control) => (control.isVisible = false));
+
     const id = this.vsAI ? 'Player' : this.player.state!.sid;
     this.client.didWin = message.winner === id;
+    this.client.stats = message.stats[id];
 
     this.players[message.loser].explode();
   }

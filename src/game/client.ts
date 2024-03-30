@@ -2,7 +2,7 @@ import { Client, Room } from 'colyseus.js';
 
 import type { RoomState } from './state';
 import { World } from './main';
-import { MessageType, type MatchStats, type PlayerStats } from '@/types/types';
+import { MessageType, type PlayerStats } from '@/types/types';
 import { useLobbyStore } from '@/stores/lobby';
 import type { IMessageEnd, IMessageFire } from '@/types/interfaces';
 import type { EnemyTank } from './models/enemy';
@@ -11,7 +11,7 @@ import { Monitor } from './monitor';
 export class GameClient {
   private static instance: GameClient;
   private client!: Client;
-  private world?: World;
+  world?: World;
   private rooms: { lobby?: Room<any>; desert?: Room<RoomState> } = {};
   isMatchEnded = false;
   didWin = false;

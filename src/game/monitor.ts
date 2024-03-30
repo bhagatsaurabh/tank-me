@@ -16,6 +16,11 @@ export class Monitor {
 
   static start(world: World) {
     Monitor.handle = setInterval(() => {
+      if (world.isDestroyed) {
+        this.stop();
+        return;
+      }
+
       if (world.vsAI) {
         /* const enemy = Object.values(world.players).find((tank) => tank.lid === 'Enemy')! as EnemyAITank;
 

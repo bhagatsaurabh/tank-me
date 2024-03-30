@@ -71,7 +71,8 @@ export const useAuthStore = defineStore('auth', () => {
     const prfl: Profile = {
       id: usr.uid,
       username,
-      email: usr.email
+      email: usr.email,
+      stats: { matches: 0, wins: 0, points: 0 }
     };
     await remote.storeProfile(prfl);
     await local.updateProfile(prfl);

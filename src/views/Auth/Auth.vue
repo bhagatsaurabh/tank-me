@@ -197,11 +197,14 @@ watch(
   box-shadow: 0px 0px 10px 0px #000;
 }
 
+.auth-card:has(> .wait) {
+  box-shadow: none;
+}
+
 .wait {
   width: 10rem;
   height: 2rem;
   overflow: hidden;
-  background-color: #000;
 }
 .guest-control {
   width: min-content;

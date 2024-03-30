@@ -4,10 +4,14 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { throttle } from '@/utils/utils';
 import type { Nullable } from '@babylonjs/core';
 import { GameClient } from '@/game/client';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
+import Button from '@/components/Common/Button/Button.vue';
+import { useLobbyStore } from '@/stores/lobby';
 
 const route = useRoute();
+const router = useRouter();
+const lobby = useLobbyStore();
 
 const containerEl = ref<Nullable<HTMLDivElement>>(null);
 const canvasEl = ref<Nullable<HTMLCanvasElement>>(null);
@@ -21,6 +25,11 @@ const handleResize = () => {
   }
 };
 const throttledHandleResize = throttle(handleResize, 200);
+const handleBackToLobby = () => {
+  gameClient.value?.world?.destroy();
+  lobby.status = 'idle';
+  router.push('/lobby');
+};
 
 let observer: ResizeObserver;
 onMounted(async () => {
@@ -54,17 +63,23 @@ onBeforeUnmount(() => {
     <canvas ref="canvasEl"></canvas>
     <div v-if="gameClient?.isMatchEnded" class="matchend">
       <section class="title">
-        {{ gameClient?.didWin ? 'Winner !' : 'Lost' }}
+        <div class="background"></div>
+        <h1>{{ gameClient?.didWin ? 'Winner !' : 'Lost' }}</h1>
       </section>
       <section class="stats">
         <div class="keys">
-          <h4>Shells Used: </h4>
-          <h4>Total Damage: </h4>
+          <h4>Shells Used</h4>
+          <h4>Total Damage</h4>
+          <h4 v-if="!gameClient?.world?.vsAI">Points</h4>
         </div>
         <div class="values">
-          <h4>{{ gameClient?.stats.shellsUsed }}</h4>
-          <h4>{{ gameClient?.stats.totalDamage }}</h4>
+          <h4>{{ gameClient?.stats?.shellsUsed }}</h4>
+          <h4>{{ gameClient?.stats?.totalDamage }}</h4>
+          <h4 v-if="!gameClient?.world?.vsAI">{{ gameClient?.stats?.points }}</h4>
         </div>
+      </section>
+      <section class="controls">
+        <Button icon="chevron-left" :size="1.4" icon-left @click="handleBackToLobby">Lobby</Button>
       </section>
     </div>
   </div>
@@ -119,7 +134,32 @@ onBeforeUnmount(() => {
   left: 0;
   z-index: 100;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
+  background-color: #00000029;
+}
+.matchend .title {
+  font-size: 4rem;
+  margin-left: 2rem;
+  margin-bottom: 20rem;
+}
+.matchend .title .background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background: url('/assets/images/background.jpg');
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+}
+.matchend .stats {
+  display: flex;
+  margin-right: 2rem;
+  column-gap: 1rem;
+}
+.matchend .controls {
+  position: absolute;
+  left: 2rem;
+  bottom: 23rem;
 }
 </style>

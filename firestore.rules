@@ -11,20 +11,26 @@ service cloud.firestore {
     }
     function validateProfileCreation(request) {
       let input = request.resource.data;
-      let validKeys = ['id', 'username', 'email'];
+      let validKeys = ['id', 'username', 'email', 'stats'];
+      let validStatsKeys = ['matches', 'wins', 'points'];
       let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
                     input.id is string && input.id == request.auth.uid &&
                     (input.email != null
                       ? (input.email is string && input.email == request.auth.token.email && request.auth.token.email_verified == true)
                       : true
                     ) &&
-                    input.username == null;
+                    input.username == null &&
+                    input.stats is map && input.stats.keys().hasAll(validStatsKeys) && input.stats.keys().hasOnly(validStatsKeys) &&
+                    input.stats.matches is number && input.stats.matches == 0 &&
+                    input.stats.wins is number && input.stats.wins == 0 &&
+                    input.stats.points is number && input.stats.points == 0;
       return isValid;
     }
     function validateProfileUpdation(request, resource) {
       let input = request.resource.data;
       let existing = resource.data;
-      let validKeys = ['id', 'username', 'email'];
+      let validKeys = ['id', 'username', 'email', 'stats'];
+      let validStatsKeys = ['matches', 'points', 'wins'];
       return input.keys().hasOnly(validKeys) && input.keys().hasAny(validKeys) &&
                     ('id' in input
                       ? (input.id is string && input.id == request.auth.uid && input.id == existing.id)
@@ -39,6 +45,13 @@ service cloud.firestore {
                     ) && 
                     ('username' in input
                       ? (input.username is string && input.username.matches('^.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{3,}$'))
+                      : true
+                    ) && 
+                    ('stats' in input
+                      ? (input.stats is map && input.stats.keys().hasAll(validStatsKeys) && input.stats.keys().hasOnly(validStatsKeys) &&
+                        input.stats.matches is number && input.stats.matches == existing.stats.matches &&
+                        input.stats.wins is number && input.stats.wins == existing.stats.wins &&
+                        input.stats.points is number && input.stats.points == existing.stats.points)
                       : true
                     );
     }

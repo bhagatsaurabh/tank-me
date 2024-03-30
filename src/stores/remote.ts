@@ -28,7 +28,11 @@ export const useRemoteDBStore = defineStore('remote', () => {
     try {
       await updateDoc(doc(remoteDB, 'users', auth.user.uid), profile);
       auth.profile = { ...auth.profile, ...profile };
-      await local.updateProfile({ ...auth.profile });
+      if (auth.profile.stats) {
+        await local.updateProfile({ ...auth.profile, stats: { ...auth.profile.stats! } });
+      } else {
+        await local.updateProfile({ ...auth.profile });
+      }
       return true;
     } catch (error) {
       notify.push(Notifications.GENERIC({ error }));

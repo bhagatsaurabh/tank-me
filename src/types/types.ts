@@ -67,5 +67,6 @@ export type EnemyAIState = 'roam' | 'combat' | 'track';
 export type PlayerStats = {
   shellsUsed: number;
   totalDamage: number;
+  points?: number;
 };
 export type MatchStats = Record<string, PlayerStats>;

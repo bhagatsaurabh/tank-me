@@ -4,7 +4,7 @@ import { Axis, Color3, Space, Vector3 } from '@babylonjs/core/Maths';
 import { MeshBuilder, Mesh, LinesMesh, AbstractMesh } from '@babylonjs/core/Meshes';
 import { PhysicsAggregate, type IPhysicsCollisionEvent, PhysicsShapeSphere } from '@babylonjs/core/Physics';
 import { Sound } from '@babylonjs/core/Audio';
-import { Observer, Tools } from '@babylonjs/core/Misc';
+import { Observer } from '@babylonjs/core/Misc';
 
 import { AssetLoader } from '../loader';
 import { Debug } from '../debug';
@@ -149,12 +149,18 @@ export class Shell {
         const hitPlayer = Object.values(this.tank.world.players).find((tank) =>
           (tank as PlayerTank | EnemyAITank).physicsBodies.includes(otherCollider)
         );
+
+        let damage = 0;
         if (hitPlayer?.barrel === otherCollider.transformNode) {
-          hitPlayer.damage(10);
+          damage = 10;
         } else if (hitPlayer?.turret === otherCollider.transformNode) {
-          hitPlayer.damage(25);
+          damage = 25;
         } else if (hitPlayer?.body === otherCollider.transformNode) {
-          hitPlayer.damage(30);
+          damage = 30;
+        }
+        hitPlayer?.damage(damage);
+        if (this.tank === this.tank.world.player) {
+          this.tank.world.playerStats.totalDamage += damage;
         }
       }
     }
@@ -165,16 +171,6 @@ export class Shell {
     this.explosionSound.onEndedObservable.add(() => this.explosionSound.dispose()).unregisterOnNextCall =
       true;
     this.explosionSound.play();
-
-    /* if (otherCollider.transformNode.name === 'ground') {
-      console.log(
-        `R=${Vector3.Distance(explosionOrigin, this.tank.body.absolutePosition)}`,
-        'V=~200',
-        'g=~-9.8',
-        Tools.ToDegrees(this.tank.barrel.rotationQuaternion!.toEulerAngles().x),
-        `Lead=${Tools.ToDegrees(Math.asin((Vector3.Distance(explosionOrigin, this.tank.body.absolutePosition) * -9.8) / (200 * 200)) / 2)}`
-      );
-    } */
 
     this.dispose();
   }

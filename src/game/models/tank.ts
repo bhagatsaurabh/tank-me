@@ -308,7 +308,11 @@ export class Tank {
     (this as unknown as PlayerTank | EnemyAITank).health -= amount;
 
     if ((this as unknown as PlayerTank | EnemyAITank).health <= 0) {
-      this.world.matchEnd({ loser: this.lid, winner: this.lid === 'Player' ? 'Enemy' : 'Player' });
+      this.world.matchEnd({
+        loser: this.lid,
+        winner: this.lid === 'Player' ? 'Enemy' : 'Player',
+        stats: { Player: this.world.playerStats }
+      });
     }
   }
 }

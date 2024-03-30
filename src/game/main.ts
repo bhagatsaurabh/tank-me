@@ -22,7 +22,7 @@ import { Tank } from './models/tank';
 import { Ground } from './models/ground';
 import { AssetLoader } from './loader';
 import { Skybox } from './skybox';
-import { MessageType } from '@/types/types';
+import { MessageType, type PlayerStats } from '@/types/types';
 import type { IMessageEnd, IMessageInput } from '@/types/interfaces';
 import { PlayerTank } from './models/player';
 import { EnemyTank } from './models/enemy';
@@ -56,6 +56,11 @@ export class World {
   private observers: Observer<Scene>[] = [];
   private fpsLabel!: TextBlock;
   ground!: Ground;
+  playerStats: PlayerStats = { shellsUsed: 0, totalDamage: 0 };
+  private _isDestroyed = false;
+  get isDestroyed(): boolean {
+    return this._isDestroyed;
+  }
 
   private constructor(
     public engine: Engine,
@@ -434,11 +439,19 @@ export class World {
 
     this.players[message.loser].explode();
   }
-  dispose() {
+  destroy() {
+    if (this._isDestroyed) return;
+
+    this.observers.forEach((observer) => observer.remove());
     this.stateUnsubFns.forEach((unsubFn) => unsubFn());
     window.removeEventListener('keydown', this.toggleInspect);
     window.removeEventListener('resize', this.throttledResizeListener);
+
+    Object.values(this.players).forEach((player) => player.dispose());
+    this.ground?.dispose();
+    this.scene.dispose();
     this.engine.dispose();
+    this._isDestroyed = true;
   }
   removePlayer(id: string) {
     this.players[id].dispose();

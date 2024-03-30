@@ -126,7 +126,7 @@ onBeforeUnmount(unregisterGuard);
   position: fixed;
   z-index: 102;
   border: 1px solid white;
-  box-shadow: 0 0 10px 0px #000;
+  box-shadow: 0 0 20px 0px #000000ba;
   left: 50%;
   top: 50%;
   background-color: #434343;

@@ -1,10 +1,4 @@
-import {
-  TransformNode,
-  type AbstractMesh,
-  type Mesh,
-  type Nullable,
-  MeshBuilder,
-} from '@babylonjs/core';
+import { TransformNode, type AbstractMesh, type Mesh, type Nullable, MeshBuilder } from '@babylonjs/core';
 import { Vector3, Axis, Space, Scalar, Quaternion } from '@babylonjs/core/Maths';
 import {
   PhysicsShapeConvexHull,
@@ -660,6 +654,7 @@ export class PlayerTank extends Tank {
     Shell.create(this).then((shell) => (this.loadedShell = shell));
 
     this.lastFiredTS = now;
+    this.world.playerStats.shellsUsed += 1;
     return true;
   }
 

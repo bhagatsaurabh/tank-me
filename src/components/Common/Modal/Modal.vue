@@ -1,11 +1,12 @@
-<script setup>
-import { watch, onBeforeUnmount, ref, onMounted } from 'vue';
+<script setup lang="ts">
+import { watch, onBeforeUnmount, ref, onMounted, type PropType } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { getSlug, trapBetween, trapFocus, noop } from '@/utils/utils';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
-import Icon from '@/components/Common/Icon/Icon.vue';
 import Button from '@/components/Common/Button/Button.vue';
+import type { IModalAction, ITrapBounds } from '@/types/interfaces';
+import type { Nullable } from '@babylonjs/core';
 
 const props = defineProps({
   title: {
@@ -13,7 +14,7 @@ const props = defineProps({
     required: true
   },
   controls: {
-    type: Array,
+    type: Array as PropType<IModalAction[]>,
     default: () => []
   }
 });
@@ -22,12 +23,12 @@ const emit = defineEmits(['dismiss', 'action']);
 
 const router = useRouter();
 const el = ref(null);
-const queuedAction = ref(null);
-const bound = ref(null);
+const queuedAction = ref<Nullable<IModalAction>>(null);
+const bound = ref<Nullable<ITrapBounds>>(null);
 const show = ref(false);
 const waitForAction = ref(false);
 
-const keyListener = (event) => trapFocus(event, el.value, bound.value);
+const keyListener = (event: KeyboardEvent) => trapFocus(event, el.value!, bound.value!);
 
 const handleDismiss = () => {
   if (show.value) {
@@ -36,7 +37,7 @@ const handleDismiss = () => {
     router.back();
   }
 };
-const handleAction = async (control) => {
+const handleAction = async (control: IModalAction) => {
   if (!control.async) {
     if (queuedAction.value === null) {
       queuedAction.value = control;
@@ -45,7 +46,7 @@ const handleAction = async (control) => {
   } else {
     control.busy = true;
     waitForAction.value = true;
-    await control.action();
+    if (control.action) await control.action();
     handleDismiss();
   }
 };
@@ -81,7 +82,7 @@ watch(el, () => {
 });
 
 onMounted(() => {
-  document.activeElement?.blur();
+  (document.activeElement as HTMLElement)?.blur();
   show.value = true;
 });
 onBeforeUnmount(unregisterGuard);
@@ -92,12 +93,10 @@ onBeforeUnmount(unregisterGuard);
   <Transition @after-leave="handleLeave" v-bind="$attrs" name="scale-fade" appear>
     <div v-if="show" ref="el" class="modal" role="dialog">
       <div class="bg"></div>
-      <Icon
-        v-if="!controls.length"
+      <Button
         class="close-icon"
-        alt="Close icon"
-        name="close"
-        adaptive
+        v-if="!controls.length"
+        icon="close"
         @click="waitForAction ? noop : handleDismiss"
       />
       <h2 class="title">{{ title }}</h2>
@@ -108,7 +107,7 @@ onBeforeUnmount(unregisterGuard);
         <Button
           :disabled="waitForAction"
           v-for="control in controls"
-          :key="control"
+          :key="control.text"
           @click="() => handleAction(control)"
           :async="control.async"
           :busy="control.busy"
@@ -149,10 +148,6 @@ onBeforeUnmount(unregisterGuard);
   justify-content: flex-end;
   column-gap: 1rem;
 }
-.close-icon {
-  margin-left: calc(100% - 1.1rem);
-  vertical-align: unset;
-}
 .modal .bg {
   position: absolute;
   width: 100%;
@@ -161,6 +156,10 @@ onBeforeUnmount(unregisterGuard);
   top: 0;
   background-image: url('/assets/images/background.jpg');
   opacity: 0.1;
+}
+
+.close-icon {
+  margin-left: calc(100% - 1.1rem);
 }
 
 @media (min-width: 768px) {

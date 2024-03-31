@@ -47,13 +47,13 @@ const handleUsername = async () => {
 const validateEmail = (val: string) => {
   if (!val) return 'Please enter an e-mail';
   // eslint-disable-next-line no-useless-escape
-  if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return null;
+  if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return '';
   return 'Not a valid e-mail';
 };
 const validateUsername = (val: string) => {
   if (!val) return 'Please enter a username';
   if (!userNameRegex.test(val)) return 'Not a valid username';
-  return null;
+  return '';
 };
 
 watch(

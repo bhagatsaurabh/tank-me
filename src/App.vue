@@ -5,14 +5,15 @@ import type { Nullable } from '@babylonjs/core';
 import { closeDB, openDB } from './database/indexeddb';
 import { useAuthStore } from './stores/auth';
 import { useBroadcastStore } from './stores/broadcast';
-import Modal from './components/Modal/Modal.vue';
+import Modal from '@/components/Common/Modal/Modal.vue';
 import { useNotificationStore } from './stores/notification';
+import type { IModalInfo } from './types/interfaces';
 
 const auth = useAuthStore();
 const broadcast = useBroadcastStore();
 const notifyStore = useNotificationStore();
 
-const modal = ref<Nullable<{ title: string; controls: string[]; message: string }>>(null);
+const modal = ref<Nullable<IModalInfo>>(null);
 
 const handleModalDismiss = () => {
   modal.value = null;

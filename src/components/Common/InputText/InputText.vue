@@ -1,5 +1,6 @@
-<script setup>
-import { onMounted, ref } from 'vue';
+<script setup lang="ts">
+import type { Nullable } from '@babylonjs/core';
+import { onMounted, ref, type PropType } from 'vue';
 
 const props = defineProps({
   type: {
@@ -15,13 +16,13 @@ const props = defineProps({
     default: () => ({})
   },
   validator: {
-    type: Function,
-    default: () => true
+    type: Function as PropType<(val: string) => string>,
+    default: () => null
   },
   validation: {
     type: String,
     default: 'Lazy',
-    validator: (val) => ['Lazy', 'Eager', 'Off'].includes(val)
+    validator: (val: string) => ['Lazy', 'Eager', 'Off'].includes(val)
   },
   focus: {
     type: Boolean,
@@ -31,29 +32,29 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:modelValue']);
 
-const native = ref(null);
-const errormsg = ref('');
+const native = ref<Nullable<HTMLInputElement>>(null);
+const errormsg = ref<string>('');
 
-const handleInput = (e) => {
-  if (props.validation === 'Eager') validate(e.target.value);
+const handleInput = (e: Event) => {
+  if (props.validation === 'Eager') validate((e.target as HTMLInputElement)?.value);
   else {
-    errormsg.value = null;
+    errormsg.value = '';
     native.value?.setCustomValidity('');
   }
 
-  emit('update:modelValue', e.target.value);
+  emit('update:modelValue', (e.target as HTMLInputElement).value);
 };
-const validate = (val) => {
+const validate = (val: string) => {
   errormsg.value = props.validator(val);
   native.value?.setCustomValidity(errormsg.value);
   return errormsg.value;
 };
-const invalidate = (msg) => {
+const invalidate = (msg: string) => {
   errormsg.value = msg;
   native.value?.setCustomValidity(errormsg.value);
 };
 
-onMounted(() => props.focus && native.value.focus());
+onMounted(() => props.focus && native.value?.focus());
 
 defineExpose({ native, validate, invalidate });
 </script>

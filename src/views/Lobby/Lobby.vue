@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, onBeforeMount } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
@@ -10,12 +10,13 @@ import Button from '@/components/Common/Button/Button.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 import InputText from '@/components/Common/InputText/InputText.vue';
+import Leaderboard from '@/components/Leaderboard/Leaderboard.vue';
 import { AssetLoader } from '@/game/loader';
 import { GameClient } from '@/game/client';
-import { noop } from '@/utils/utils';
+import { noop, randInRange } from '@/utils/utils';
 import type { Nullable } from '@babylonjs/core';
 import type { AuthStatus } from '@/types/types';
-import Modal from '@/components/Modal/Modal.vue';
+import Modal from '@/components/Common/Modal/Modal.vue';
 
 const auth = useAuthStore();
 const lobby = useLobbyStore();
@@ -30,11 +31,13 @@ const emailEl = ref<Nullable<InstanceType<typeof InputText>>>(null);
 const isGuestUpgrading = ref<boolean>(false);
 const suggestAI = ref(false);
 const isSuggestionRejected = ref<Nullable<boolean>>(false);
+const isLeaderboardOpen = ref(false);
+const randomStartPoint = ref(0);
 
 const validateEmail = (val: string) => {
   if (!val) return 'Please enter an e-mail';
   // eslint-disable-next-line no-useless-escape
-  if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return null;
+  if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return '';
   return 'Not a valid e-mail';
 };
 let oldStatus: AuthStatus;
@@ -107,6 +110,7 @@ watch(
   }
 );
 
+onBeforeMount(() => (randomStartPoint.value = randInRange(0, 148)));
 onMounted(async () => {
   await AssetLoader.load();
   await lobby.connect();
@@ -123,7 +127,7 @@ onMounted(async () => {
     </template>
     <template #right>
       <div class="header-controls">
-        <Button>Leaderboard</Button>
+        <Button @click="isLeaderboardOpen = true">Leaderboard</Button>
         <Button class="profile-control" :class="{ float: showProfile }" @click="showProfile = !showProfile">
           <img alt="avatar icon" src="/assets/icons/avatar.png" />
         </Button>
@@ -184,7 +188,13 @@ onMounted(async () => {
       Match-making is slow and taking longer than expected.
     </Modal>
     <div class="background">
-      <video src="/assets/videos/dynamic-background.mp4" autoplay loop playsinline muted></video>
+      <video
+        :src="`/assets/videos/dynamic-background.mp4#t=${randomStartPoint}`"
+        autoplay
+        loop
+        playsinline
+        muted
+      ></video>
     </div>
     <div class="match">
       <Button class="match-control" @click="handleStart">
@@ -198,6 +208,7 @@ onMounted(async () => {
       </Button>
       <Button @click="handleStartAI" :size="0.75" :disabled="lobby.status === 'matchmaking'">vs. AI </Button>
     </div>
+    <Leaderboard v-if="isLeaderboardOpen" @dismiss="isLeaderboardOpen = false" />
   </main>
 </template>
 

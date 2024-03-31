@@ -1,4 +1,5 @@
-<script setup>
+<script setup lang="ts">
+import type { Nullable } from '@babylonjs/core';
 import { ref, onUpdated } from 'vue';
 
 const props = defineProps({
@@ -14,10 +15,6 @@ const props = defineProps({
     type: Number,
     default: 1
   },
-  styles: {
-    type: Object,
-    default: new Object()
-  },
   animated: {
     type: Boolean,
     default: false
@@ -26,7 +23,7 @@ const props = defineProps({
 
 const extn = props.animated ? 'gif' : 'png';
 const metaUrl = import.meta.url;
-const source = ref(null);
+const source = ref<Nullable<string>>(null);
 if (props.name.startsWith('src#')) {
   source.value = props.name.substring(4);
 } else {
@@ -44,7 +41,7 @@ onUpdated(() => {
 
 <template>
   <span class="icon-container">
-    <img :alt="alt" :style="{ maxWidth: `${size}rem` }" class="icon" :src="source" :draggable="false" />
+    <img :alt="alt" :style="{ maxWidth: `${size}rem` }" class="icon" :src="source!" :draggable="false" />
   </span>
 </template>
 

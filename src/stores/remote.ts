@@ -1,5 +1,17 @@
+import { ref } from 'vue';
 import { defineStore } from 'pinia';
-import { collection, doc, getCountFromServer, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getCountFromServer,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  setDoc,
+  updateDoc,
+  where
+} from 'firebase/firestore';
 
 import { remoteDB } from '@/config/firebase';
 import { useAuthStore } from './auth';
@@ -11,6 +23,8 @@ import { Notifications } from '@/utils/constants';
 export const useRemoteDBStore = defineStore('remote', () => {
   const auth = useAuthStore();
   const notify = useNotificationStore();
+
+  const leaderboard = ref<Profile[]>([]);
 
   async function storeProfile(profile: Profile): Promise<boolean> {
     if (!auth.user) return false;
@@ -50,10 +64,22 @@ export const useRemoteDBStore = defineStore('remote', () => {
     }
     return -1;
   }
+  async function fetchLeaderboard() {
+    try {
+      leaderboard.value = [];
+      const top25 = query(collection(remoteDB, 'users'), orderBy('stats.points', 'desc'), limit(25));
+      const docsSnap = await getDocs(top25);
+      docsSnap.forEach((snap) => snap.exists() && leaderboard.value.push(snap.data()));
+    } catch (error) {
+      notify.push(Notifications.GENERIC({ error }));
+    }
+  }
 
   return {
+    leaderboard,
     storeProfile,
     updateProfile,
-    usersCountByName
+    usersCountByName,
+    fetchLeaderboard
   };
 });

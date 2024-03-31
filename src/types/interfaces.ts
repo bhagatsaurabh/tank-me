@@ -27,6 +27,18 @@ export interface ITrapBounds {
   last: Node | null;
 }
 
+export interface IModalAction {
+  text: string;
+  action?: () => Promise<void> | void;
+  async?: boolean;
+  busy?: boolean;
+}
+export interface IModalInfo {
+  title: string;
+  controls: IModalAction[];
+  message: string;
+}
+
 export interface INotification {
   type: NotificationType;
   title: string;

@@ -1,5 +1,6 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
+import type { Nullable } from '@babylonjs/core';
 
 import Icon from '@/components/Common/Icon/Icon.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
@@ -36,7 +37,7 @@ const props = defineProps({
   }
 });
 
-const el = ref(null);
+const el = ref<Nullable<HTMLElement>>(null);
 const busy = ref(false);
 
 const handleClick = async () => {

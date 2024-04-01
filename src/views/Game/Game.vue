@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import { throttle } from '@/utils/utils';
 import type { Nullable } from '@babylonjs/core';
@@ -17,6 +17,8 @@ const containerEl = ref<Nullable<HTMLDivElement>>(null);
 const canvasEl = ref<Nullable<HTMLCanvasElement>>(null);
 const isLoading = ref(false);
 const gameClient = ref<Nullable<GameClient>>(null);
+const currTime = ref('');
+const isVsAI = computed(() => route.hash === '#ai');
 
 const handleResize = () => {
   if (canvasEl.value) {
@@ -32,6 +34,7 @@ const handleBackToLobby = () => {
 };
 
 let observer: ResizeObserver;
+let handle = -1;
 onMounted(async () => {
   observer = new ResizeObserver(throttledHandleResize);
   if (canvasEl.value) {
@@ -43,12 +46,25 @@ onMounted(async () => {
 
     // Initialize the game
     isLoading.value = true;
-    await gameClient.value.createWorld(canvasEl.value, route.hash === '#ai');
+    await gameClient.value.createWorld(canvasEl.value, isVsAI.value);
     isLoading.value = false;
+
+    handle = setInterval(() => {
+      const mark = new Date(
+        (gameClient.value?.matchDuration ?? 0) -
+          (Date.now() -
+            ((isVsAI.value
+              ? gameClient.value?.world?.startTimestamp
+              : gameClient.value?.state?.startTimestamp) ?? 0))
+      );
+      currTime.value = `${mark.toISOString().substring(14, 19)}`;
+      if (currTime.value === '00:00') clearInterval(handle);
+    }, 1000);
   }
 });
 onBeforeUnmount(() => {
   observer?.disconnect();
+  clearInterval(handle);
 });
 </script>
 
@@ -61,21 +77,22 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <canvas ref="canvasEl"></canvas>
+    <div class="timer" v-if="lobby.status === 'playing' || (gameClient?.world && isVsAI)">{{ currTime }}</div>
     <div v-if="gameClient?.isMatchEnded" class="matchend">
       <section class="title">
         <div class="background"></div>
-        <h1>{{ gameClient?.didWin ? 'Winner !' : 'Lost' }}</h1>
+        <h1>{{ gameClient?.isDraw ? 'Draw' : gameClient?.didWin ? 'Winner !' : 'Lost' }}</h1>
       </section>
       <section class="stats">
         <div class="keys">
           <h4>Shells Used</h4>
           <h4>Total Damage</h4>
-          <h4 v-if="!gameClient?.world?.vsAI">Points</h4>
+          <h4 v-if="!isVsAI">Points</h4>
         </div>
         <div class="values">
           <h4>{{ gameClient?.stats?.shellsUsed }}</h4>
           <h4>{{ gameClient?.stats?.totalDamage }}</h4>
-          <h4 v-if="!gameClient?.world?.vsAI">{{ gameClient?.stats?.points }}</h4>
+          <h4 v-if="!isVsAI">{{ gameClient?.stats?.points }}</h4>
         </div>
       </section>
       <section class="controls">
@@ -161,5 +178,16 @@ onBeforeUnmount(() => {
   position: absolute;
   left: 2rem;
   bottom: 23rem;
+}
+
+.timer {
+  background-color: #daaa818a;
+  padding: 0.25rem 1rem;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
 }
 </style>

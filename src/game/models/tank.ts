@@ -311,7 +311,8 @@ export class Tank {
       this.world.matchEnd({
         loser: this.lid,
         winner: this.lid === 'Player' ? 'Enemy' : 'Player',
-        stats: { Player: this.world.playerStats }
+        stats: { Player: this.world.playerStats },
+        isDraw: false
       });
     }
   }

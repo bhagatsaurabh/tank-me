@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, onBeforeMount } from 'vue';
 import { useRouter } from 'vue-router';
+import type { Nullable } from '@babylonjs/core';
 
 import { useAuthStore } from '@/stores/auth';
 import { useLobbyStore } from '@/stores/lobby';
@@ -9,49 +10,27 @@ import Header from '@/components/Common/Header/Header.vue';
 import Button from '@/components/Common/Button/Button.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
-import InputText from '@/components/Common/InputText/InputText.vue';
 import Leaderboard from '@/components/Leaderboard/Leaderboard.vue';
 import { AssetLoader } from '@/game/loader';
 import { GameClient } from '@/game/client';
-import { noop, randInRange } from '@/utils/utils';
-import type { Nullable } from '@babylonjs/core';
-import type { AuthStatus } from '@/types/types';
+import { randInRange } from '@/utils/utils';
 import Modal from '@/components/Common/Modal/Modal.vue';
+import Profile from '@/components/Profile/Profile.vue';
 
 const auth = useAuthStore();
 const lobby = useLobbyStore();
 const loader = useLoaderStore();
 const router = useRouter();
 
-const email = ref<string>('');
 const startTS = ref(-1);
 const timer = ref('');
 const showProfile = ref(false);
-const emailEl = ref<Nullable<InstanceType<typeof InputText>>>(null);
 const isGuestUpgrading = ref<boolean>(false);
 const suggestAI = ref(false);
 const isSuggestionRejected = ref<Nullable<boolean>>(false);
 const isLeaderboardOpen = ref(false);
 const randomStartPoint = ref(0);
 
-const validateEmail = (val: string) => {
-  if (!val) return 'Please enter an e-mail';
-  // eslint-disable-next-line no-useless-escape
-  if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return '';
-  return 'Not a valid e-mail';
-};
-let oldStatus: AuthStatus;
-const handleUpgrade = async () => {
-  if (emailEl.value?.validate(email.value)) {
-    return;
-  }
-
-  let oStatus = auth.status;
-  if (await auth.signIn('email', email.value, '', true)) {
-    isGuestUpgrading.value = true;
-    oldStatus = oStatus;
-  }
-};
 let handle = -1;
 const handleStart = async () => {
   if (lobby.status === 'idle') {
@@ -80,16 +59,7 @@ const handleReset = (disconnect = false) => {
   clearInterval(handle);
   isSuggestionRejected.value = false;
 };
-const handleSignOut = async () => {
-  if (await auth.signOut()) {
-    showProfile.value = false;
-    router.push('/');
-  }
-};
-const handleUpgradeRetry = () => {
-  isGuestUpgrading.value = false;
-  auth.status = oldStatus;
-};
+
 const handleAction = (action: { text: string }) => {
   if (action.text === 'Yes') {
     handleStartAI();
@@ -134,39 +104,12 @@ onMounted(async () => {
         <Button v-if="showProfile" class="profile-control filler">
           <img alt="avatar icon" src="/assets/icons/avatar.png" />
         </Button>
-        <Transition name="fade-down">
-          <Backdrop v-if="showProfile" :show="showProfile" @dismiss="showProfile = !showProfile" clear>
-            <aside @pointerup.stop="noop" class="profile">
-              <section class="info">
-                <span class="name">{{ auth.profile?.username }}</span>
-              </section>
-              <section class="status">{{ !auth.profile?.email ? 'Not verified' : 'Verified' }}</section>
-              <section v-if="!auth.profile?.email && !isGuestUpgrading" class="verify">
-                <InputText
-                  class="mt-1 mb-2p5"
-                  ref="emailEl"
-                  v-model="email"
-                  type="email"
-                  placeholder="E-mail"
-                  :attrs="{ spellCheck: false }"
-                  :validator="(val: string) => validateEmail(val)"
-                />
-                <Button :action="handleUpgrade" :size="0.75" async>Verify</Button>
-              </section>
-              <section v-if="isGuestUpgrading" class="guest-upgrade">
-                <h5>
-                  Verification link sent to <span class="upgrade-email">{{ email }}</span>
-                </h5>
-                <Button :action="handleUpgradeRetry" :size="0.75">Change E-mail</Button>
-              </section>
-              <section class="controls">
-                <Button icon="sign-out" :action="handleSignOut" :size="0.75" icon-left async>
-                  Signout
-                </Button>
-              </section>
-            </aside>
-          </Backdrop>
-        </Transition>
+        <Profile
+          v-if="showProfile"
+          :is-guest-upgrading="isGuestUpgrading"
+          @dismiss="showProfile = false"
+          @guest-upgrade="(val) => (isGuestUpgrading = val)"
+        />
       </div>
     </template>
   </Header>
@@ -206,7 +149,7 @@ onMounted(async () => {
           <div class="fs-0p75">{{ timer }}</div>
         </template>
       </Button>
-      <Button @click="handleStartAI" :size="0.75" :disabled="lobby.status === 'matchmaking'">vs. AI </Button>
+      <Button @click="handleStartAI" :size="0.75" :disabled="lobby.status === 'matchmaking'">vs. AI</Button>
     </div>
     <Leaderboard v-if="isLeaderboardOpen" @dismiss="isLeaderboardOpen = false" />
   </main>
@@ -270,27 +213,6 @@ onMounted(async () => {
   flex-direction: column !important;
 }
 
-.profile {
-  max-width: 20rem;
-  min-width: 15rem;
-  position: fixed;
-  right: 0;
-  top: var(--header-height);
-  z-index: 100;
-  box-shadow: 0px 0px 10px 0px #000;
-  background-color: #c9b18b;
-  background-image: url(/assets/images/dirt-overlay.png);
-  background-size: 50%;
-  background-position: bottom;
-  padding: 1rem;
-}
-.profile .info {
-  display: flex;
-}
-.profile .info .name {
-  color: #000;
-}
-
 .profile-control.float {
   position: fixed;
   right: 0;
@@ -303,26 +225,7 @@ onMounted(async () => {
     0px -10px 10px 0px,
     2.5px 2.5px 5px 0 black inset !important;
 }
-.profile .status {
-  color: #585858;
-  font-size: 0.75rem;
-}
-.profile .controls {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1.5rem;
-}
 
-.guest-upgrade h5 {
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-  color: #303030;
-}
-.upgrade-email {
-  color: #ffffff;
-  background-color: #00000066;
-  padding: 0.1rem 0.5rem;
-}
 .background {
   position: fixed;
   width: 100%;

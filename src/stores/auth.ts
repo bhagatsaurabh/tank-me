@@ -67,13 +67,23 @@ export const useAuthStore = defineStore('auth', () => {
     const snap = await getDoc(doc(remoteDB, 'users', uid));
     profile.value = snap.data() as Profile;
   }
-  async function handleNewUser(usr: User, username: string | null = null) {
-    const prfl: Profile = {
-      id: usr.uid,
-      username,
-      email: usr.email,
-      stats: { matches: 0, wins: 0, points: 0 }
-    };
+  async function handleNewUser(usr: User, username: string | null = null, isUpgrade = false) {
+    let prfl: Profile;
+    if (isUpgrade) {
+      prfl = {
+        id: usr.uid,
+        username,
+        email: usr.email
+      };
+    } else {
+      prfl = {
+        id: usr.uid,
+        username,
+        email: usr.email,
+        stats: { matches: 0, wins: 0, points: 0 }
+      };
+    }
+
     await remote.storeProfile(prfl);
     await local.updateProfile(prfl);
     profile.value = prfl;
@@ -116,7 +126,7 @@ export const useAuthStore = defineStore('auth', () => {
             const credential = EmailAuthProvider.credentialWithLink(email, link);
             const { user: usr } = await linkWithCredential(user.value, credential);
             user.value = usr;
-            await handleNewUser(usr, profile.value?.username);
+            await handleNewUser(usr, profile.value?.username, true);
             status.value = 'verified';
             broadcast.sendBroadcast({ type: 'auth', value: 'guest-verified' });
           }

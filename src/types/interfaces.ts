@@ -1,3 +1,4 @@
+import type { Nullable } from '@babylonjs/core';
 import type {
   MatchStats,
   NotificationAction,
@@ -17,8 +18,9 @@ export interface IMessageFire {
   id: string;
 }
 export interface IMessageEnd {
-  winner: string;
-  loser: string;
+  winner: Nullable<string>;
+  loser: Nullable<string>;
+  isDraw: boolean;
   stats: MatchStats;
 }
 

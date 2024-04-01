@@ -9,7 +9,6 @@ import Button from '@/components/Common/Button/Button.vue';
 import InputText from '@/components/Common/InputText/InputText.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
 import { userNameRegex } from '@/utils/constants';
-// import Modal from '@/components/Modal/Modal.vue';
 
 const auth = useAuthStore();
 const remote = useRemoteDBStore();
@@ -21,8 +20,6 @@ const errorMsg = ref<Nullable<string>>(null);
 const emailEl = ref<Nullable<InstanceType<typeof InputText>>>(null);
 const usernameEl = ref<Nullable<InstanceType<typeof InputText>>>(null);
 const didSignIn = ref(false);
-// const modal = ref<Nullable<{ title: string; controls: string[]; message: string }>>(null);
-// const showModal = ref<boolean>(false);
 
 const handleSignIn = async (provider: 'email' | 'guest') => {
   if (provider === 'email' && emailEl.value?.validate(email.value)) {
@@ -82,15 +79,6 @@ watch(
 </script>
 
 <template>
-  <!-- <Modal
-      v-if="showModal && modal"
-      :title="modal.title"
-      :controls="modal.controls"
-      @dismiss="showModal = false"
-      @action="(action: string) => console.log(action)"
-    >
-      {{ modal.message }}
-    </Modal> -->
   <main class="auth-container">
     <div class="background"></div>
     <Transition name="fade">

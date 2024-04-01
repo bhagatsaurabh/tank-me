@@ -13,8 +13,10 @@ export class GameClient {
   private client!: Client;
   world?: World;
   private rooms: { lobby?: Room<any>; desert?: Room<RoomState> } = {};
+  matchDuration = 60000;
   isMatchEnded = false;
   didWin = false;
+  isDraw = false;
   stats!: PlayerStats;
 
   get state() {
@@ -48,6 +50,9 @@ export class GameClient {
     this.rooms[name] = room;
 
     if (name === 'desert') {
+      this.didWin = false;
+      this.isDraw = false;
+      this.isMatchEnded = false;
       this.setListeners();
     }
 

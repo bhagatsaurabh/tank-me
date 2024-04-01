@@ -61,6 +61,7 @@ export class World {
   get isDestroyed(): boolean {
     return this._isDestroyed;
   }
+  startTimestamp: number = Date.now();
 
   private constructor(
     public engine: Engine,
@@ -322,6 +323,13 @@ export class World {
     );
   }
   private beforeStep() {
+    if (
+      this.vsAI &&
+      Date.now() - this.startTimestamp >= this.client.matchDuration &&
+      !this.client.isMatchEnded
+    ) {
+      this.matchEnd({ winner: null, loser: null, isDraw: true, stats: { Player: this.playerStats } });
+    }
     if (this.client.isMatchEnded) {
       this.animateEndCam();
       return;
@@ -429,15 +437,17 @@ export class World {
 
   matchEnd(message: IMessageEnd) {
     this.client.isMatchEnded = true;
+    this.client.isDraw = message.isDraw;
     this.scene.activeCamera = this.endCamera;
     this.player.sights.forEach((ui) => (ui.isVisible = false));
     Object.values(this.guiRefs).forEach((control) => (control.isVisible = false));
 
-    const id = this.vsAI ? 'Player' : this.player.state!.sid;
-    this.client.didWin = message.winner === id;
-    this.client.stats = message.stats[id];
-
-    this.players[message.loser].explode();
+    if (!message.isDraw) {
+      const id = this.vsAI ? 'Player' : this.player.state!.sid;
+      this.client.didWin = message.winner === id;
+      this.client.stats = message.stats[id];
+      this.players[message.loser!].explode();
+    }
   }
   destroy() {
     if (this._isDestroyed) return;

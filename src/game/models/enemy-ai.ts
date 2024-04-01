@@ -445,7 +445,11 @@ export class EnemyAITank extends Tank {
     }
   }
   private beforeStep() {
-    if (this.world.client.isMatchEnded) return;
+    if (this.world.client.isMatchEnded) {
+      this.particleSystems['dust-left']?.stop();
+      this.particleSystems['dust-right']?.stop();
+      return;
+    }
 
     this.applyInputs(this.computeInputs());
 

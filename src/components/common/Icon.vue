@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Nullable } from '@babylonjs/core';
 import { ref, onUpdated } from 'vue';
+import type { Nullable } from '@babylonjs/core';
 
 const props = defineProps({
   alt: {

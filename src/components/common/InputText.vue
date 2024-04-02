@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Nullable } from '@babylonjs/core';
 import { onMounted, ref, type PropType } from 'vue';
+import type { Nullable } from '@babylonjs/core';
 
 const props = defineProps({
   type: {

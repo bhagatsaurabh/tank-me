@@ -5,18 +5,12 @@ import { AbstractMesh, TransformNode } from '@babylonjs/core/Meshes';
 import { PBRMaterial, Texture } from '@babylonjs/core/Materials';
 import { type IBasePhysicsCollisionEvent, PhysicsEventType } from '@babylonjs/core/Physics';
 
-import { Shell } from './shell';
-import { forwardVector, randInRange } from '@/utils/utils';
-import { PSExhaust } from '../particle-systems/exhaust';
-import { PSDust } from '../particle-systems/dust';
-import { PSMuzzle } from '../particle-systems/muzzle';
-import { PSTankExplosion } from '../particle-systems/tank-explosion';
+import { forwardVector, randInRange } from '@/utils';
+import { Shell, type PlayerTank, type EnemyAITank, type EnemyTank } from '../models';
+import { PSExhaust, PSDust, PSMuzzle, PSTankExplosion } from '../particle-systems';
 import type { Player } from '../state';
-import { type TankSounds, type TankSoundType } from '@/types/types';
+import { type TankSounds, type TankSoundType } from '@/types';
 import { World } from '../main';
-import type { PlayerTank } from './player';
-import type { EnemyTank } from './enemy';
-import type { EnemyAITank } from './enemy-ai';
 
 export class Tank {
   private static commonConfig = {

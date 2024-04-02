@@ -1,12 +1,12 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import * as Colyseus from 'colyseus.js';
+import type { Nullable } from '@babylonjs/core';
 
 import { useAuthStore } from './auth';
-import type { LobbyStatus } from '@/types/types';
+import type { LobbyStatus } from '@/types';
 import type { RoomState } from '@/game/state';
 import { GameClient } from '@/game/client';
-import type { Nullable } from '@babylonjs/core';
 import { useNotificationStore } from './notification';
 import { Notifications } from '@/utils/constants';
 

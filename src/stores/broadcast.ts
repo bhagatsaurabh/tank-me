@@ -3,7 +3,7 @@ import { defineStore } from 'pinia';
 import type { Nullable } from '@babylonjs/core';
 
 import { useAuthStore } from './auth';
-import type { BroadcastMessage } from '@/types/auth';
+import type { BroadcastMessage } from '@/types';
 
 // For cross-tab communication
 export const useBroadcastStore = defineStore('broadcast', () => {

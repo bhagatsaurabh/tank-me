@@ -2,12 +2,10 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import type { Nullable } from '@babylonjs/core';
 
-import { closeDB, openDB } from './database/indexeddb';
-import { useAuthStore } from './stores/auth';
-import { useBroadcastStore } from './stores/broadcast';
-import Modal from '@/components/Common/Modal/Modal.vue';
-import { useNotificationStore } from './stores/notification';
-import type { IModalInfo } from './types/interfaces';
+import { closeDB, openDB } from '@/database/indexeddb';
+import { useBroadcastStore, useNotificationStore, useAuthStore } from '@/stores';
+import { Modal } from '@/components/common';
+import type { IModalInfo } from '@/types/interfaces';
 
 const auth = useAuthStore();
 const broadcast = useBroadcastStore();
@@ -53,3 +51,4 @@ onUnmounted(() => {
 </template>
 
 <style scoped></style>
+@/components/common

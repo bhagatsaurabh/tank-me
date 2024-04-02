@@ -21,21 +21,11 @@ import {
 } from '@babylonjs/core/Physics';
 
 import { World } from '../main';
-import { Tank } from './tank';
-import { avg, clamp, forwardVector, gravityVector, isInRange } from '@/utils/utils';
-import { GameInputType, type EnemyAIState, type PlayerInputs } from '@/types/types';
-import { Shell } from './shell';
-import { Ground } from './ground';
+import { Tank, Shell, Ground } from '../models';
+import { avg, clamp, forwardVector, gravityVector, isInRange } from '@/utils';
+import { GameInputType, type EnemyAIState, type PlayerInputs } from '@/types';
 
 export class EnemyAITank extends Tank {
-  /* targetBarrelAngleD = 0;
-  currentBarrelAngleD = 0;
-  deltaBarrelAngleD = 0;
-  deltaTurretAngleD = 0;
-  leadAngleD = 0;
-  barrelInfoAngleD = 0;
-  barrelInfoOrientD = 0; */
-
   private static config = {
     maxEnginePower: 100,
     speedModifier: 10,
@@ -816,15 +806,6 @@ export class EnemyAITank extends Tank {
         // this.aiState = 'combat-advanced';
         this.aiState = 'track';
       }
-
-      // Debug
-      /* this.currentBarrelAngleD = currentBarrelAngle;
-      this.targetBarrelAngleD = targetBarrelAngle;
-      this.leadAngleD = leadAngle;
-      this.deltaBarrelAngleD = Math.abs(targetBarrelAngle - currentBarrelAngle);
-      this.deltaTurretAngleD = turretInfo.angle;
-      this.barrelInfoAngleD = barrelInfo.angle;
-      this.barrelInfoOrientD = barrelInfo.orientation; */
 
       // If alignment is satisfactory, fire
       if (

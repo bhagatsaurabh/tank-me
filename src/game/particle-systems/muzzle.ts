@@ -5,7 +5,7 @@ import { Texture } from '@babylonjs/core/Materials';
 import { ParticleSystem, SphereDirectedParticleEmitter } from '@babylonjs/core/Particles';
 
 import { AssetLoader } from '../loader';
-import { luid } from '@/utils/utils';
+import { luid } from '@/utils';
 
 export class PSMuzzle {
   private psExplosion!: ParticleSystem;

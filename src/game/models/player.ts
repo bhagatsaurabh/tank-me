@@ -18,13 +18,11 @@ import { Control, Container, Image, Rectangle } from '@babylonjs/gui';
 
 import { World } from '../main';
 import type { Player } from '../state';
-import { Tank } from './tank';
-import { avg, clamp, forwardVector, nzpyVector } from '@/utils/utils';
+import { Tank, Shell, Ground } from '../models';
+import { avg, clamp, forwardVector, nzpyVector } from '@/utils';
 import { AssetLoader } from '../loader';
-import { GameInputType, type PlayerInputs } from '@/types/types';
-import { Shell } from './shell';
+import { GameInputType, type PlayerInputs } from '@/types';
 import { InputManager, type IInputHistory } from '../input';
-import { Ground } from './ground';
 
 export class PlayerTank extends Tank {
   private static config = {
@@ -108,9 +106,6 @@ export class PlayerTank extends Tank {
     const newTank = new PlayerTank(world, state, cloned, spawn, cameras!);
     await newTank.init();
     newTank.setPreStep(false);
-    /* newTank.observers.push(
-      newTank.sounds['load']!.onEndedObservable.add(() => (newTank.isLoadSoundEnded = true))
-    ); */
     return newTank;
   }
 

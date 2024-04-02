@@ -1,5 +1,6 @@
-import { noop } from '@/utils/utils';
 import type { Nullable } from '@babylonjs/core';
+
+import { noop } from '@/utils';
 
 let localDB: Nullable<IDBDatabase> = null;
 

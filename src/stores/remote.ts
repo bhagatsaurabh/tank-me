@@ -16,7 +16,7 @@ import {
 import { remoteDB } from '@/config/firebase';
 import { useAuthStore } from './auth';
 import * as local from '@/database/driver';
-import type { Profile } from '@/types/auth';
+import type { Profile } from '@/types';
 import { useNotificationStore } from './notification';
 import { Notifications } from '@/utils/constants';
 

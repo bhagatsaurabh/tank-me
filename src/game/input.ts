@@ -1,12 +1,11 @@
 import { Vector3, type Scene, Quaternion } from '@babylonjs/core';
 import { ActionEvent, ActionManager, ExecuteCodeAction } from '@babylonjs/core/Actions';
 
-import type { IMessageInput } from '@/types/interfaces';
-import { GameInputType, KeyInputType, type PlayerInputs } from '@/types/types';
+import { GameInputType, KeyInputType, type PlayerInputs, type IMessageInput } from '@/types';
 import { keyMap } from '@/utils/constants';
 import { IndexedQueue } from '@/utils/queue';
 import type { LastProcessedInput } from './state';
-import type { PlayerTank } from './models/player';
+import type { PlayerTank } from './models';
 
 export interface IInputHistory {
   step: number;

@@ -8,11 +8,9 @@ import { Observer } from '@babylonjs/core/Misc';
 
 import { AssetLoader } from '../loader';
 import { Debug } from '../debug';
-import type { Tank } from './tank';
-import { PSShellExplosion } from '../particle-systems/shell-explosion';
-import { forwardVector, luid } from '@/utils/utils';
-import type { PlayerTank } from './player';
-import type { EnemyAITank } from './enemy-ai';
+import type { Tank, PlayerTank, EnemyAITank } from '../models';
+import { PSShellExplosion } from '../particle-systems';
+import { forwardVector, luid } from '@/utils';
 
 export class Shell {
   static config = {

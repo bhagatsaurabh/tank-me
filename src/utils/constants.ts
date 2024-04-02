@@ -1,7 +1,6 @@
 import { Converter } from 'showdown';
 
-import { GameInputType, type ErrorInfo, type KeyInputType, SpawnAxis } from '@/types/types';
-import type { INotification } from '@/types/interfaces';
+import { GameInputType, type ErrorInfo, type KeyInputType, SpawnAxis, type INotification } from '@/types';
 
 const converter = new Converter();
 

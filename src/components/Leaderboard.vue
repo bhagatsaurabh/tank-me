@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-
-import { trapBetween, trapFocus } from '@/utils/utils';
-import { useRemoteDBStore } from '@/stores/remote';
 import type { Nullable } from '@babylonjs/core';
-import type { ITrapBounds } from '@/types/interfaces';
-import Button from '../Common/Button/Button.vue';
-import Spinner from '../Common/Spinner/Spinner.vue';
-import Icon from '../Common/Icon/Icon.vue';
+
+import { trapBetween, trapFocus } from '@/utils';
+import { useRemoteDBStore } from '@/stores';
+import type { ITrapBounds } from '@/types';
+import { Button, Spinner, Icon } from '@/components/common';
 
 const emit = defineEmits(['dismiss']);
 

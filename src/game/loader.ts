@@ -1,8 +1,7 @@
 import { getFile, storeFile } from '@/database/driver';
-import { useLoaderStore } from '@/stores/loader';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationStore, useLoaderStore } from '@/stores';
 import { Notifications } from '@/utils/constants';
-import { readAsArrayBuffer, readAsDataURL } from '@/utils/utils';
+import { readAsArrayBuffer, readAsDataURL } from '@/utils';
 
 export class AssetLoader {
   static assets: Record<string, string | ArrayBuffer> = {};

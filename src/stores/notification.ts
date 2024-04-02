@@ -2,7 +2,7 @@ import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import type { Nullable } from '@babylonjs/core';
 
-import type { INotification } from '@/types/interfaces';
+import type { INotification } from '@/types';
 
 export const useNotificationStore = defineStore('notification', () => {
   const active = ref<Nullable<INotification>>(null);

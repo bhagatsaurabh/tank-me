@@ -4,7 +4,7 @@ import { Texture } from '@babylonjs/core/Materials';
 import { GPUParticleSystem, SphereDirectedParticleEmitter } from '@babylonjs/core/Particles';
 
 import { AssetLoader } from '../loader';
-import { delay, luid } from '@/utils/utils';
+import { delay, luid } from '@/utils';
 
 export class PSShellExplosion {
   private particleSystem!: GPUParticleSystem;

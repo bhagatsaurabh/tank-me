@@ -98,7 +98,7 @@ defineExpose({
   color: #000;
   border: none;
   padding: 0.5rem 1rem;
-  background-image: url('./assets/images/dirt-overlay.png');
+  background-image: url('/assets/images/dirt-overlay.png');
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-color: #c9b18b;

@@ -166,7 +166,7 @@ watch(
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('./assets/images/background.jpg');
+  background-image: url('/assets/images/background.jpg');
   background-size: 40%;
   filter: blur(4px) brightness(0.4);
   animation-name: slide;

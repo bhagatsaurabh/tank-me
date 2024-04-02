@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build-only
+        env:
+          TANKME_PUBLIC_KEY: ${{ secrets.TANKME_PUBLIC_KEY }}
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tankme-dist
+          path: dist
+
+  Deploy-Firebase:
+    needs: [Build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: tankme-dist
+          path: dist
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TANKME_3D61D }}'
+          channelId: live
+          projectId: tankme-3d61d
+
+  Cleanup:
+    needs: [Deploy-Firebase]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete dist artifacts
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: tankme-dist

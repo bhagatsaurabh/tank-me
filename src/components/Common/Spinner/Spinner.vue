@@ -41,7 +41,7 @@ const overlayWidth = computed(() => `${Math.round(props.progress * 100)}%`);
   overflow: hidden;
   width: 100%;
   height: 100%;
-  background-image: url('./assets/images/spinner-scroller.png');
+  background-image: url('/assets/images/spinner-scroller.png');
   background-position: bottom;
   background-size: 200% auto;
   background-repeat: repeat-x;

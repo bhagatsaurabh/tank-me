@@ -1,0 +1,13 @@
+name: Build
+'on': pull_request
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build-only

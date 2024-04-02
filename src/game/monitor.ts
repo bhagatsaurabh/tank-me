@@ -1,6 +1,6 @@
 import { TextBlock } from '@babylonjs/gui';
 
-import { clamp } from '@/utils/utils';
+import { clamp } from '@/utils';
 import type { World } from './main';
 import { InputManager } from './input';
 
@@ -22,17 +22,7 @@ export class Monitor {
       }
 
       if (world.vsAI) {
-        /* const enemy = Object.values(world.players).find((tank) => tank.lid === 'Enemy')! as EnemyAITank;
-
-        world.gui &&
-          ((world.gui.getControlByName('stats') as TextBlock).text = `\n
-          CBarrelAngle: ${enemy.currentBarrelAngleD}\n
-          TBarrelAngle: ${enemy.targetBarrelAngleD}\n
-          LeadAngle: ${enemy.leadAngleD}\n
-          TurretDelta: ${enemy.deltaTurretAngleD}\n
-          BarrelDelta: ${enemy.deltaBarrelAngleD}\n
-          BarrelInfo: ${enemy.barrelInfoAngleD}\n
-          BarrelInfoOrient: ${enemy.barrelInfoOrientD}`); */
+        //
       } else {
         world.gui &&
           ((world.gui.getControlByName('stats') as TextBlock).text = `\n

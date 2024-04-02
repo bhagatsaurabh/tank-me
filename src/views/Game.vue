@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-
-import { throttle } from '@/utils/utils';
-import type { Nullable } from '@babylonjs/core';
-import { GameClient } from '@/game/client';
 import { useRoute, useRouter } from 'vue-router';
-import Spinner from '@/components/Common/Spinner/Spinner.vue';
-import Button from '@/components/Common/Button/Button.vue';
-import { useLobbyStore } from '@/stores/lobby';
+import type { Nullable } from '@babylonjs/core';
+
+import { throttle } from '@/utils';
+import { GameClient } from '@/game/client';
+import { Spinner, Button } from '@/components/common';
+import { useLobbyStore } from '@/stores';
 
 const route = useRoute();
 const router = useRouter();

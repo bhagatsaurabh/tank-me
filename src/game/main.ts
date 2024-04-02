@@ -16,17 +16,12 @@ import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, Image } from '@b
 
 import { GameClient } from '@/game/client';
 import type { Player } from './state';
-import { clamp, getSpawnPoint, gravityVector, noop, nzpyVector, throttle } from '@/utils/utils';
+import { clamp, getSpawnPoint, gravityVector, noop, nzpyVector, throttle } from '@/utils';
 import { InputManager } from './input';
-import { Tank } from './models/tank';
-import { Ground } from './models/ground';
+import { Tank, Ground, PlayerTank, EnemyAITank, EnemyTank } from './models';
 import { AssetLoader } from './loader';
 import { Skybox } from './skybox';
-import { MessageType, type PlayerStats } from '@/types/types';
-import type { IMessageEnd, IMessageInput } from '@/types/interfaces';
-import { PlayerTank } from './models/player';
-import { EnemyTank } from './models/enemy';
-import { EnemyAITank } from './models/enemy-ai';
+import { MessageType, type PlayerStats, type IMessageEnd, type IMessageInput } from '@/types';
 
 export class World {
   static instance: World;

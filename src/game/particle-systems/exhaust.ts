@@ -5,7 +5,7 @@ import { Texture } from '@babylonjs/core/Materials';
 import { ConeParticleEmitter, GPUParticleSystem } from '@babylonjs/core/Particles';
 
 import { AssetLoader } from '../loader';
-import { luid } from '@/utils/utils';
+import { luid } from '@/utils';
 
 export class PSExhaust {
   private particleSystem!: GPUParticleSystem;

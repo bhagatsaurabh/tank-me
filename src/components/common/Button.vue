@@ -2,9 +2,8 @@
 import { ref } from 'vue';
 import type { Nullable } from '@babylonjs/core';
 
-import Icon from '@/components/Common/Icon/Icon.vue';
-import Spinner from '@/components/Common/Spinner/Spinner.vue';
-import { noop } from '@/utils/utils';
+import { Icon, Spinner } from './';
+import { noop } from '@/utils';
 
 const props = defineProps({
   icon: {

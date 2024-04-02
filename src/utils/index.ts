@@ -1,6 +1,6 @@
-import type { ITrapBounds } from '@/types/interfaces';
-import { SpawnAxis } from '@/types/types';
-import { Vector3, type Nullable, TransformNode, Vector2, Tools } from '@babylonjs/core';
+import { Vector3, type Nullable } from '@babylonjs/core';
+
+import { type ITrapBounds, SpawnAxis } from '@/types';
 import { spawnAxes } from './constants';
 
 export const throttle = (cb: (...argmts: any) => void, delay: number) => {

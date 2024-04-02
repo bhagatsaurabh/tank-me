@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { watch, onBeforeUnmount, ref, onMounted, type PropType } from 'vue';
 import { useRouter } from 'vue-router';
-
-import { getSlug, trapBetween, trapFocus, noop } from '@/utils/utils';
-import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
-import Button from '@/components/Common/Button/Button.vue';
-import type { IModalAction, ITrapBounds } from '@/types/interfaces';
 import type { Nullable } from '@babylonjs/core';
+
+import { getSlug, trapBetween, trapFocus, noop } from '@/utils';
+import { Backdrop, Button } from '@/components/common';
+import type { IModalAction, ITrapBounds } from '@/types';
 
 const props = defineProps({
   title: {

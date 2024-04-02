@@ -3,12 +3,10 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Nullable } from '@babylonjs/core';
 
-import { noop } from '@/utils/utils';
-import { useAuthStore } from '@/stores/auth';
-import type { AuthStatus } from '@/types/types';
-import Backdrop from '../Common/Backdrop/Backdrop.vue';
-import InputText from '../Common/InputText/InputText.vue';
-import Button from '../Common/Button/Button.vue';
+import { noop } from '@/utils';
+import { useAuthStore } from '@/stores';
+import type { AuthStatus } from '@/types';
+import { Backdrop, InputText, Button } from '@/components/common';
 
 defineProps({
   isGuestUpgrading: {

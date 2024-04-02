@@ -20,8 +20,7 @@ import { useRemoteDBStore } from './remote';
 import { useBroadcastStore } from './broadcast';
 import * as local from '@/database/driver';
 import { app, remoteDB } from '@/config/firebase';
-import { type Profile } from '@/types/auth';
-import type { AuthStatus, AuthType } from '@/types/types';
+import { type Profile, type AuthStatus, type AuthType } from '@/types';
 import { useNotificationStore } from './notification';
 import { Notifications } from '@/utils/constants';
 

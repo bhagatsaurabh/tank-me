@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-
-import { useAuthStore } from '@/stores/auth';
-import { useRemoteDBStore } from '@/stores/remote';
 import type { Nullable } from '@babylonjs/core';
-import Button from '@/components/Common/Button/Button.vue';
-import InputText from '@/components/Common/InputText/InputText.vue';
-import Spinner from '@/components/Common/Spinner/Spinner.vue';
+
+import { useAuthStore, useRemoteDBStore } from '@/stores';
+import { Button, InputText, Spinner } from '@/components/common';
 import { userNameRegex } from '@/utils/constants';
 
 const auth = useAuthStore();

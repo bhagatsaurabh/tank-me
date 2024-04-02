@@ -1,7 +1,6 @@
 import type { NavigationGuard } from 'vue-router';
 
-import { useAuthStore } from '@/stores/auth';
-import { useLobbyStore } from '@/stores/lobby';
+import { useAuthStore, useLobbyStore } from '@/stores';
 
 export const authGuard: NavigationGuard = async (_to, _from, next) => {
   const auth = useAuthStore();

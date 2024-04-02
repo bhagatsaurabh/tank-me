@@ -2,10 +2,9 @@ import { Client, Room } from 'colyseus.js';
 
 import type { RoomState } from './state';
 import { World } from './main';
-import { MessageType, type PlayerStats } from '@/types/types';
-import { useLobbyStore } from '@/stores/lobby';
-import type { IMessageEnd, IMessageFire } from '@/types/interfaces';
-import type { EnemyTank } from './models/enemy';
+import { MessageType, type PlayerStats, type IMessageEnd, type IMessageFire } from '@/types';
+import { useLobbyStore } from '@/stores';
+import type { EnemyTank } from './models';
 import { Monitor } from './monitor';
 
 export class GameClient {

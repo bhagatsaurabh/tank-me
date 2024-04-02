@@ -1,4 +1,4 @@
-import type { Profile } from '@/types/auth';
+import type { Profile } from '@/types';
 import { updateObject, getObject } from './indexeddb';
 
 export const updateProfile = async (profile: Profile) => {

@@ -7,8 +7,9 @@ import {
   Texture,
   Vector3
 } from '@babylonjs/core';
+
 import { AssetLoader } from '../loader';
-import { luid } from '@/utils/utils';
+import { luid } from '@/utils';
 
 export class PSTankExplosion {
   private psExplosion!: GPUParticleSystem;

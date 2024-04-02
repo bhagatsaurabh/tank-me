@@ -13,8 +13,7 @@ import {
 
 import { World } from '../main';
 import type { Player } from '../state';
-import { Tank } from './tank';
-import { Shell } from './shell';
+import { Tank, Shell } from '../models';
 
 export class EnemyTank extends Tank {
   private nextState = {

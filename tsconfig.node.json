@@ -11,7 +11,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/components/*": ["./src/components/*"],
-      "@/components/Common/*": ["./src/components/Common/*"]
+      "@/components/common/*": ["./src/components/common/*"]
     }
   }
 }

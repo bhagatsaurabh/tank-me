@@ -3,19 +3,13 @@ import { ref, onMounted, watch, onBeforeMount } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Nullable } from '@babylonjs/core';
 
-import { useAuthStore } from '@/stores/auth';
-import { useLobbyStore } from '@/stores/lobby';
-import { useLoaderStore } from '@/stores/loader';
-import Header from '@/components/Common/Header/Header.vue';
-import Button from '@/components/Common/Button/Button.vue';
-import Spinner from '@/components/Common/Spinner/Spinner.vue';
-import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
-import Leaderboard from '@/components/Leaderboard/Leaderboard.vue';
+import { useAuthStore, useLobbyStore, useLoaderStore } from '@/stores';
+import { Header, Button, Spinner, Backdrop, Modal } from '@/components/common';
+import Leaderboard from '@/components/Leaderboard.vue';
+import Profile from '@/components/Profile.vue';
 import { AssetLoader } from '@/game/loader';
 import { GameClient } from '@/game/client';
-import { randInRange } from '@/utils/utils';
-import Modal from '@/components/Common/Modal/Modal.vue';
-import Profile from '@/components/Profile/Profile.vue';
+import { randInRange } from '@/utils';
 
 const auth = useAuthStore();
 const lobby = useLobbyStore();
@@ -115,9 +109,12 @@ onMounted(async () => {
   </Header>
   <Backdrop :show="(auth.status === 'pending' || loader.isLoading) && !isGuestUpgrading" :dismissable="false">
     <div class="wait">
-      <Spinner :progress="loader.progress" trackable>
-        <span>{{ `${Math.round(loader.progress * 100)}%` }}</span>
-      </Spinner>
+      <span class="progress">
+        {{
+          `Fetching Game Assets (${loader.noOfFilesDownloaded}/${loader.noOfFiles})\n${Math.round(loader.progress * 100)}%`
+        }}
+      </span>
+      <Spinner :progress="loader.progress" trackable />
     </div>
   </Backdrop>
   <main class="lobby">
@@ -243,5 +240,16 @@ onMounted(async () => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.progress {
+  position: absolute;
+  color: #fff;
+  top: 125%;
+  font-size: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: pre;
+  text-align: center;
 }
 </style>

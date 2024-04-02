@@ -190,4 +190,3 @@ onBeforeUnmount(() => {
   border-bottom-right-radius: 0.5rem;
 }
 </style>
-@/utils@/components/common

@@ -109,9 +109,12 @@ onMounted(async () => {
   </Header>
   <Backdrop :show="(auth.status === 'pending' || loader.isLoading) && !isGuestUpgrading" :dismissable="false">
     <div class="wait">
-      <Spinner :progress="loader.progress" trackable>
-        <span>{{ `${Math.round(loader.progress * 100)}%` }}</span>
-      </Spinner>
+      <span class="progress">
+        {{
+          `Fetching Game Assets (${loader.noOfFilesDownloaded}/${loader.noOfFiles})\n${Math.round(loader.progress * 100)}%`
+        }}
+      </span>
+      <Spinner :progress="loader.progress" trackable />
     </div>
   </Backdrop>
   <main class="lobby">
@@ -238,6 +241,15 @@ onMounted(async () => {
   height: 100%;
   object-fit: cover;
 }
+
+.progress {
+  position: absolute;
+  color: #fff;
+  top: 125%;
+  font-size: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: pre;
+  text-align: center;
+}
 </style>
-@/utils
-@/components/common

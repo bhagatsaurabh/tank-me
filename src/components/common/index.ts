@@ -1,10 +1,9 @@
 import InputText from './InputText.vue';
+import Button from './Button.vue';
+import Backdrop from './Backdrop.vue';
+import Spinner from './Spinner.vue';
+import Icon from './Icon.vue';
+import Header from './Header.vue';
+import Modal from './Modal.vue';
 
-export * as Backdrop from './Backdrop.vue';
-export * as Button from './Button.vue';
-export * as Header from './Header.vue';
-export * as Icon from './Icon.vue';
-// Weird issue when used with InstanceType on refs
-export { InputText };
-export * as Modal from './Modal.vue';
-export * as Spinner from './Spinner.vue';
+export { InputText, Button, Backdrop, Spinner, Icon, Header, Modal };

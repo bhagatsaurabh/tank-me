@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import type { Nullable } from '@babylonjs/core';
 
-import { Icon, Spinner } from '@/components/common';
+import { Icon, Spinner } from './';
 import { noop } from '@/utils';
 
 const props = defineProps({
@@ -152,4 +152,3 @@ defineExpose({
   }
 }
 </style>
-@/utils@/components/common

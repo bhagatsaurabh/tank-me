@@ -32,6 +32,8 @@ export class AssetLoader {
   static async load() {
     const loaderStore = useLoaderStore();
     const notify = useNotificationStore();
+
+    loaderStore.setTotalFiles(this.assetSources.length);
     loaderStore.isLoading = true;
 
     try {

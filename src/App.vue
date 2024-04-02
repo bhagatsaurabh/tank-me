@@ -51,4 +51,3 @@ onUnmounted(() => {
 </template>
 
 <style scoped></style>
-@/components/common

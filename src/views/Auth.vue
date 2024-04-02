@@ -197,4 +197,3 @@ watch(
   text-wrap: nowrap;
 }
 </style>
-@/components/common

@@ -31,7 +31,7 @@ export interface ITrapBounds {
 
 export interface IModalAction {
   text: string;
-  action?: () => Promise<void> | void;
+  action?: () => Promise<any> | any;
   async?: boolean;
   busy?: boolean;
 }
@@ -48,4 +48,8 @@ export interface INotification {
   message: string;
   action?: NotificationAction;
   error?: unknown;
+}
+
+export interface UserPreferences {
+  fullscreenConsentTS: number;
 }

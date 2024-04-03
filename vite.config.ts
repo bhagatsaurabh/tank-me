@@ -15,6 +15,9 @@ export default defineConfig(({ mode }) => {
     plugins: [
       vue(),
       VitePWA({
+        devOptions: {
+          enabled: false
+        },
         registerType: 'autoUpdate',
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png}']
@@ -23,7 +26,7 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: 'TankeMe!',
           short_name: 'TankMe!',
-          description: 'Online 1v3 multiplayer 3D tank battle',
+          description: 'Online 1v1 multiplayer 3D tank battle',
           theme_color: '#000000',
           background_color: '#000000',
           icons: [
@@ -37,7 +40,8 @@ export default defineConfig(({ mode }) => {
               sizes: '512x512',
               type: 'image/png'
             }
-          ]
+          ],
+          display: 'fullscreen'
         }
       }),
       SRI()

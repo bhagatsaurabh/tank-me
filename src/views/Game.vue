@@ -5,12 +5,15 @@ import type { Nullable } from '@babylonjs/core';
 
 import { throttle } from '@/utils';
 import { GameClient } from '@/game/client';
-import { Spinner, Button } from '@/components/common';
-import { useLobbyStore } from '@/stores';
+import { Spinner, Button, Modal } from '@/components/common';
+import { useLoaderStore, useLobbyStore, usePresentationStore } from '@/stores';
+import TouchControls from '@/components/TouchControls.vue';
 
 const route = useRoute();
 const router = useRouter();
 const lobby = useLobbyStore();
+const presentation = usePresentationStore();
+const loader = useLoaderStore();
 
 const containerEl = ref<Nullable<HTMLDivElement>>(null);
 const canvasEl = ref<Nullable<HTMLCanvasElement>>(null);
@@ -31,6 +34,9 @@ const handleBackToLobby = () => {
   lobby.status = 'idle';
   router.push('/lobby');
 };
+const handleAllowFullscreen = async () => {
+  await presentation.fullscreen();
+};
 
 let observer: ResizeObserver;
 let handle = -1;
@@ -47,6 +53,7 @@ onMounted(async () => {
     isLoading.value = true;
     await gameClient.value.createWorld(canvasEl.value, isVsAI.value);
     isLoading.value = false;
+    gameClient.value.world?.engine?.resize(true);
 
     handle = setInterval(() => {
       const mark = new Date(
@@ -69,6 +76,12 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="game-container" ref="containerEl">
+    <Modal
+      title="Fullscreen: Permission required"
+      :controls="[{ text: 'Deny' }, { text: 'Allow', async: true, action: handleAllowFullscreen }]"
+    >
+      <h5>Playing on fullscreen is recommended for best experience !</h5>
+    </Modal>
     <div v-if="isLoading" class="feed-load">
       <div class="background"></div>
       <div class="spinner">
@@ -76,10 +89,11 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <canvas ref="canvasEl"></canvas>
+    <TouchControls />
     <div class="timer" v-if="lobby.status === 'playing' || (gameClient?.world && isVsAI)">{{ currTime }}</div>
     <div v-if="gameClient?.isMatchEnded" class="matchend">
       <section class="title">
-        <div class="background"></div>
+        <div class="background" :style="{ backgroundImage: loader.get('/assets/images/load.png')! }"></div>
         <h1>{{ gameClient?.isDraw ? 'Draw' : gameClient?.didWin ? 'Winner !' : 'Lost' }}</h1>
       </section>
       <section class="stats">

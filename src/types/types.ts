@@ -70,3 +70,7 @@ export type PlayerStats = {
   points?: number;
 };
 export type MatchStats = Record<string, PlayerStats>;
+
+export type ScreenOrientation = 'landscape' | 'portrait';
+
+export type ObjectStoreName = 'files' | 'users' | 'preferences';

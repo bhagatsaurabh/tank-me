@@ -1,6 +1,7 @@
 import type { Nullable } from '@babylonjs/core';
 
 import { noop } from '@/utils';
+import type { ObjectStoreName } from '@/types';
 
 let localDB: Nullable<IDBDatabase> = null;
 
@@ -36,6 +37,9 @@ const createSchema = (database: IDBDatabase) => {
   if (!database.objectStoreNames.contains('files')) {
     database.createObjectStore('files');
   }
+  if (!database.objectStoreNames.contains('preferences')) {
+    database.createObjectStore('preferences');
+  }
 };
 const closeDB = () => {
   localDB?.removeEventListener('close', closeListener);
@@ -43,7 +47,7 @@ const closeDB = () => {
 };
 const closeListener = noop;
 
-const getObject = async <T>(objStoreName: 'users' | 'files', key: string): Promise<Nullable<T>> => {
+const getObject = async <T>(objStoreName: ObjectStoreName, key: string): Promise<Nullable<T>> => {
   return new Promise((resolve, reject) => {
     if (!localDB) resolve(null);
     else
@@ -56,7 +60,7 @@ const getObject = async <T>(objStoreName: 'users' | 'files', key: string): Promi
       }
   });
 };
-const updateObject = async (objStoreName: 'users' | 'files', key: string, value: any): Promise<boolean> => {
+const updateObject = async (objStoreName: ObjectStoreName, key: string, value: any): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     if (!localDB) resolve(false);
     else
@@ -72,7 +76,7 @@ const updateObject = async (objStoreName: 'users' | 'files', key: string, value:
       }
   });
 };
-const deleteObject = async (objStoreName: 'users' | 'files', key: string) => {
+const deleteObject = async (objStoreName: ObjectStoreName, key: string) => {
   return new Promise((resolve, reject) => {
     if (!localDB) resolve(false);
     else
@@ -85,7 +89,7 @@ const deleteObject = async (objStoreName: 'users' | 'files', key: string) => {
       }
   });
 };
-const getAll = async <T>(objStoreName: 'users' | 'files'): Promise<T[]> => {
+const getAll = async <T>(objStoreName: ObjectStoreName): Promise<T[]> => {
   return new Promise((resolve, reject) => {
     if (!localDB) resolve([]);
     else {
@@ -99,7 +103,7 @@ const getAll = async <T>(objStoreName: 'users' | 'files'): Promise<T[]> => {
     }
   });
 };
-const getCount = async (objStoreName: 'users' | 'files'): Promise<number> => {
+const getCount = async (objStoreName: ObjectStoreName): Promise<number> => {
   return new Promise((resolve, reject) => {
     if (!localDB) resolve(-1);
     else

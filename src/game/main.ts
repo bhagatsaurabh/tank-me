@@ -418,8 +418,9 @@ export class World {
       else this.scene.debugLayer.show();
     }
   }
-  private resize() {
-    this.engine.resize();
+  private resize(force = false) {
+    this.engine.resize(force);
+    this.player?.adjustGUI();
   }
   private animateEndCam() {
     this.endCamera.target = this.player.body.absolutePosition;

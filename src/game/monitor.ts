@@ -7,6 +7,7 @@ import { InputManager } from './input';
 export class Monitor {
   private static handle = -1;
   private static _interval = 200;
+  private static enabled = true;
   static set interval(ms: number) {
     Monitor._interval = clamp(ms, 500, Number.MAX_SAFE_INTEGER);
   }
@@ -15,6 +16,8 @@ export class Monitor {
   }
 
   static start(world: World) {
+    if (!this.enabled) return;
+
     Monitor.handle = setInterval(() => {
       if (world.isDestroyed) {
         this.stop();

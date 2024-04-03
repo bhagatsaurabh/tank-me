@@ -12,7 +12,7 @@ export class GameClient {
   private client!: Client;
   world?: World;
   private rooms: { lobby?: Room<any>; desert?: Room<RoomState> } = {};
-  matchDuration = 60000;
+  matchDuration = 600000;
   isMatchEnded = false;
   didWin = false;
   isDraw = false;

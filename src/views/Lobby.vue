@@ -77,6 +77,7 @@ watch(
 onBeforeMount(() => (randomStartPoint.value = randInRange(0, 148)));
 onMounted(async () => {
   await AssetLoader.load();
+  await loader.prefetch('/assets/images/load.png');
   await lobby.connect();
 });
 </script>

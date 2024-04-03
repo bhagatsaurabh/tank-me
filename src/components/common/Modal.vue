@@ -15,6 +15,10 @@ const props = defineProps({
   controls: {
     type: Array as PropType<IModalAction[]>,
     default: () => []
+  },
+  hidden: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -53,6 +57,10 @@ const handleLeave = () => {
   queuedAction.value && emit('action', queuedAction.value);
   emit('dismiss');
 };
+const showModal = () => {
+  (document.activeElement as HTMLElement)?.blur();
+  show.value = true;
+};
 
 let unregisterGuard = () => {};
 watch(
@@ -81,10 +89,15 @@ watch(el, () => {
 });
 
 onMounted(() => {
-  (document.activeElement as HTMLElement)?.blur();
-  show.value = true;
+  if (!props.hidden) {
+    showModal();
+  }
 });
 onBeforeUnmount(unregisterGuard);
+
+defineExpose({
+  showModal
+});
 </script>
 
 <template>

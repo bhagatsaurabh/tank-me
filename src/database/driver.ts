@@ -1,4 +1,4 @@
-import type { Profile } from '@/types';
+import type { Profile, UserPreferences } from '@/types';
 import { updateObject, getObject } from './indexeddb';
 
 export const updateProfile = async (profile: Profile) => {
@@ -15,4 +15,12 @@ export const storeFile = async (pathId: string, file: Blob) => {
 
 export const getFile = async (pathId: string) => {
   return await getObject<File>('files', pathId);
+};
+
+export const getPreferences = async () => {
+  return await getObject<Partial<UserPreferences>>('preferences', 'default');
+};
+
+export const storePreferences = async (data: Partial<UserPreferences>) => {
+  return await updateObject('preferences', 'default', data);
 };

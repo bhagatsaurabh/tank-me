@@ -813,4 +813,14 @@ export class PlayerTank extends Tank {
 
     this.playSounds(isMoving, !!isBarrelMoving || !!isTurretMoving);
   }
+
+  adjustGUI() {
+    const padWidth = (this.world.engine.getRenderWidth(true) - this.world.engine.getRenderHeight(true)) / 2;
+    if (this.world.gui.getControlByName('left-pad')) {
+      this.world.gui.getControlByName('left-pad')!.width = `${padWidth}px`;
+    }
+    if (this.world.gui.getControlByName('right-pad')) {
+      this.world.gui.getControlByName('right-pad')!.width = `${padWidth}px`;
+    }
+  }
 }

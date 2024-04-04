@@ -454,10 +454,10 @@ export class PlayerTank extends Tank {
 
     this.animate(this.leftSpeed, this.rightSpeed);
 
-    if (InputManager.keys[GameInputType.FIRE]) {
+    if (InputManager.input[GameInputType.FIRE]) {
       this.fire(now);
     }
-    if (InputManager.keys[GameInputType.CHANGE_PERSPECTIVE]) {
+    if (InputManager.input[GameInputType.CHANGE_PERSPECTIVE]) {
       this.toggleCamera();
       this.sights.forEach((ui) => (ui.isVisible = this.world.scene.activeCamera === this.cameras?.fpp));
     }

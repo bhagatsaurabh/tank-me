@@ -53,3 +53,9 @@ export interface INotification {
 export interface UserPreferences {
   fullscreenConsentTS: number;
 }
+
+export interface GraphicsConfig {
+  ground: {
+    subdivisions: number;
+  };
+}

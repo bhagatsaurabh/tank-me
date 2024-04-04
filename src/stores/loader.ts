@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import type { Nullable } from '@babylonjs/core';
+import { clamp } from '@/utils';
 
 export const useLoaderStore = defineStore('loader', () => {
   const progress = ref(0.0);
@@ -13,7 +14,7 @@ export const useLoaderStore = defineStore('loader', () => {
     noOfFiles.value = fileCount;
   }
   function updateProgress(prgs: number) {
-    progress.value = prgs;
+    progress.value = clamp(prgs, 0, 1);
   }
   function updateFileCount(noOfFiles: number) {
     noOfFilesDownloaded.value = noOfFiles;

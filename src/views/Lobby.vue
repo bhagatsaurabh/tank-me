@@ -3,7 +3,7 @@ import { ref, onMounted, watch, onBeforeMount } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Nullable } from '@babylonjs/core';
 
-import { useAuthStore, useLobbyStore, useLoaderStore } from '@/stores';
+import { useAuthStore, useLobbyStore, useLoaderStore, usePresentationStore } from '@/stores';
 import { Header, Button, Spinner, Backdrop, Modal } from '@/components/common';
 import Leaderboard from '@/components/Leaderboard.vue';
 import Profile from '@/components/Profile.vue';
@@ -15,6 +15,7 @@ const auth = useAuthStore();
 const lobby = useLobbyStore();
 const loader = useLoaderStore();
 const router = useRouter();
+const presentation = usePresentationStore();
 
 const startTS = ref(-1);
 const timer = ref('');
@@ -92,7 +93,13 @@ onMounted(async () => {
     </template>
     <template #right>
       <div class="header-controls">
-        <Button @click="isLeaderboardOpen = true">Leaderboard</Button>
+        <Button
+          :icon="presentation.media === 'mobile' ? 'leaderboard' : undefined"
+          @click="isLeaderboardOpen = true"
+          :size="1.5"
+        >
+          {{ presentation.media === 'desktop' ? 'Leaderboard' : '' }}
+        </Button>
         <Button class="profile-control" :class="{ float: showProfile }" @click="showProfile = !showProfile">
           <img alt="avatar icon" src="/assets/icons/avatar.png" />
         </Button>

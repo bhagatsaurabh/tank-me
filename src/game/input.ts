@@ -24,7 +24,7 @@ export interface IHistoryInfo {
 
 export class InputManager {
   static history = new IndexedQueue<number, IInputHistory>([], 'step');
-  static keys: PlayerInputs = {};
+  static input: PlayerInputs = {};
   private static maxBufferSize = 30;
 
   static create(scene: Scene) {
@@ -32,13 +32,13 @@ export class InputManager {
     actionManager.registerAction(
       new ExecuteCodeAction(ActionManager.OnKeyDownTrigger, (ev: ActionEvent) => {
         const code = ev.sourceEvent.code as KeyInputType;
-        if (typeof GameInputType[keyMap[code]] !== 'undefined') InputManager.keys[keyMap[code]] = true;
+        if (typeof GameInputType[keyMap[code]] !== 'undefined') InputManager.input[keyMap[code]] = true;
       })
     );
     actionManager.registerAction(
       new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (ev: ActionEvent) => {
         const code = ev.sourceEvent.code as KeyInputType;
-        if (typeof GameInputType[keyMap[code]] !== 'undefined') InputManager.keys[keyMap[code]] = false;
+        if (typeof GameInputType[keyMap[code]] !== 'undefined') InputManager.input[keyMap[code]] = false;
       })
     );
     return actionManager;

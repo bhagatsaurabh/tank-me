@@ -1,6 +1,15 @@
 import { Converter } from 'showdown';
 
-import { GameInputType, type ErrorInfo, type KeyInputType, SpawnAxis, type INotification } from '@/types';
+import {
+  GameInputType,
+  type ErrorInfo,
+  type KeyInputType,
+  SpawnAxis,
+  type INotification,
+  type GraphicsPresetType,
+  type GraphicsConfig,
+  TouchInputType
+} from '@/types';
 
 const converter = new Converter();
 
@@ -18,6 +27,20 @@ export const keyMap: Record<KeyInputType, GameInputType> = {
   Space: GameInputType.BRAKE,
   ControlLeft: GameInputType.FIRE,
   ControlRight: GameInputType.FIRE
+};
+export const touchMap: Record<TouchInputType, GameInputType> = {
+  Joystick1Up: GameInputType.FORWARD,
+  Joystick1Down: GameInputType.REVERSE,
+  Joystick1Left: GameInputType.LEFT,
+  Joystick1Right: GameInputType.RIGHT,
+  Reset: GameInputType.RESET,
+  Perspective: GameInputType.CHANGE_PERSPECTIVE,
+  Joystick2Up: GameInputType.BARREL_UP,
+  Joystick2Down: GameInputType.BARREL_DOWN,
+  Joystick2Left: GameInputType.TURRET_LEFT,
+  Joystick2Right: GameInputType.TURRET_RIGHT,
+  Brake: GameInputType.BRAKE,
+  Fire: GameInputType.FIRE
 };
 
 export const userNameRegex = /^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/;
@@ -74,3 +97,16 @@ export const Notifications = Object.freeze({
 });
 
 export const spawnAxes: SpawnAxis[] = [SpawnAxis.PX, SpawnAxis.NX, SpawnAxis.PZ, SpawnAxis.NZ];
+
+export const GraphicsPreset: Record<GraphicsPresetType, GraphicsConfig> = Object.freeze({
+  high: {
+    ground: {
+      subdivisions: 250
+    }
+  },
+  low: {
+    ground: {
+      subdivisions: 125
+    }
+  }
+});

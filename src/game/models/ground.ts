@@ -4,6 +4,7 @@ import { StandardMaterial, Texture } from '@babylonjs/core/Materials';
 import { Color3 } from '@babylonjs/core/Maths';
 
 import { AssetLoader } from '../loader';
+import type { World } from '../main';
 
 export class Ground {
   private static instance: Ground;
@@ -11,10 +12,10 @@ export class Ground {
   static mesh: GroundMesh;
   static groundFriction = 1;
 
-  static async create(scene: Scene) {
-    return Ground.instance ?? (await Ground.createMesh(scene));
+  static async create(world: World) {
+    return Ground.instance ?? (await Ground.createMesh(world));
   }
-  private static createMesh(scene: Scene) {
+  private static createMesh(world: World) {
     return new Promise((resolve) => {
       if (Ground.isFlat) {
         Ground.mesh = MeshBuilder.CreateGround(
@@ -22,12 +23,12 @@ export class Ground {
           {
             width: 500,
             height: 500,
-            subdivisions: 250,
+            subdivisions: world.config.ground.subdivisions,
             updatable: false
           },
-          scene
+          world.scene
         );
-        this.onGroundCreated(scene, Ground.mesh, resolve);
+        this.onGroundCreated(world.scene, Ground.mesh, resolve);
       } else {
         Ground.mesh = MeshBuilder.CreateGroundFromHeightMap(
           'ground',
@@ -39,9 +40,9 @@ export class Ground {
             minHeight: 0,
             maxHeight: 14,
             updatable: false,
-            onReady: (mesh) => Ground.onGroundCreated(scene, mesh, resolve)
+            onReady: (mesh) => Ground.onGroundCreated(world.scene, mesh, resolve)
           },
-          scene
+          world.scene
         );
       }
     });

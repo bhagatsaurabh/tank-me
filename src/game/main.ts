@@ -21,7 +21,13 @@ import { InputManager } from './input';
 import { Tank, Ground, PlayerTank, EnemyAITank, EnemyTank } from './models';
 import { AssetLoader } from './loader';
 import { Skybox } from './skybox';
-import { MessageType, type PlayerStats, type IMessageEnd, type IMessageInput } from '@/types';
+import {
+  MessageType,
+  type PlayerStats,
+  type IMessageEnd,
+  type IMessageInput,
+  type GraphicsConfig
+} from '@/types';
 
 export class World {
   static instance: World;
@@ -62,7 +68,8 @@ export class World {
     public engine: Engine,
     public client: GameClient,
     public physicsPlugin: HavokPlugin,
-    public vsAI: boolean
+    public vsAI: boolean,
+    public config: GraphicsConfig
   ) {
     this.id = client.getSessionId();
     this.scene = new Scene(this.engine);
@@ -71,7 +78,12 @@ export class World {
     physicsPlugin.setTimeStep(0);
     this.scene.getPhysicsEngine()?.setSubTimeStep(World.subTimeStep);
   }
-  static async create(client: GameClient, canvas: HTMLCanvasElement, vsAI = false): Promise<World> {
+  static async create(
+    client: GameClient,
+    canvas: HTMLCanvasElement,
+    vsAI = false,
+    config: GraphicsConfig
+  ): Promise<World> {
     if (client?.getSessionId() || vsAI) {
       // Pre-fetch all assets
       await AssetLoader.load();
@@ -82,7 +94,7 @@ export class World {
         lockstepMaxSteps: World.lockstepMaxSteps
       });
       const physicsPlugin = new HavokPlugin(false, await HavokPhysics());
-      const world = new World(engine, client, physicsPlugin, vsAI);
+      const world = new World(engine, client, physicsPlugin, vsAI, config);
       await world.importPlayerMesh(world);
       await world.initScene();
       world.initWindowListeners();
@@ -126,7 +138,7 @@ export class World {
     this.scene.actionManager = InputManager.create(this.scene);
 
     await Skybox.create(this.scene);
-    this.ground = await Ground.create(this.scene);
+    this.ground = await Ground.create(this);
     this.shadowGenerator?.addShadowCaster(Ground.mesh);
     this.setGUI();
     await this.createTanks();
@@ -334,7 +346,7 @@ export class World {
       const step = this.scene.getStepId();
       const message = {
         step,
-        input: structuredClone(InputManager.keys)
+        input: structuredClone(InputManager.input)
       };
       this.sendInput(message);
 
@@ -345,7 +357,7 @@ export class World {
     }
 
     if (this.vsAI) {
-      this.player.applyInputs(InputManager.keys);
+      this.player.applyInputs(InputManager.input);
     }
   }
   private update() {

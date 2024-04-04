@@ -51,7 +51,11 @@ onMounted(async () => {
 
     // Initialize the game
     isLoading.value = true;
-    await gameClient.value.createWorld(canvasEl.value, isVsAI.value);
+    await gameClient.value.createWorld(
+      canvasEl.value,
+      isVsAI.value,
+      presentation.media === 'desktop' ? 'high' : 'low'
+    );
     isLoading.value = false;
     gameClient.value.world?.engine?.resize(true);
 
@@ -89,7 +93,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <canvas ref="canvasEl"></canvas>
-    <TouchControls />
+    <TouchControls v-if="!gameClient?.isMatchEnded" />
     <div class="timer" v-if="lobby.status === 'playing' || (gameClient?.world && isVsAI)">{{ currTime }}</div>
     <div v-if="gameClient?.isMatchEnded" class="matchend">
       <section class="title">
@@ -171,7 +175,6 @@ onBeforeUnmount(() => {
 .matchend .title {
   font-size: 4rem;
   margin-left: 2rem;
-  margin-bottom: 20rem;
 }
 .matchend .title .background {
   position: absolute;
@@ -190,7 +193,7 @@ onBeforeUnmount(() => {
 .matchend .controls {
   position: absolute;
   left: 2rem;
-  bottom: 23rem;
+  top: calc(50% + 6rem);
 }
 
 .timer {
@@ -202,5 +205,11 @@ onBeforeUnmount(() => {
   transform: translateX(-50%);
   border-bottom-left-radius: 0.5rem;
   border-bottom-right-radius: 0.5rem;
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .matchend {
+    flex-direction: column;
+  }
 }
 </style>

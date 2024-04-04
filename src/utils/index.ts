@@ -130,3 +130,5 @@ export const getSpawnPoint = (): Vector3 => {
   }
 };
 export const isInRange = (val: number, min: number, max: number) => val >= min && val <= max;
+
+export const normalize = (val: number, max: number, min: number) => (val - min) / (max - min);

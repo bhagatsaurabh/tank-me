@@ -34,6 +34,20 @@ export enum KeyInputType {
   KEY_R = 'KeyR',
   KEY_V = 'KeyV'
 }
+export enum TouchInputType {
+  JOYSTICK_PRIMARY_UP = 'Joystick1Up',
+  JOYSTICK_PRIMARY_DOWN = 'Joystick1Down',
+  JOYSTICK_PRIMARY_LEFT = 'Joystick1Left',
+  JOYSTICK_PRIMARY_RIGHT = 'Joystick1Right',
+  BRAKE = 'Brake',
+  JOYSTICK_SECONDARY_UP = 'Joystick2Up',
+  JOYSTICK_SECONDARY_DOWN = 'Joystick2Down',
+  JOYSTICK_SECONDARY_LEFT = 'Joystick2Left',
+  JOYSTICK_SECONDARY_RIGHT = 'Joystick2Right',
+  FIRE = 'Fire',
+  RESET = 'Reset',
+  PERSPECTIVE = 'Perspective'
+}
 
 export enum MessageType {
   INPUT = 'input',
@@ -74,3 +88,5 @@ export type MatchStats = Record<string, PlayerStats>;
 export type ScreenOrientation = 'landscape' | 'portrait';
 
 export type ObjectStoreName = 'files' | 'users' | 'preferences';
+
+export type GraphicsPresetType = 'high' | 'low';

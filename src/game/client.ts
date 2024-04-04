@@ -2,10 +2,17 @@ import { Client, Room } from 'colyseus.js';
 
 import type { RoomState } from './state';
 import { World } from './main';
-import { MessageType, type PlayerStats, type IMessageEnd, type IMessageFire } from '@/types';
+import {
+  MessageType,
+  type PlayerStats,
+  type IMessageEnd,
+  type IMessageFire,
+  type GraphicsPresetType
+} from '@/types';
 import { useLobbyStore } from '@/stores';
 import type { EnemyTank } from './models';
 import { Monitor } from './monitor';
+import { GraphicsPreset } from '@/utils/constants';
 
 export class GameClient {
   private static instance: GameClient;
@@ -49,9 +56,6 @@ export class GameClient {
     this.rooms[name] = room;
 
     if (name === 'desert') {
-      this.didWin = false;
-      this.isDraw = false;
-      this.isMatchEnded = false;
       this.setListeners();
     }
 
@@ -71,8 +75,12 @@ export class GameClient {
     });
   }
 
-  async createWorld(canvasEl: HTMLCanvasElement, vsAI = false) {
-    this.world = await World.create(this, canvasEl, vsAI);
+  async createWorld(canvasEl: HTMLCanvasElement, vsAI = false, preset: GraphicsPresetType) {
+    this.didWin = false;
+    this.isDraw = false;
+    this.isMatchEnded = false;
+
+    this.world = await World.create(this, canvasEl, vsAI, GraphicsPreset[preset]);
     Monitor.start(this.world!);
   }
   getSessionId() {

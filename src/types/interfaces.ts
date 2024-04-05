@@ -1,10 +1,11 @@
-import type { Nullable } from '@babylonjs/core';
+import { type Nullable } from '@babylonjs/core';
 import type {
   MatchStats,
   NotificationAction,
   NotificationStatus,
   NotificationType,
-  PlayerInputs
+  PlayerInputs,
+  ShadowGeneratorQuality
 } from './types';
 
 export interface IMessageInput {
@@ -55,7 +56,8 @@ export interface UserPreferences {
 }
 
 export interface GraphicsConfig {
-  ground: {
-    subdivisions: number;
+  shadows: {
+    quality: ShadowGeneratorQuality;
+    mapSize: 256 | 512;
   };
 }

@@ -26,7 +26,7 @@ export class PSTankExplosion {
   private setExplosion() {
     this.psExplosion = new GPUParticleSystem(
       `PS:TankExplosion:${luid()}`,
-      { capacity: 400, randomTextureSize: 1024 },
+      { capacity: 200, randomTextureSize: 256 },
       this.scene
     );
 
@@ -69,8 +69,8 @@ export class PSTankExplosion {
     this.psExplosion.endSpriteCellID = 63;
     this.psExplosion.spriteCellLoop = true;
     this.psExplosion.spriteRandomStartCell = true;
-    this.psExplosion.spriteCellWidth = 128;
-    this.psExplosion.spriteCellHeight = 128;
+    this.psExplosion.spriteCellWidth = 64;
+    this.psExplosion.spriteCellHeight = 64;
     this.psExplosion.spriteCellChangeSpeed = 1.0;
     this.psExplosion.preventAutoStart = true;
   }

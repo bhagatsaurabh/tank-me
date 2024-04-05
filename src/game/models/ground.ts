@@ -23,7 +23,7 @@ export class Ground {
           {
             width: 500,
             height: 500,
-            subdivisions: world.config.ground.subdivisions,
+            subdivisions: 250,
             updatable: false
           },
           world.scene

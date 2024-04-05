@@ -386,6 +386,8 @@ export class PlayerTank extends Tank {
     return _6dofConstraint;
   }
   private setGUI() {
+    const scale = this.world.engine.getHardwareScalingLevel();
+
     const scope = new Image('ads', AssetLoader.assets['/assets/game/gui/ads.png'] as string);
     scope.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     scope.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
@@ -393,7 +395,7 @@ export class PlayerTank extends Tank {
     scope.width = '50%';
     scope.fixedRatio = 1;
     scope.stretch = Image.STRETCH_FILL;
-    scope.shadowBlur = 3;
+    scope.shadowBlur = 3 * scale;
     scope.shadowColor = '#AFE1AF';
     scope.alpha = 0.8;
     scope.isVisible = false;
@@ -413,7 +415,7 @@ export class PlayerTank extends Tank {
 
     const padWidth = (this.world.engine.getRenderWidth(true) - this.world.engine.getRenderHeight(true)) / 2;
     const padLeft = new Rectangle('left-pad');
-    padLeft.width = `${padWidth}px`;
+    padLeft.width = `${padWidth * scale}px`;
     padLeft.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     padLeft.color = '#000';
     padLeft.background = '#000';
@@ -421,7 +423,7 @@ export class PlayerTank extends Tank {
     padLeft.zIndex = -1;
     this.world.gui.addControl(padLeft);
     const padRight = new Rectangle('right-pad');
-    padRight.width = `${padWidth}px`;
+    padRight.width = `${padWidth * scale}px`;
     padRight.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
     padRight.color = '#000';
     padRight.background = '#000';
@@ -430,6 +432,12 @@ export class PlayerTank extends Tank {
     this.world.gui.addControl(padRight);
 
     this.sights.push(scope, overlay, padLeft, padRight);
+  }
+  adjustGUI(scale: number, width: number, height: number) {
+    const padWidth = (width - height) / 2;
+    this.sights[0].shadowBlur = 3 * scale;
+    this.sights[2].width = `${padWidth * scale}px`;
+    this.sights[3].width = `${padWidth * scale}px`;
   }
   private setPreStep(value: boolean) {
     this.body.physicsBody!.disablePreStep = value;
@@ -812,15 +820,5 @@ export class PlayerTank extends Tank {
     }
 
     this.playSounds(isMoving, !!isBarrelMoving || !!isTurretMoving);
-  }
-
-  adjustGUI() {
-    const padWidth = (this.world.engine.getRenderWidth(true) - this.world.engine.getRenderHeight(true)) / 2;
-    if (this.world.gui.getControlByName('left-pad')) {
-      this.world.gui.getControlByName('left-pad')!.width = `${padWidth}px`;
-    }
-    if (this.world.gui.getControlByName('right-pad')) {
-      this.world.gui.getControlByName('right-pad')!.width = `${padWidth}px`;
-    }
   }
 }

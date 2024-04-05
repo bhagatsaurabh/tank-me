@@ -1,4 +1,4 @@
-import type { Sound } from '@babylonjs/core';
+import { type Sound } from '@babylonjs/core';
 
 export type AuthStatus = 'pending' | 'blocked' | 'verified' | 'signed-in' | 'signed-out';
 export type AuthType = 'email' | 'verify' | 'guest' | 'guest-verify';
@@ -90,3 +90,5 @@ export type ScreenOrientation = 'landscape' | 'portrait';
 export type ObjectStoreName = 'files' | 'users' | 'preferences';
 
 export type GraphicsPresetType = 'high' | 'low';
+
+export type ShadowGeneratorQuality = 0 | 1 | 2;

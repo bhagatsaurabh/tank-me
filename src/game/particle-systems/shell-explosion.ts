@@ -17,7 +17,7 @@ export class PSShellExplosion {
   private setProperties() {
     this.particleSystem = new GPUParticleSystem(
       `PS:ShellExplosion:${luid()}`,
-      { capacity: 300, randomTextureSize: 1024 },
+      { capacity: 150, randomTextureSize: 256 },
       this.scene
     );
     this.particleSystem.particleTexture = new Texture(
@@ -44,8 +44,8 @@ export class PSShellExplosion {
     this.particleSystem.endSpriteCellID = 63;
     this.particleSystem.spriteCellLoop = true;
     this.particleSystem.spriteRandomStartCell = true;
-    this.particleSystem.spriteCellWidth = 128;
-    this.particleSystem.spriteCellHeight = 128;
+    this.particleSystem.spriteCellWidth = 64;
+    this.particleSystem.spriteCellHeight = 64;
     this.particleSystem.spriteCellChangeSpeed = 1.0;
     this.particleSystem.preventAutoStart = true;
     this.particleSystem

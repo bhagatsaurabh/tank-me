@@ -100,13 +100,15 @@ export const spawnAxes: SpawnAxis[] = [SpawnAxis.PX, SpawnAxis.NX, SpawnAxis.PZ,
 
 export const GraphicsPreset: Record<GraphicsPresetType, GraphicsConfig> = Object.freeze({
   high: {
-    ground: {
-      subdivisions: 250
+    shadows: {
+      quality: 0,
+      mapSize: 512
     }
   },
   low: {
-    ground: {
-      subdivisions: 125
+    shadows: {
+      quality: 2,
+      mapSize: 256
     }
   }
 });

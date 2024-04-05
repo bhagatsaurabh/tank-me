@@ -124,6 +124,7 @@ onBeforeUnmount(unregisterGuard);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  display: flex;
 }
 .leaderboard .title h1 {
   color: #fedeab;
@@ -184,5 +185,17 @@ onBeforeUnmount(unregisterGuard);
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+@media (max-width: 768px) {
+  .leaderboard .title {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .leaderboard .title button {
+    margin-left: 2rem;
+    margin-bottom: 1rem;
+  }
 }
 </style>

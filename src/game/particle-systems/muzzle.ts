@@ -22,7 +22,7 @@ export class PSMuzzle {
   }
 
   private setExplosion() {
-    this.psExplosion = new ParticleSystem(`PS:MuzzleExplosion:${luid()}`, 200, this.scene);
+    this.psExplosion = new ParticleSystem(`PS:MuzzleExplosion:${luid()}`, 100, this.scene);
     this.psExplosion.particleTexture = new Texture(
       AssetLoader.assets['/assets/game/spritesheets/explosion.png'] as string,
       this.scene
@@ -49,8 +49,8 @@ export class PSMuzzle {
     this.psExplosion.endSpriteCellID = 15;
     this.psExplosion.spriteCellLoop = false;
     this.psExplosion.spriteRandomStartCell = false;
-    this.psExplosion.spriteCellWidth = 256;
-    this.psExplosion.spriteCellHeight = 256;
+    this.psExplosion.spriteCellWidth = 128;
+    this.psExplosion.spriteCellHeight = 128;
     this.psExplosion.spriteCellChangeSpeed = 2.5;
     this.psExplosion.preventAutoStart = true;
     this.psExplosion.targetStopDuration = 0.7;
@@ -64,7 +64,7 @@ export class PSMuzzle {
       .addColorGradient(1, Color4.FromInts(255, 248, 151, 0));
   }
   private setSmoke() {
-    this.psSmoke = new ParticleSystem(`PS:MuzzleSmoke:${luid()}`, 200, this.scene);
+    this.psSmoke = new ParticleSystem(`PS:MuzzleSmoke:${luid()}`, 100, this.scene);
     this.psSmoke.particleTexture = new Texture(
       AssetLoader.assets['/assets/game/spritesheets/smoke_dust_cloud.png'] as string,
       this.scene
@@ -93,8 +93,8 @@ export class PSMuzzle {
     this.psSmoke.endSpriteCellID = 63;
     this.psSmoke.spriteCellLoop = true;
     this.psSmoke.spriteRandomStartCell = true;
-    this.psSmoke.spriteCellWidth = 128;
-    this.psSmoke.spriteCellHeight = 128;
+    this.psSmoke.spriteCellWidth = 64;
+    this.psSmoke.spriteCellHeight = 64;
     this.psSmoke.spriteCellChangeSpeed = 0.1;
     this.psSmoke.preventAutoStart = true;
     this.psSmoke.isLocal = true;

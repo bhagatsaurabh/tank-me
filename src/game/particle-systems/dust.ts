@@ -22,7 +22,7 @@ export class PSDust {
   private setProperties() {
     const particleSystem = new GPUParticleSystem(
       `PS:Dust:${luid()}`,
-      { capacity: 100, randomTextureSize: 512 },
+      { capacity: 50, randomTextureSize: 128 },
       this.scene
     );
 
@@ -36,8 +36,8 @@ export class PSDust {
     particleSystem.emitRate = 20;
     particleSystem.minEmitPower = 0.1;
     particleSystem.maxEmitPower = 0.2;
-    particleSystem.minLifeTime = 1.5;
-    particleSystem.maxLifeTime = 2;
+    particleSystem.minLifeTime = 1;
+    particleSystem.maxLifeTime = 1.5;
     particleSystem.minScaleX = 1;
     particleSystem.maxScaleX = 1;
     particleSystem.minScaleY = 1;
@@ -52,8 +52,8 @@ export class PSDust {
     particleSystem.endSpriteCellID = 63;
     particleSystem.spriteCellLoop = true;
     particleSystem.spriteRandomStartCell = true;
-    particleSystem.spriteCellWidth = 128;
-    particleSystem.spriteCellHeight = 128;
+    particleSystem.spriteCellWidth = 64;
+    particleSystem.spriteCellHeight = 64;
     particleSystem.spriteCellChangeSpeed = 0.1;
     particleSystem.preventAutoStart = true;
     particleSystem

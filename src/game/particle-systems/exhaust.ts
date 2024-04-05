@@ -19,7 +19,7 @@ export class PSExhaust {
   private setProperties() {
     this.particleSystem = new GPUParticleSystem(
       `PS:Exhaust:${luid()}`,
-      { capacity: 300, randomTextureSize: 1024 },
+      { capacity: 100, randomTextureSize: 128 },
       this.scene
     );
 
@@ -53,8 +53,8 @@ export class PSExhaust {
     this.particleSystem.endSpriteCellID = 63;
     this.particleSystem.spriteCellLoop = true;
     this.particleSystem.spriteRandomStartCell = true;
-    this.particleSystem.spriteCellWidth = 128;
-    this.particleSystem.spriteCellHeight = 128;
+    this.particleSystem.spriteCellWidth = 64;
+    this.particleSystem.spriteCellHeight = 64;
     this.particleSystem.spriteCellChangeSpeed = 2.5;
     this.particleSystem.noiseStrength = new Vector3(0.2, 0, 0.15);
     this.particleSystem.preventAutoStart = true;

@@ -30,7 +30,8 @@ export class Monitor {
           Optimize Count: ${world.optimizeCount}\n
           Hardware Scaling: ${world.engine.getHardwareScalingLevel()}\n
           Priority Level: ${world.optimizer.currentPriorityLevel}\n
-          Improvement Mode: ${world.optimizer.isInImprovementMode}`);
+          Curret FPS: ${world.optimizer.currentFrameRate}\n
+          Curret FPS: ${world.optimizer.targetFrameRate}`);
       } else {
         world.gui &&
           ((world.gui.getControlByName('stats') as TextBlock).text = `\n

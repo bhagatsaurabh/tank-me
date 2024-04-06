@@ -83,6 +83,8 @@ export class World {
   private hardwareScale: number = 1;
   optimizer!: SceneOptimizer;
   optimizeCount: number = 0;
+  fps: number = 0;
+  lastFpsTS: number = 0;
 
   private constructor(
     public engine: Engine,
@@ -184,7 +186,8 @@ export class World {
   }
   private render() {
     this.scene.render();
-    this.fpsLabel.text = this.engine.getFps().toFixed() + ' FPS';
+    this.fps = this.engine.getFps();
+    this.fpsLabel.text = this.fps.toFixed() + ' FPS';
   }
   private setLights() {
     this.glowLayer = new GlowLayer('glow', this.scene);
@@ -355,6 +358,18 @@ export class World {
   }
   fadeDir = -1;
   private beforeRender() {
+    const now = performance.now();
+    // Scene optimization is not working as expected on low-end devices
+    if (
+      this.config.id === 'low' &&
+      now - this.lastFpsTS > 2000 &&
+      this.optimizer.currentFrameRate < this.optimizer.targetFrameRate
+    ) {
+      this.optimizer.reset();
+      this.optimizer.start();
+      this.lastFpsTS = now;
+    }
+
     const renderWidth = this.engine.getRenderWidth(true);
     const renderHeight = this.engine.getRenderHeight(true);
     if (this.engine.getHardwareScalingLevel() !== this.hardwareScale) {

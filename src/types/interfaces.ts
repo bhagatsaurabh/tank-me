@@ -57,6 +57,9 @@ export interface UserPreferences {
 
 export interface GraphicsConfig {
   id: string;
+  ground: {
+    subdivisions: 128 | 256;
+  };
   shadows: {
     quality: ShadowGeneratorQuality;
     mapSize: 128 | 256 | 512;

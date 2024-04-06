@@ -36,7 +36,7 @@ export class Ground {
           {
             width: 500,
             height: 500,
-            subdivisions: 250,
+            subdivisions: world.config.ground.subdivisions,
             minHeight: 0,
             maxHeight: 14,
             updatable: false,

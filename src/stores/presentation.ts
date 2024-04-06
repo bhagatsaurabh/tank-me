@@ -3,11 +3,13 @@ import { defineStore } from 'pinia';
 
 import type { ScreenOrientation } from '@/types';
 import { GameClient } from '@/game/client';
+import { getDeviceType } from '@/utils';
 
 export const usePresentationStore = defineStore('presentation', () => {
   const isFullscreen = ref(false);
   const orientation = ref<ScreenOrientation>('landscape');
   const media = ref<'desktop' | 'mobile'>('desktop');
+  const device = ref<'desktop' | 'mobile'>(getDeviceType());
 
   const fullscreenChangeListener = () => {
     isFullscreen.value = !!document.fullscreenElement;
@@ -53,6 +55,7 @@ export const usePresentationStore = defineStore('presentation', () => {
     isFullscreen,
     orientation,
     media,
+    device,
     registerListeners,
     unregister,
     fullscreen

@@ -7,6 +7,7 @@ import {
   Engine,
   HardwareScalingOptimization,
   Observer,
+  ParticlesOptimization,
   RenderTargetsOptimization,
   Scene,
   SceneOptimizer,
@@ -326,12 +327,13 @@ export class World {
     new PhysicsAggregate(barrier4, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
   }
   private setOptimizer() {
-    const options = new SceneOptimizerOptions(45);
+    const options = new SceneOptimizerOptions(this.config.optimizations.targetFps);
 
-    options.addOptimization(new TextureOptimization(0, 512));
+    options.addOptimization(new TextureOptimization(0, this.config.optimizations.maxTextureSize));
     options.addOptimization(new ShadowsOptimization(1));
-    options.addOptimization(new HardwareScalingOptimization(1, 2));
-    options.addOptimization(new RenderTargetsOptimization(2));
+    options.addOptimization(new HardwareScalingOptimization(1, this.config.optimizations.maxHardwareScale));
+    options.addOptimization(new RenderTargetsOptimization(1));
+    options.addOptimization(new ParticlesOptimization(2));
 
     SceneOptimizer.OptimizeAsync(this.scene, options).start();
   }

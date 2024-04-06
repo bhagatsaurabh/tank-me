@@ -10,12 +10,28 @@ export class Skybox {
     let instance = Skybox.instance;
     if (!instance) {
       instance = new Skybox(scene);
+
+      await instance.loadEnv();
       await instance.load();
-      instance.scene.createDefaultSkybox(instance.cubeTexture, true, 1000);
+
+      const skybox = instance.scene.createDefaultSkybox(instance.cubeTexture, false, 1000, undefined, false);
+      skybox!.infiniteDistance = true;
     }
     return instance;
   }
 
+  loadEnv() {
+    return new Promise<boolean>((resolve) => {
+      this.scene.environmentTexture = new CubeTexture(
+        '/assets/game/skybox/environment.env',
+        this.scene,
+        null,
+        undefined,
+        null,
+        () => resolve(true)
+      );
+    });
+  }
   load() {
     return new Promise<boolean>((resolve) => {
       this.cubeTexture = new CubeTexture(

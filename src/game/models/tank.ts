@@ -251,7 +251,7 @@ export class Tank {
     }
 
     // Dust trail
-    if (leftSpeed <= 1.5 || rightSpeed <= 1.5) {
+    if (Math.abs(leftSpeed) <= 1.5 || Math.abs(rightSpeed) <= 1.5) {
       this.particleSystems['dust-left']?.stop();
       this.particleSystems['dust-right']?.stop();
     } else {

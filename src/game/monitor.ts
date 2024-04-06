@@ -7,7 +7,7 @@ import { InputManager } from './input';
 export class Monitor {
   private static handle = -1;
   private static _interval = 200;
-  private static enabled = true;
+  private static enabled = false;
   static set interval(ms: number) {
     Monitor._interval = clamp(ms, 500, Number.MAX_SAFE_INTEGER);
   }
@@ -27,11 +27,12 @@ export class Monitor {
       if (world.vsAI) {
         world.gui &&
           ((world.gui.getControlByName('stats') as TextBlock).text = `\n
-          Optimize Count: ${world.optimizeCount}\n
-          Hardware Scaling: ${world.engine.getHardwareScalingLevel()}\n
-          Priority Level: ${world.optimizer.currentPriorityLevel}\n
-          Curret FPS: ${world.optimizer.currentFrameRate}\n
-          Curret FPS: ${world.optimizer.targetFrameRate}`);
+          Config: ${world.config.id}
+          Optimize Count: ${world.optimizeCount}
+          Hardware Scaling: ${world.engine.getHardwareScalingLevel()}
+          Priority Level: ${world.optimizer.currentPriorityLevel}
+          Current FPS: ${world.optimizer.currentFrameRate}
+          Target FPS: ${world.optimizer.targetFrameRate}`);
       } else {
         world.gui &&
           ((world.gui.getControlByName('stats') as TextBlock).text = `\n

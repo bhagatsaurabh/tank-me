@@ -9,18 +9,12 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    server: {
-      host: true
-    },
     optimizeDeps: {
       exclude: ['@babylonjs/havok']
     },
     plugins: [
       vue(),
       VitePWA({
-        devOptions: {
-          enabled: false
-        },
         registerType: 'autoUpdate',
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png}']

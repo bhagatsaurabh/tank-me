@@ -61,6 +61,9 @@ const showModal = () => {
   (document.activeElement as HTMLElement)?.blur();
   show.value = true;
 };
+const hideModal = () => {
+  handleDismiss();
+};
 
 let unregisterGuard = () => {};
 watch(
@@ -96,7 +99,8 @@ onMounted(() => {
 onBeforeUnmount(unregisterGuard);
 
 defineExpose({
-  showModal
+  showModal,
+  hideModal
 });
 </script>
 

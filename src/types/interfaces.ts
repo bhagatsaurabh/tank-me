@@ -58,6 +58,11 @@ export interface UserPreferences {
 export interface GraphicsConfig {
   shadows: {
     quality: ShadowGeneratorQuality;
-    mapSize: 256 | 512;
+    mapSize: 128 | 256 | 512;
+  };
+  optimizations: {
+    targetFps: 30 | 45 | 60;
+    maxTextureSize: 128 | 256 | 512;
+    maxHardwareScale: 2 | 3 | 4;
   };
 }

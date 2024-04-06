@@ -1,7 +1,7 @@
 import { Vector3, type Nullable } from '@babylonjs/core';
 
 import { type ITrapBounds, SpawnAxis } from '@/types';
-import { spawnAxes } from './constants';
+import { mobileRegex1, mobileRegex2, spawnAxes } from './constants';
 
 export const throttle = (cb: (...argmts: any) => void, delay: number) => {
   let timerHandle: Nullable<Number>, args: any;
@@ -132,3 +132,9 @@ export const getSpawnPoint = (): Vector3 => {
 export const isInRange = (val: number, min: number, max: number) => val >= min && val <= max;
 
 export const normalize = (val: number, max: number, min: number) => (val - min) / (max - min);
+
+export const getDeviceType = () => {
+  if (mobileRegex1.test(navigator.userAgent) || mobileRegex2.test(navigator.userAgent.substring(0, 4)))
+    return 'mobile';
+  return 'desktop';
+};

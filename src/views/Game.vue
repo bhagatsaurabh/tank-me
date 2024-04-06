@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { Nullable } from '@babylonjs/core';
 
@@ -20,6 +20,7 @@ const canvasEl = ref<Nullable<HTMLCanvasElement>>(null);
 const isLoading = ref(false);
 const gameClient = ref<Nullable<GameClient>>(null);
 const currTime = ref('');
+const fullscreenConsent = ref<Nullable<InstanceType<typeof Modal>>>(null);
 const isVsAI = computed(() => route.hash === '#ai');
 
 const handleResize = () => {
@@ -38,6 +39,19 @@ const handleAllowFullscreen = async () => {
   await presentation.fullscreen();
 };
 
+watch(
+  () => presentation.isFullscreen,
+  () => {
+    if (presentation.isFullscreen) {
+      fullscreenConsent.value?.hideModal();
+    } else {
+      if (presentation.device === 'mobile') {
+        fullscreenConsent.value?.showModal();
+      }
+    }
+  }
+);
+
 let observer: ResizeObserver;
 let handle = -1;
 onMounted(async () => {
@@ -54,7 +68,7 @@ onMounted(async () => {
     await gameClient.value.createWorld(
       canvasEl.value,
       isVsAI.value,
-      presentation.media === 'desktop' ? 'high' : 'low'
+      presentation.device === 'desktop' ? 'high' : 'low'
     );
     isLoading.value = false;
     gameClient.value.world?.engine?.resize(true);
@@ -81,10 +95,17 @@ onBeforeUnmount(() => {
 <template>
   <div class="game-container" ref="containerEl">
     <Modal
+      ref="fullscreenConsent"
       title="Fullscreen: Permission required"
       :controls="[{ text: 'Deny' }, { text: 'Allow', async: true, action: handleAllowFullscreen }]"
     >
-      <h5>Playing on fullscreen is recommended for best experience !</h5>
+      <h5>
+        {{
+          presentation.device === 'desktop'
+            ? 'Playing on fullscreen is recommended for best experience !'
+            : 'Touch controls only work when in fullscreen !'
+        }}
+      </h5>
     </Modal>
     <div v-if="isLoading" class="feed-load">
       <div class="background"></div>

@@ -27,7 +27,10 @@ export class Monitor {
       if (world.vsAI) {
         world.gui &&
           ((world.gui.getControlByName('stats') as TextBlock).text = `\n
-          Hardware Scaling: ${world.engine.getHardwareScalingLevel()}`);
+          Optimize Count: ${world.optimizeCount}\n
+          Hardware Scaling: ${world.engine.getHardwareScalingLevel()}\n
+          Priority Level: ${world.optimizer.currentPriorityLevel}\n
+          Improvement Mode: ${world.optimizer.isInImprovementMode}`);
       } else {
         world.gui &&
           ((world.gui.getControlByName('stats') as TextBlock).text = `\n

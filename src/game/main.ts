@@ -52,9 +52,9 @@ export class World {
   scene: Scene;
   private throttledResizeListener = noop;
   private stateUnsubFns: (() => boolean)[] = [];
-  private glowLayer!: GlowLayer;
+  glowLayer!: GlowLayer;
   private directionalLight!: DirectionalLight;
-  private shadowGenerator!: ShadowGenerator;
+  shadowGenerator!: ShadowGenerator;
   private tppCamera!: FreeCamera;
   private fppCamera!: FreeCamera;
   private endCamera!: ArcRotateCamera;
@@ -81,6 +81,8 @@ export class World {
   }
   startTimestamp: number = Date.now();
   private hardwareScale: number = 1;
+  optimizer!: SceneOptimizer;
+  optimizeCount: number = 0;
 
   private constructor(
     public engine: Engine,
@@ -160,12 +162,13 @@ export class World {
     this.setGUI();
     await this.createTanks();
     this.setBarriers();
-    this.setOptimizer();
 
     this.observers.push(this.scene.onBeforeStepObservable.add(() => this.beforeStep()));
     this.observers.push(this.scene.onAfterStepObservable.add(() => this.update()));
     this.observers.push(this.scene.onBeforeRenderObservable.add(() => this.beforeRender()));
     !this.vsAI && this.client.state.onChange(() => this.update());
+
+    this.setOptimizer();
   }
   private initWindowListeners() {
     window.addEventListener('keydown', this.toggleInspect.bind(this));
@@ -177,6 +180,7 @@ export class World {
     this.physicsPlugin.setTimeStep(World.timeStep);
     this.specCamera.lockedTarget = this.player.mesh;
     this.specCamera.radius = 14;
+    this.optimizer.start();
   }
   private render() {
     this.scene.render();
@@ -193,6 +197,7 @@ export class World {
     this.directionalLight.direction = new Vector3(-1, -1.2, -1);
     this.directionalLight.shadowMinZ = -1000;
     this.directionalLight.shadowMaxZ = 1000;
+
     this.shadowGenerator = new ShadowGenerator(512, this.directionalLight);
     this.shadowGenerator.usePercentageCloserFiltering = true;
     this.shadowGenerator.filteringQuality = this.config.shadows.quality;
@@ -203,12 +208,12 @@ export class World {
   private setCameras() {
     // Set TPP Camera
     this.tppCamera = new FreeCamera('tpp-cam', new Vector3(0, 0, 0), this.scene, true);
-    this.tppCamera.maxZ = 50000;
+    this.tppCamera.maxZ = 100000;
 
     // Set FPP Camera
     this.fppCamera = new FreeCamera('fpp-cam', new Vector3(0.3, -0.309, 1), this.scene);
     this.fppCamera.minZ = 0.5;
-    this.fppCamera.maxZ = 50000;
+    this.fppCamera.maxZ = 100000;
 
     // Set End Camera
     this.endCamera = new ArcRotateCamera('end-cam', 0, 0, 15, new Vector3(0, 0, 0), this.scene);
@@ -331,11 +336,22 @@ export class World {
 
     options.addOptimization(new TextureOptimization(0, this.config.optimizations.maxTextureSize));
     options.addOptimization(new ShadowsOptimization(1));
+    options.addCustomOptimization(
+      () => {
+        if (this.config.id === 'low') {
+          this.scene.shadowsEnabled = false;
+          return true;
+        }
+        return false;
+      },
+      () => 'CustomShadowOptimization',
+      1
+    );
     options.addOptimization(new HardwareScalingOptimization(1, this.config.optimizations.maxHardwareScale));
     options.addOptimization(new RenderTargetsOptimization(1));
     options.addOptimization(new ParticlesOptimization(2));
 
-    SceneOptimizer.OptimizeAsync(this.scene, options).start();
+    this.optimizer = SceneOptimizer.OptimizeAsync(this.scene, options, () => (this.optimizeCount += 1));
   }
   fadeDir = -1;
   private beforeRender() {

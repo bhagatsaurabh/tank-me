@@ -77,7 +77,7 @@ export class PSTankExplosion {
   private setFire() {
     this.psFire = new GPUParticleSystem(
       `PS:TankFire:${luid()}`,
-      { capacity: 50, randomTextureSize: 1024 },
+      { capacity: 100, randomTextureSize: 256 },
       this.scene
     );
 
@@ -119,8 +119,8 @@ export class PSTankExplosion {
     this.psFire.endSpriteCellID = 63;
     this.psFire.spriteCellLoop = true;
     this.psFire.spriteRandomStartCell = true;
-    this.psFire.spriteCellWidth = 128;
-    this.psFire.spriteCellHeight = 128;
+    this.psFire.spriteCellWidth = 64;
+    this.psFire.spriteCellHeight = 64;
     this.psFire.spriteCellChangeSpeed = 0.4;
 
     this.psFire.preventAutoStart = true;

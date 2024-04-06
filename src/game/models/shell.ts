@@ -96,6 +96,8 @@ export class Shell {
     this.trail = MeshBuilder.CreateLines(`Trail:${mesh.name}`, this.trailOptions, this.tank.world.scene);
 
     this.mesh = mesh;
+
+    this.tank.world.glowLayer.addIncludedOnlyMesh(this.mesh as Mesh);
   }
   private setParticleSystem() {
     this.particleSystem = PSShellExplosion.create(this.tank.world.scene);

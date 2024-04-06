@@ -56,6 +56,7 @@ export interface UserPreferences {
 }
 
 export interface GraphicsConfig {
+  id: string;
   shadows: {
     quality: ShadowGeneratorQuality;
     mapSize: 128 | 256 | 512;

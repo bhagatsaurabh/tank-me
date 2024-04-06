@@ -76,7 +76,7 @@ export enum SpawnAxis {
   NZ = 3
 }
 
-export type EnemyAIState = 'roam' | 'combat' | 'track';
+export type EnemyAIState = { move: 'roam' | 'track' | null; combat: 'basic' | null };
 
 export type PlayerStats = {
   shellsUsed: number;

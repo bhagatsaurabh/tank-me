@@ -159,6 +159,8 @@ export class World {
     this.setCameras();
     this.scene.actionManager = InputManager.create(this.scene);
 
+    this.scene.fogMode = Scene.FOGMODE_EXP2;
+
     await Skybox.create(this.scene);
     this.ground = await Ground.create(this);
     this.setGUI();
@@ -183,6 +185,7 @@ export class World {
     this.specCamera.lockedTarget = this.player.mesh;
     this.specCamera.radius = 14;
     this.optimizer.start();
+    this.scene.debugLayer.show();
   }
   private render() {
     this.scene.render();

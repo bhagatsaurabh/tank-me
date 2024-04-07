@@ -720,10 +720,7 @@ export class EnemyAITank extends Tank {
     if (Vector3.Distance(this.turret.absolutePosition, targetPos) <= EnemyAITank.config.wayPointEpsilon) {
       // This will also work if in tracking state and player's last known position is reached
       this.memory.nextPosition = Vector3.Random(-220, 220);
-      this.memory.nextPosition!.y = Ground.mesh.getHeightAtCoordinates(
-        this.memory.nextPosition!.x,
-        this.memory.nextPosition!.z
-      );
+      this.memory.nextPosition!.y = 0;
       this.aiState.move = 'roam';
     }
 

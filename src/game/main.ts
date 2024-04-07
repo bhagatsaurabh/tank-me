@@ -16,7 +16,7 @@ import {
   TextureOptimization
 } from '@babylonjs/core';
 import { SceneLoader } from '@babylonjs/core/Loading';
-import { Axis, Space, Vector3 } from '@babylonjs/core/Maths';
+import { Axis, Color3, Space, Vector3 } from '@babylonjs/core/Maths';
 import { AbstractMesh, MeshBuilder, TransformNode } from '@babylonjs/core/Meshes';
 import { PBRMaterial, StandardMaterial, Texture } from '@babylonjs/core/Materials';
 import { HavokPlugin, PhysicsAggregate, PhysicsShapeType } from '@babylonjs/core/Physics';
@@ -131,7 +131,7 @@ export class World {
   private async importPlayerMesh(world: World) {
     const { meshes } = await SceneLoader.ImportMeshAsync(
       null,
-      '/assets/game/models/Panzer I/',
+      '/assets/game/models/',
       'Panzer_I.glb',
       world.scene
     );
@@ -159,7 +159,11 @@ export class World {
     this.setCameras();
     this.scene.actionManager = InputManager.create(this.scene);
 
-    this.scene.fogMode = Scene.FOGMODE_EXP2;
+    this.scene.fogMode = Scene.FOGMODE_LINEAR;
+    this.scene.fogDensity = 0.0035;
+    this.scene.fogColor = Color3.FromInts(178, 153, 110);
+    this.scene.fogStart = 20;
+    this.scene.fogEnd = 700;
 
     await Skybox.create(this.scene);
     this.ground = await Ground.create(this);
@@ -180,6 +184,8 @@ export class World {
     window.addEventListener('resize', this.throttledResizeListener.bind(this));
   }
   private start() {
+    // this.engine.getCaps().parallelShaderCompile = undefined;
+
     this.engine.runRenderLoop(this.render.bind(this));
     this.physicsPlugin.setTimeStep(World.timeStep);
     this.specCamera.lockedTarget = this.player.mesh;

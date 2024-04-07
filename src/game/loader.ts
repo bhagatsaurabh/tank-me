@@ -7,7 +7,7 @@ export class AssetLoader {
   static assets: Record<string, string | ArrayBuffer> = {};
   static noOfFilesDownloaded: number = 0;
   private static assetSources = [
-    { path: '/assets/game/models/Panzer I/Panzer_I.glb' },
+    { path: '/assets/game/models/Panzer_I.glb' },
     { path: '/assets/game/map/desert/height.png' },
     { path: '/assets/game/map/desert/diffuse.png' },
     { path: '/assets/game/textures/explosion.jpg' },

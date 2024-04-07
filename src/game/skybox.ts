@@ -16,6 +16,7 @@ export class Skybox {
 
       const skybox = instance.scene.createDefaultSkybox(instance.cubeTexture, false, 1000, undefined, false);
       skybox!.infiniteDistance = true;
+      // skybox!.applyFog = false;
     }
     return instance;
   }

@@ -1,6 +1,6 @@
 <p align="center">
 <a href="https://tankme.saurabhagat.me">
-<img width="50%" alt="TankMe" src="https://raw.githubusercontent.com/saurabh-prosoft/tank-me/main/public/assets/images/logo512.png">
+<img width="35%" alt="TankMe" src="https://raw.githubusercontent.com/saurabh-prosoft/tank-me/main/public/assets/images/logo512.png">
 </a>
 </p>
 
@@ -14,9 +14,12 @@ A multiplayer online PvP tank battle 3D game with semi-realistic tank mechanics.
 
 [tankme.saurabhagat.me](https://tankme.saurabhagat.me/)
 
-<video src="/public/assets/videos/dynamic-background.mp4" autoplay></video>
 
-> *Only works in browsers/devices with **WebGL2 + Parallel Shader Compilation** support !*
+<p align="center">
+<img alt="" src="./public/assets/images/readme.gif" />
+</p>
+
+> _Only works in browsers/devices with **WebGL2 + Parallel Shader Compilation** support !_
 
 <br/>
 

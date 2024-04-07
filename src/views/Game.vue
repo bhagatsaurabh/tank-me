@@ -114,7 +114,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <canvas ref="canvasEl"></canvas>
-    <TouchControls v-if="!gameClient?.isMatchEnded" />
+    <!-- <TouchControls v-if="!gameClient?.isMatchEnded" /> -->
     <div class="timer" v-if="lobby.status === 'playing' || (gameClient?.world && isVsAI)">{{ currTime }}</div>
     <div v-if="gameClient?.isMatchEnded" class="matchend">
       <section class="title">

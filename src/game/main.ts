@@ -191,7 +191,6 @@ export class World {
     this.specCamera.lockedTarget = this.player.mesh;
     this.specCamera.radius = 14;
     this.optimizer.start();
-    this.scene.debugLayer.show();
   }
   private render() {
     this.scene.render();

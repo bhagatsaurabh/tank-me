@@ -53,7 +53,7 @@ export const Notifications = Object.freeze({
           title: 'Something went wrong',
           status: 'error',
           message: converter.makeHtml(
-            'Please try again or report [here](https://github.com/saurabh-prosoft/tank-me/issues)'
+            'Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)'
           ),
           action: 'reload',
           error: meta.error
@@ -63,7 +63,7 @@ export const Notifications = Object.freeze({
           title: 'Something went wrong',
           status: 'error',
           message: converter.makeHtml(
-            'Please try again or report [here](https://github.com/saurabh-prosoft/tank-me/issues)'
+            'Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)'
           ),
           error: meta.error
         },
@@ -72,7 +72,7 @@ export const Notifications = Object.freeze({
     title: 'Failed to load assets',
     status: 'error',
     message: converter.makeHtml(
-      'Please try again or report [here](https://github.com/saurabh-prosoft/tank-me/issues)'
+      'Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)'
     ),
     error: meta.error
   }),
@@ -81,7 +81,7 @@ export const Notifications = Object.freeze({
     title: 'Sign-in failed',
     status: 'error',
     message: converter.makeHtml(
-      'Please try again or report [here](https://github.com/saurabh-prosoft/tank-me/issues)'
+      'Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)'
     ),
     error: meta.error
   }),
@@ -90,7 +90,7 @@ export const Notifications = Object.freeze({
     title: 'Could not connect to server',
     status: 'error',
     message: converter.makeHtml(
-      'Please try again or report [here](https://github.com/saurabh-prosoft/tank-me/issues)'
+      'Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)'
     ),
     error: meta.error
   })

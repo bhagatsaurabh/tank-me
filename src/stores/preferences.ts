@@ -12,7 +12,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
     data.value = await getPreferences();
   }
   function update(updatedPrefs: Partial<UserPreferences>) {
-    data.value = { ...(data.value ?? {}), ...updatedPrefs };
+    data.value = { ...data.value, ...updatedPrefs };
     storePreferences(toRaw(data.value));
   }
 

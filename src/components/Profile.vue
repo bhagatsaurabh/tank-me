@@ -27,8 +27,8 @@ const isVerified = computed(() => !!auth.profile?.email);
 
 const validateEmail = (val: string) => {
   if (!val) return 'Please enter an e-mail';
-  // eslint-disable-next-line no-useless-escape
-  if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return '';
+   
+  if (/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return '';
   return 'Not a valid e-mail';
 };
 let oldStatus: AuthStatus;
@@ -37,7 +37,7 @@ const handleUpgrade = async () => {
     return;
   }
 
-  let oStatus = auth.status;
+  const oStatus = auth.status;
   if (await auth.signIn('email', email.value, '', true)) {
     emit('guest-upgrade', true);
     oldStatus = oStatus;

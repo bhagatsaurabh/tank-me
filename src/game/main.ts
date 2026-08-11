@@ -1,8 +1,8 @@
-import '@babylonjs/core/Debug/debugLayer';
-import '@babylonjs/inspector';
-import '@babylonjs/loaders/glTF/2.0/glTFLoader';
-import { GlowLayer } from '@babylonjs/core/Layers';
-import { PhysicsViewer } from '@babylonjs/core/Debug';
+import "@babylonjs/core/Debug/debugLayer";
+import "@babylonjs/inspector";
+import "@babylonjs/loaders/glTF/2.0/glTFLoader";
+import { GlowLayer } from "@babylonjs/core/Layers";
+import { PhysicsViewer } from "@babylonjs/core/Debug";
 import {
   Engine,
   HardwareScalingOptimization,
@@ -13,32 +13,32 @@ import {
   SceneOptimizer,
   SceneOptimizerOptions,
   ShadowsOptimization,
-  TextureOptimization
-} from '@babylonjs/core';
-import { SceneLoader } from '@babylonjs/core/Loading';
-import { Axis, Color3, Space, Vector3 } from '@babylonjs/core/Maths';
-import { AbstractMesh, MeshBuilder, TransformNode } from '@babylonjs/core/Meshes';
-import { PBRMaterial, StandardMaterial, Texture } from '@babylonjs/core/Materials';
-import { HavokPlugin, PhysicsAggregate, PhysicsShapeType } from '@babylonjs/core/Physics';
-import { DirectionalLight, ShadowGenerator } from '@babylonjs/core/Lights';
-import { FreeCamera, ArcRotateCamera, FollowCamera } from '@babylonjs/core/Cameras';
-import HavokPhysics from '@babylonjs/havok';
-import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, Image } from '@babylonjs/gui';
+  TextureOptimization,
+} from "@babylonjs/core";
+import { SceneLoader } from "@babylonjs/core/Loading";
+import { Axis, Color3, Space, Vector3 } from "@babylonjs/core/Maths";
+import { AbstractMesh, MeshBuilder, TransformNode } from "@babylonjs/core/Meshes";
+import { PBRMaterial, StandardMaterial, Texture } from "@babylonjs/core/Materials";
+import { HavokPlugin, PhysicsAggregate, PhysicsShapeType } from "@babylonjs/core/Physics";
+import { DirectionalLight, ShadowGenerator } from "@babylonjs/core/Lights";
+import { FreeCamera, ArcRotateCamera, FollowCamera } from "@babylonjs/core/Cameras";
+import HavokPhysics from "@babylonjs/havok";
+import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, Image } from "@babylonjs/gui";
 
-import { GameClient } from '@/game/client';
-import type { Player } from './state';
-import { clamp, getSpawnPoint, gravityVector, noop, nzpyVector, throttle } from '@/utils';
-import { InputManager } from './input';
-import { Tank, Ground, PlayerTank, EnemyAITank, EnemyTank } from './models';
-import { AssetLoader } from './loader';
-import { Skybox } from './skybox';
+import { GameClient } from "@/game/client";
+import type { Player } from "./state";
+import { clamp, getSpawnPoint, gravityVector, noop, nzpyVector, throttle } from "@/utils";
+import { InputManager } from "./input";
+import { Tank, Ground, PlayerTank, EnemyAITank, EnemyTank } from "./models";
+import { AssetLoader } from "./loader";
+import { Skybox } from "./skybox";
 import {
   MessageType,
   type PlayerStats,
   type IMessageEnd,
   type IMessageInput,
-  type GraphicsConfig
-} from '@/types';
+  type GraphicsConfig,
+} from "@/types";
 
 export class World {
   static instance: World;
@@ -91,7 +91,7 @@ export class World {
     public client: GameClient,
     public physicsPlugin: HavokPlugin,
     public vsAI: boolean,
-    public config: GraphicsConfig
+    public config: GraphicsConfig,
   ) {
     this.id = client.getSessionId();
     this.scene = new Scene(this.engine);
@@ -104,7 +104,7 @@ export class World {
     client: GameClient,
     canvas: HTMLCanvasElement,
     vsAI = false,
-    config: GraphicsConfig
+    config: GraphicsConfig,
   ): Promise<World> {
     if (client?.getSessionId() || vsAI) {
       // Pre-fetch all assets
@@ -113,7 +113,7 @@ export class World {
       // Init engine
       const engine = new Engine(canvas, true, {
         deterministicLockstep: true,
-        lockstepMaxSteps: World.lockstepMaxSteps
+        lockstepMaxSteps: World.lockstepMaxSteps,
       });
       const physicsPlugin = new HavokPlugin(false, await HavokPhysics());
       const world = new World(engine, client, physicsPlugin, vsAI, config);
@@ -131,26 +131,31 @@ export class World {
   private async importPlayerMesh(world: World) {
     const { meshes } = await SceneLoader.ImportMeshAsync(
       null,
-      '/assets/game/models/',
-      'Panzer_I.glb',
-      world.scene
+      "/assets/game/models/",
+      "Panzer_I.glb",
+      world.scene,
     );
+
+    if (!meshes[0]) {
+      throw Error("Import Error: Player mesh root transform missing");
+    }
 
     // Reset __root__ mesh's transform
     meshes[0].position = Vector3.Zero();
     meshes[0].rotation = Vector3.Zero();
     meshes[0].scaling = Vector3.One();
+
     const container = meshes.shift();
-    setTimeout(() => container?.dispose());
+    setTimeout(() => container?.dispose(), 0);
 
     meshes.forEach((mesh) => {
-      mesh.parent = mesh !== meshes[0] ? meshes[0] : null;
+      mesh.parent = mesh !== meshes[0] ? meshes[0]! : null;
 
       // Disable shininess
       (mesh.material as PBRMaterial).metallicF0Factor = 0;
       mesh.isVisible = false;
     });
-    meshes[0].name = 'Panzer:Ref';
+    meshes[0].name = "Panzer:Ref";
     world.playerMeshes = meshes;
   }
   private async initScene() {
@@ -174,14 +179,19 @@ export class World {
     this.observers.push(this.scene.onBeforeStepObservable.add(() => this.beforeStep()));
     this.observers.push(this.scene.onAfterStepObservable.add(() => this.update()));
     this.observers.push(this.scene.onBeforeRenderObservable.add(() => this.beforeRender()));
-    !this.vsAI && this.client.state.onChange(() => this.update());
+    if (!this.vsAI) {
+      this.client.state.onChange(() => this.update());
+    }
 
     this.setOptimizer();
   }
   private initWindowListeners() {
-    window.addEventListener('keydown', this.toggleInspect.bind(this));
-    this.throttledResizeListener = throttle(this.resize.bind(this), 200);
-    window.addEventListener('resize', this.throttledResizeListener.bind(this));
+    window.addEventListener("keydown", this.toggleInspect.bind(this));
+    this.throttledResizeListener = throttle(
+      this.resize.bind(this) as (...args: unknown[]) => void,
+      200,
+    );
+    window.addEventListener("resize", this.throttledResizeListener.bind(this));
   }
   private start() {
     // this.engine.getCaps().parallelShaderCompile = undefined;
@@ -195,14 +205,18 @@ export class World {
   private render() {
     this.scene.render();
     this.fps = this.engine.getFps();
-    this.fpsLabel.text = this.fps.toFixed() + ' FPS';
+    this.fpsLabel.text = this.fps.toFixed() + " FPS";
   }
   private setLights() {
-    this.glowLayer = new GlowLayer('glow', this.scene);
+    this.glowLayer = new GlowLayer("glow", this.scene);
     this.glowLayer.intensity = 1;
     this.glowLayer.blurKernelSize = 15;
 
-    this.directionalLight = new DirectionalLight('DirectionalLight', new Vector3(0, 1, 0), this.scene);
+    this.directionalLight = new DirectionalLight(
+      "DirectionalLight",
+      new Vector3(0, 1, 0),
+      this.scene,
+    );
     this.directionalLight.intensity = 1.3;
     this.directionalLight.position = new Vector3(0, 0, 0);
     this.directionalLight.direction = new Vector3(-1, -1.2, -1);
@@ -218,27 +232,27 @@ export class World {
   }
   private setCameras() {
     // Set TPP Camera
-    this.tppCamera = new FreeCamera('tpp-cam', new Vector3(0, 0, 0), this.scene, true);
+    this.tppCamera = new FreeCamera("tpp-cam", new Vector3(0, 0, 0), this.scene, true);
     this.tppCamera.maxZ = 100000;
 
     // Set FPP Camera
-    this.fppCamera = new FreeCamera('fpp-cam', new Vector3(0.3, -0.309, 1), this.scene);
+    this.fppCamera = new FreeCamera("fpp-cam", new Vector3(0.3, -0.309, 1), this.scene);
     this.fppCamera.minZ = 0.5;
     this.fppCamera.maxZ = 100000;
 
     // Set End Camera
-    this.endCamera = new ArcRotateCamera('end-cam', 0, 0, 15, new Vector3(0, 0, 0), this.scene);
+    this.endCamera = new ArcRotateCamera("end-cam", 0, 0, 15, new Vector3(0, 0, 0), this.scene);
 
     // Set Spec Camera
-    this.specCamera = new FollowCamera('spec-cam', new Vector3(0, 10, -10), this.scene);
+    this.specCamera = new FollowCamera("spec-cam", new Vector3(0, 10, -10), this.scene);
   }
   private setGUI() {
     const scale = this.engine.getHardwareScalingLevel();
-    this.gui = AdvancedDynamicTexture.CreateFullscreenUI('UI');
+    this.gui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-    const statsControl = new TextBlock('stats');
-    statsControl.text = '';
-    statsControl.color = 'white';
+    const statsControl = new TextBlock("stats");
+    statsControl.text = "";
+    statsControl.color = "white";
     statsControl.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
     statsControl.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
     statsControl.resizeToFit = true;
@@ -246,9 +260,9 @@ export class World {
     statsControl.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     this.gui.addControl(statsControl);
 
-    const fpsLabel = new TextBlock('fps');
-    fpsLabel.text = '';
-    fpsLabel.color = 'white';
+    const fpsLabel = new TextBlock("fps");
+    fpsLabel.text = "";
+    fpsLabel.color = "white";
     fpsLabel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     fpsLabel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
     fpsLabel.resizeToFit = true;
@@ -257,24 +271,24 @@ export class World {
     this.fpsLabel = fpsLabel;
 
     const renderWidth = this.engine.getRenderWidth(true);
-    const healthBarBorder = new Rectangle('health-border');
+    const healthBarBorder = new Rectangle("health-border");
     healthBarBorder.width = `${renderWidth * 0.3 * scale}px`;
     healthBarBorder.height = `${20 * scale}px`;
     healthBarBorder.top = `${-20 * scale}px`;
     healthBarBorder.thickness = 1 * scale;
     healthBarBorder.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     healthBarBorder.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-    healthBarBorder.color = '#d3d3d3cc';
-    const healthBar = new Rectangle('health');
+    healthBarBorder.color = "#d3d3d3cc";
+    const healthBar = new Rectangle("health");
     healthBar.height = `${20 * scale}px`;
     healthBar.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     healthBar.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    healthBar.background = '#d3d3d3cc';
-    healthBar.color = 'transparent';
+    healthBar.background = "#d3d3d3cc";
+    healthBar.color = "transparent";
     healthBarBorder.addControl(healthBar);
     this.gui.addControl(healthBarBorder);
 
-    const shell = new Image('shell', AssetLoader.assets['/assets/game/gui/shell.png'] as string);
+    const shell = new Image("shell", AssetLoader.assets["/assets/game/gui/shell.png"] as string);
     shell.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     shell.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
     shell.height = `${24 * scale}px`;
@@ -287,7 +301,7 @@ export class World {
       healthBorder: healthBarBorder,
       shell,
       fps: fpsLabel,
-      stats: statsControl
+      stats: statsControl,
     };
   }
   private adjustGUI(scale: number, width: number, height: number) {
@@ -306,27 +320,43 @@ export class World {
     this.gui.renderScale = scale;
   }
   private setBarriers() {
-    const barrier = new TransformNode('barrier', this.scene);
-    const barrierMaterial = new StandardMaterial('barrier', this.scene);
-    barrierMaterial.diffuseTexture = new Texture('/assets/game/textures/metal.png', this.scene);
+    const barrier = new TransformNode("barrier", this.scene);
+    const barrierMaterial = new StandardMaterial("barrier", this.scene);
+    barrierMaterial.diffuseTexture = new Texture("/assets/game/textures/metal.png", this.scene);
     barrierMaterial.diffuseTexture.level = 1.4;
     (barrierMaterial.diffuseTexture as Texture).uScale = 5;
     (barrierMaterial.diffuseTexture as Texture).vScale = 0.5;
 
-    const barrier1 = MeshBuilder.CreateBox('barrier1', { width: 500, height: 20, depth: 1 }, this.scene);
+    const barrier1 = MeshBuilder.CreateBox(
+      "barrier1",
+      { width: 500, height: 20, depth: 1 },
+      this.scene,
+    );
     barrier1.position = new Vector3(0, 9, -249);
     // barrier1.receiveShadows = true;
     barrier1.material = barrierMaterial;
-    const barrier2 = MeshBuilder.CreateBox('barrier2', { width: 500, height: 20, depth: 1 }, this.scene);
+    const barrier2 = MeshBuilder.CreateBox(
+      "barrier2",
+      { width: 500, height: 20, depth: 1 },
+      this.scene,
+    );
     barrier2.position = new Vector3(0, 9, 249);
     // barrier2.receiveShadows = true;
     barrier2.material = barrierMaterial;
-    const barrier3 = MeshBuilder.CreateBox('barrier3', { width: 500, height: 20, depth: 1 }, this.scene);
+    const barrier3 = MeshBuilder.CreateBox(
+      "barrier3",
+      { width: 500, height: 20, depth: 1 },
+      this.scene,
+    );
     barrier3.rotate(Axis.Y, Math.PI / 2, Space.LOCAL);
     barrier3.position = new Vector3(-249, 9, 0);
     // barrier3.receiveShadows = true;
     barrier3.material = barrierMaterial;
-    const barrier4 = MeshBuilder.CreateBox('barrier4', { width: 500, height: 20, depth: 1 }, this.scene);
+    const barrier4 = MeshBuilder.CreateBox(
+      "barrier4",
+      { width: 500, height: 20, depth: 1 },
+      this.scene,
+    );
     barrier4.position = new Vector3(249, 9, 0);
     barrier4.rotate(Axis.Y, -Math.PI / 2, Space.LOCAL);
     // barrier4.receiveShadows = true;
@@ -349,27 +379,33 @@ export class World {
     options.addOptimization(new ShadowsOptimization(1));
     options.addCustomOptimization(
       () => {
-        if (this.config.id === 'low') {
+        if (this.config.id === "low") {
           this.scene.shadowsEnabled = false;
           return true;
         }
         return false;
       },
-      () => 'CustomShadowOptimization',
-      1
+      () => "CustomShadowOptimization",
+      1,
     );
-    options.addOptimization(new HardwareScalingOptimization(1, this.config.optimizations.maxHardwareScale));
+    options.addOptimization(
+      new HardwareScalingOptimization(1, this.config.optimizations.maxHardwareScale),
+    );
     options.addOptimization(new RenderTargetsOptimization(1));
     options.addOptimization(new ParticlesOptimization(2));
 
-    this.optimizer = SceneOptimizer.OptimizeAsync(this.scene, options, () => (this.optimizeCount += 1));
+    this.optimizer = SceneOptimizer.OptimizeAsync(
+      this.scene,
+      options,
+      () => (this.optimizeCount += 1),
+    );
   }
   fadeDir = -1;
   private beforeRender() {
     const now = performance.now();
     // Scene optimization is not working as expected on low-end devices
     if (
-      this.config.id === 'low' &&
+      this.config.id === "low" &&
       now - this.lastFpsTS > 2000 &&
       this.optimizer.currentFrameRate < this.optimizer.targetFrameRate
     ) {
@@ -393,16 +429,20 @@ export class World {
 
     this.guiRefs.healthBorder.width = `${renderWidth * 0.3}px`;
     if (orgHealth <= 75) {
-      this.guiRefs.health.background = '#e97451cc';
+      this.guiRefs.health.background = "#e97451cc";
     } else if (orgHealth <= 25) {
-      this.guiRefs.health.background = '#ee4b2bcc';
+      this.guiRefs.health.background = "#ee4b2bcc";
     }
 
     this.guiRefs.shell.left = `${(renderWidth * 0.3) / 2 + 15}px`;
     if (this.player.canFire) {
       this.guiRefs.shell.alpha = 1;
     } else {
-      this.guiRefs.shell.alpha = clamp(this.guiRefs.shell.alpha + World.deltaTime * 3 * this.fadeDir, 0, 1);
+      this.guiRefs.shell.alpha = clamp(
+        this.guiRefs.shell.alpha + World.deltaTime * 3 * this.fadeDir,
+        0,
+        1,
+      );
       if (this.guiRefs.shell.alpha <= 0 || this.guiRefs.shell.alpha >= 1) {
         this.fadeDir *= -1;
       }
@@ -415,12 +455,12 @@ export class World {
         .normalize()
         .scaleInPlace(15)
         .addInPlace(this.player.body.position),
-      World.deltaTime
+      World.deltaTime,
     );
     this.tppCamera.target = Vector3.Lerp(
       this.tppCamera.target,
       this.player.body.position,
-      World.deltaTime * 2
+      World.deltaTime * 2,
     );
   }
   private beforeStep() {
@@ -429,7 +469,12 @@ export class World {
       Date.now() - this.startTimestamp >= this.client.matchDuration &&
       !this.client.isMatchEnded
     ) {
-      this.matchEnd({ winner: null, loser: null, isDraw: true, stats: { Player: this.playerStats } });
+      this.matchEnd({
+        winner: null,
+        loser: null,
+        isDraw: true,
+        stats: { Player: this.playerStats },
+      });
     }
     if (this.client.isMatchEnded) {
       this.animateEndCam();
@@ -440,7 +485,7 @@ export class World {
       const step = this.scene.getStepId();
       const message = {
         step,
-        input: structuredClone(InputManager.input)
+        input: structuredClone(InputManager.input),
       };
       this.sendInput(message);
 
@@ -464,19 +509,22 @@ export class World {
     this.client.sendEvent<IMessageInput>(MessageType.INPUT, message);
   }
   private async createTanks() {
+    if (!this.playerMeshes[0]) {
+      throw Error("Create error: Tank player mesh root transform missing");
+    }
     if (this.vsAI) {
       const spawn = getSpawnPoint();
       const tanks = await Promise.all([
         PlayerTank.create(this, null, this.playerMeshes[0], spawn, {
           tpp: this.tppCamera,
-          fpp: this.fppCamera
+          fpp: this.fppCamera,
         }),
-        EnemyAITank.create(this, this.playerMeshes[0], new Vector3(-1 * spawn.x, 14, -1 * spawn.z))
+        EnemyAITank.create(this, this.playerMeshes[0], new Vector3(-1 * spawn.x, 14, -1 * spawn.z)),
       ]);
 
       this.players = {
         Player: tanks[0],
-        Enemy: tanks[1]
+        Enemy: tanks[1],
       };
       this.player = tanks[0];
       tanks.forEach((tank) => this.shadowGenerator?.addShadowCaster(tank.mesh));
@@ -492,23 +540,23 @@ export class World {
             return EnemyTank.create(
               this,
               player,
-              this.playerMeshes[0],
-              new Vector3(player.position.x, player.position.y, player.position.z)
+              this.playerMeshes[0]!,
+              new Vector3(player.position.x, player.position.y, player.position.z),
             );
           } else {
             return PlayerTank.create(
               this,
               player,
-              this.playerMeshes[0],
+              this.playerMeshes[0]!,
               new Vector3(player.position.x, player.position.y, player.position.z),
-              { tpp: this.tppCamera, fpp: this.fppCamera }
+              { tpp: this.tppCamera, fpp: this.fppCamera },
             );
           }
-        })
+        }),
       );
       tanks.forEach((tank) => {
         this.players[tank.state!.sid] = tank;
-        this.shadowGenerator?.addShadowCaster(this.players[tank.state!.sid].mesh);
+        this.shadowGenerator?.addShadowCaster(this.players[tank.state!.sid]!.mesh);
         if (this.id === tank.state!.sid) {
           this.player = tank as PlayerTank;
         }
@@ -517,7 +565,7 @@ export class World {
   }
   private toggleInspect(ev: KeyboardEvent) {
     // Sfhit+Alt+I
-    if (ev.shiftKey && ev.altKey && ev.code === 'KeyI') {
+    if (ev.shiftKey && ev.altKey && ev.code === "KeyI") {
       ev.preventDefault();
       ev.stopPropagation();
       if (this.scene.debugLayer.isVisible()) this.scene.debugLayer.hide();
@@ -549,10 +597,10 @@ export class World {
     Object.values(this.guiRefs).forEach((control) => (control.isVisible = false));
 
     if (!message.isDraw) {
-      const id = this.vsAI ? 'Player' : this.player.state!.sid;
+      const id = this.vsAI ? "Player" : this.player.state!.sid;
       this.client.didWin = message.winner === id;
-      this.client.stats = message.stats[id];
-      this.players[message.loser!].explode();
+      this.client.stats = message.stats[id]!;
+      this.players[message.loser!]?.explode();
     }
   }
   destroy() {
@@ -560,8 +608,8 @@ export class World {
 
     this.observers.forEach((observer) => observer.remove());
     this.stateUnsubFns.forEach((unsubFn) => unsubFn());
-    window.removeEventListener('keydown', this.toggleInspect);
-    window.removeEventListener('resize', this.throttledResizeListener);
+    window.removeEventListener("keydown", this.toggleInspect);
+    window.removeEventListener("resize", this.throttledResizeListener);
 
     Object.values(this.players).forEach((player) => player.dispose());
     this.ground?.dispose();
@@ -570,6 +618,6 @@ export class World {
     this._isDestroyed = true;
   }
   removePlayer(id: string) {
-    this.players[id].dispose();
+    this.players[id]?.dispose();
   }
 }

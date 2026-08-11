@@ -1,11 +1,11 @@
-import { Scene } from '@babylonjs/core';
-import { AbstractMesh } from '@babylonjs/core/Meshes';
-import { Color4, Vector3 } from '@babylonjs/core/Maths';
-import { Texture } from '@babylonjs/core/Materials';
-import { GPUParticleSystem, ParticleSystem } from '@babylonjs/core/Particles';
+import { Scene } from "@babylonjs/core";
+import { AbstractMesh } from "@babylonjs/core/Meshes";
+import { Color4, Vector3 } from "@babylonjs/core/Maths";
+import { Texture } from "@babylonjs/core/Materials";
+import { GPUParticleSystem, ParticleSystem } from "@babylonjs/core/Particles";
 
-import { AssetLoader } from '../loader';
-import { delay, luid } from '@/utils';
+import { AssetLoader } from "../loader";
+import { delay, luid } from "@/utils";
 
 export class PSDust {
   private isStarted = false;
@@ -15,7 +15,7 @@ export class PSDust {
 
   private constructor(
     public emitter: AbstractMesh,
-    public scene: Scene
+    public scene: Scene,
   ) {
     this.setProperties();
   }
@@ -23,12 +23,12 @@ export class PSDust {
     const particleSystem = new GPUParticleSystem(
       `PS:Dust:${luid()}`,
       { capacity: 50, randomTextureSize: 128 },
-      this.scene
+      this.scene,
     );
 
     particleSystem.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/spritesheets/smoke_dust_cloud.png'] as string,
-      this.scene
+      AssetLoader.assets["/assets/game/spritesheets/smoke_dust_cloud.png"] as string,
+      this.scene,
     );
     particleSystem.isBillboardBased = true;
     particleSystem.emitter = this.emitter;
@@ -73,13 +73,13 @@ export class PSDust {
   start() {
     if (this.isStarted) return;
 
-    this.particleSystems[this.currParticleSystem].start();
+    this.particleSystems[this.currParticleSystem]?.start();
     this.isStarted = true;
   }
   async stop() {
     if (!this.isStarted) return;
 
-    this.particleSystems[this.currParticleSystem].stop();
+    this.particleSystems[this.currParticleSystem]?.stop();
     this.isStarted = false;
 
     const currId = this.currParticleSystem;
@@ -87,7 +87,7 @@ export class PSDust {
     this.setProperties();
     // Disposing only when all the particles are invisible after sometime
     if (!(await delay(5000, (clear) => this.unsub.push(clear)))) return;
-    this.particleSystems[currId].dispose();
+    this.particleSystems[currId]?.dispose();
     delete this.particleSystems[currId];
   }
 

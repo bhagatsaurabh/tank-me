@@ -40,8 +40,8 @@ const handleUsername = async () => {
 };
 const validateEmail = (val: string) => {
   if (!val) return 'Please enter an e-mail';
-  // eslint-disable-next-line no-useless-escape
-  if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return '';
+   
+  if (/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return '';
   return 'Not a valid e-mail';
 };
 const validateUsername = (val: string) => {

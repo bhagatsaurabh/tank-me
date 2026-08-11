@@ -29,6 +29,9 @@ const handleMove = (event: TouchEvent) => {
     y: rect.top + halfHeight
   };
 
+  if (!event.touches[0]) {
+    return;
+  }
   const rawX = clamp(event.touches[0].clientX - moveBgPos.value.x, -halfWidth, halfWidth);
   const rawY = clamp(event.touches[0].clientY - moveBgPos.value.y, -halfHeight, halfHeight);
   const fgPos = {
@@ -116,19 +119,11 @@ onBeforeUnmount(() => mQuery.value.removeEventListener('change', changeListener)
 </script>
 
 <template>
-  <div
-    v-if="isSupported && GameClient.get() && !GameClient.get().isMatchEnded"
-    class="touch-controls"
-    @contextmenu.prevent="(e) => e.stopPropagation()"
-  >
+  <div v-if="isSupported && GameClient.get() && !GameClient.get().isMatchEnded" class="touch-controls"
+    @contextmenu.prevent="(e) => e.stopPropagation()">
     <div class="left">
-      <div
-        class="joystick-move"
-        @touchstart="handleMove"
-        @touchmove="handleMove"
-        @touchcancel="handleMoveCancel"
-        @touchend="handleMoveCancel"
-      >
+      <div class="joystick-move" @touchstart="handleMove" @touchmove="handleMove" @touchcancel="handleMoveCancel"
+        @touchend="handleMoveCancel">
         <div class="bg" ref="moveBgEl">
           <img class="chevron c-left" src="/assets/icons/chevron-left.png" :draggable="false" />
           <img class="chevron c-right" src="/assets/icons/chevron-left.png" :draggable="false" />
@@ -137,88 +132,36 @@ onBeforeUnmount(() => mQuery.value.removeEventListener('change', changeListener)
         </div>
         <div class="fg" ref="moveFgEl"></div>
       </div>
-      <div
-        class="brake"
-        @pointerdown="handleBrakeOn"
-        @pointerup="handleBrakeOff"
-        @pointercancel="handleBrakeOff"
-        @pointerout="handleBrakeOff"
-        @pointerleave="handleBrakeOff"
-      >
+      <div class="brake" @pointerdown="handleBrakeOn" @pointerup="handleBrakeOff" @pointercancel="handleBrakeOff"
+        @pointerout="handleBrakeOff" @pointerleave="handleBrakeOff">
         <img src="/assets/icons/brake.png" :draggable="false" />
       </div>
-      <div
-        class="reset"
-        @pointerdown="handleResetOn"
-        @pointerup="handleResetOff"
-        @pointercancel="handleResetOff"
-        @pointerout="handleResetOff"
-        @pointerleave="handleResetOff"
-      >
+      <div class="reset" @pointerdown="handleResetOn" @pointerup="handleResetOff" @pointercancel="handleResetOff"
+        @pointerout="handleResetOff" @pointerleave="handleResetOff">
         <img src="/assets/icons/reset-turret.png" :draggable="false" />
       </div>
     </div>
     <div class="right">
       <div class="joystick-aim">
-        <img
-          @pointerdown="() => handleBarrelOn(true)"
-          @pointerup="handleBarrelOff"
-          @pointercancel="handleBarrelOff"
-          @pointerout="handleBarrelOff"
-          @pointerleave="handleBarrelOff"
-          class="control up"
-          src="/assets/icons/control-barrelup.png"
-          :draggable="false"
-        />
-        <img
-          @pointerdown="() => handleBarrelOn(false)"
-          @pointerup="handleBarrelOff"
-          @pointercancel="handleBarrelOff"
-          @pointerout="handleBarrelOff"
-          @pointerleave="handleBarrelOff"
-          class="control down"
-          src="/assets/icons/control-barreldown.png"
-          :draggable="false"
-        />
-        <img
-          @pointerdown="() => handleTurretOn(true)"
-          @pointerup="handleTurretOff"
-          @pointercancel="handleTurretOff"
-          @pointerout="handleTurretOff"
-          @pointerleave="handleTurretOff"
-          class="control left"
-          src="/assets/icons/control-turretleft.png"
-          :draggable="false"
-        />
-        <img
-          @pointerdown="() => handleTurretOn(false)"
-          @pointerup="handleTurretOff"
-          @pointercancel="handleTurretOff"
-          @pointerout="handleTurretOff"
-          @pointerleave="handleTurretOff"
-          class="control right"
-          src="/assets/icons/control-turretright.png"
-          :draggable="false"
-        />
+        <img @pointerdown="() => handleBarrelOn(true)" @pointerup="handleBarrelOff" @pointercancel="handleBarrelOff"
+          @pointerout="handleBarrelOff" @pointerleave="handleBarrelOff" class="control up"
+          src="/assets/icons/control-barrelup.png" :draggable="false" />
+        <img @pointerdown="() => handleBarrelOn(false)" @pointerup="handleBarrelOff" @pointercancel="handleBarrelOff"
+          @pointerout="handleBarrelOff" @pointerleave="handleBarrelOff" class="control down"
+          src="/assets/icons/control-barreldown.png" :draggable="false" />
+        <img @pointerdown="() => handleTurretOn(true)" @pointerup="handleTurretOff" @pointercancel="handleTurretOff"
+          @pointerout="handleTurretOff" @pointerleave="handleTurretOff" class="control left"
+          src="/assets/icons/control-turretleft.png" :draggable="false" />
+        <img @pointerdown="() => handleTurretOn(false)" @pointerup="handleTurretOff" @pointercancel="handleTurretOff"
+          @pointerout="handleTurretOff" @pointerleave="handleTurretOff" class="control right"
+          src="/assets/icons/control-turretright.png" :draggable="false" />
       </div>
-      <div
-        @pointerdown="handlePerspectiveOn"
-        @pointerup="handlePerspectiveOff"
-        @pointercancel="handlePerspectiveOff"
-        @pointerout="handlePerspectiveOff"
-        @pointerleave="handlePerspectiveOff"
-        class="perspective"
-      >
+      <div @pointerdown="handlePerspectiveOn" @pointerup="handlePerspectiveOff" @pointercancel="handlePerspectiveOff"
+        @pointerout="handlePerspectiveOff" @pointerleave="handlePerspectiveOff" class="perspective">
         FPP
       </div>
-      <div
-        @pointerdown="handleFireOn"
-        @pointerup="handleFireOff"
-        @pointercancel="handleFireOff"
-        @pointerout="handleFireOff"
-        @pointerleave="handleFireOff"
-        class="fire"
-      >
+      <div @pointerdown="handleFireOn" @pointerup="handleFireOff" @pointercancel="handleFireOff"
+        @pointerout="handleFireOff" @pointerleave="handleFireOff" class="fire">
         <img src="/assets/game/gui/shell.png" :draggable="false" />
       </div>
     </div>
@@ -248,6 +191,7 @@ onBeforeUnmount(() => mQuery.value.removeEventListener('change', changeListener)
   opacity: 0.25;
   border-radius: 100%;
 }
+
 .joystick-move .fg {
   position: absolute;
   width: 30%;
@@ -260,27 +204,32 @@ onBeforeUnmount(() => mQuery.value.removeEventListener('change', changeListener)
   transform: translate(-50%, -50%);
   filter: invert(1);
 }
+
 .joystick-move .chevron {
   position: absolute;
   filter: invert(1);
   width: 1rem;
   height: 1rem;
 }
+
 .joystick-move .chevron.c-left {
   left: 0;
   top: 50%;
   transform: translateY(-50%);
 }
+
 .joystick-move .chevron.c-right {
   right: 0;
   top: 50%;
   transform: translateY(-50%) rotateZ(180deg);
 }
+
 .joystick-move .chevron.c-up {
   left: 50%;
   top: 0;
   transform: translateX(-50%) rotateZ(90deg);
 }
+
 .joystick-move .chevron.c-down {
   left: 50%;
   bottom: 0;
@@ -300,21 +249,25 @@ onBeforeUnmount(() => mQuery.value.removeEventListener('change', changeListener)
   border-radius: 100%;
   filter: invert(1);
 }
+
 .joystick-aim .control.up {
   left: 50%;
   top: 0;
   transform: translate(-50%, -25%);
 }
+
 .joystick-aim .control.down {
   left: 50%;
   bottom: 0;
   transform: translate(-50%, 25%);
 }
+
 .joystick-aim .control.left {
   left: 0;
   top: 50%;
   transform: translate(-25%, -50%);
 }
+
 .joystick-aim .control.right {
   right: 0;
   top: 50%;
@@ -331,6 +284,7 @@ onBeforeUnmount(() => mQuery.value.removeEventListener('change', changeListener)
   font-size: 0;
   border-radius: 100%;
 }
+
 .left .brake img {
   width: 1.8rem;
   height: 1.8rem;
@@ -348,6 +302,7 @@ onBeforeUnmount(() => mQuery.value.removeEventListener('change', changeListener)
   font-size: 0;
   border-radius: 100%;
 }
+
 .left .reset img {
   width: 1.8rem;
   height: 1.8rem;
@@ -366,6 +321,7 @@ onBeforeUnmount(() => mQuery.value.removeEventListener('change', changeListener)
   height: min-content;
   font-size: 0;
 }
+
 .right .fire img {
   width: 2.5rem;
   height: 2.5rem;

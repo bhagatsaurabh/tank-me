@@ -54,7 +54,9 @@ const handleAction = async (control: IModalAction) => {
   }
 };
 const handleLeave = () => {
-  queuedAction.value && emit('action', queuedAction.value);
+  if (queuedAction.value) {
+    emit('action', queuedAction.value);
+  }
   emit('dismiss');
 };
 const showModal = () => {
@@ -65,7 +67,7 @@ const hideModal = () => {
   handleDismiss();
 };
 
-let unregisterGuard = () => {};
+let unregisterGuard = () => { };
 watch(
   show,
   async (newVal, oldVal) => {
@@ -109,26 +111,14 @@ defineExpose({
   <Transition @after-leave="handleLeave" v-bind="$attrs" name="scale-fade" appear>
     <div v-if="show" ref="el" class="modal" role="dialog">
       <div class="bg"></div>
-      <Button
-        class="close-icon"
-        v-if="!controls.length"
-        icon="close"
-        @click="waitForAction ? noop : handleDismiss"
-      />
+      <Button class="close-icon" v-if="!controls.length" icon="close" @click="waitForAction ? noop : handleDismiss" />
       <h2 class="title">{{ title }}</h2>
       <div class="content">
         <slot></slot>
       </div>
       <div v-if="controls.length" class="controls">
-        <Button
-          :disabled="waitForAction"
-          v-for="control in controls"
-          :key="control.text"
-          @click="() => handleAction(control)"
-          :async="control.async"
-          :busy="control.busy"
-          accented
-        >
+        <Button :disabled="waitForAction" v-for="control in controls" :key="control.text"
+          @click="() => handleAction(control)" :async="control.async" :busy="control.busy" accented>
           {{ control.text }}
         </Button>
       </div>
@@ -155,15 +145,18 @@ defineExpose({
   white-space: break-spaces;
   margin-bottom: 2rem;
 }
+
 .modal .title {
   font-weight: light;
   margin-bottom: 1rem;
 }
+
 .modal .controls {
   display: flex;
   justify-content: flex-end;
   column-gap: 1rem;
 }
+
 .modal .bg {
   position: absolute;
   width: 100%;
@@ -183,6 +176,7 @@ defineExpose({
     min-width: 25%;
   }
 }
+
 @media (min-width: 1024px) {
   /*  */
 }

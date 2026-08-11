@@ -10,7 +10,6 @@
   ],
   "compilerOptions": {
     "composite": true,
-    "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "module": "preserve",
     "moduleResolution": "bundler",

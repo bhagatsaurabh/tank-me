@@ -1,5 +1,5 @@
 <p align="center">
-<a href="https://tankme.saurabhagat.me">
+<a href="https://tankme.saurabhagat.dev">
 <img width="35%" alt="TankMe" src="https://raw.githubusercontent.com/bhagatsaurabh/tank-me/main/public/assets/images/logo512.png">
 </a>
 </p>
@@ -12,7 +12,7 @@
 
 A multiplayer online PvP tank battle 3D game with semi-realistic tank mechanics.
 
-[tankme.saurabhagat.me](https://tankme.saurabhagat.me/)
+[tankme.saurabhagat.dev](https://tankme.saurabhagat.dev/)
 
 
 <p align="center">

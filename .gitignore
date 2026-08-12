@@ -26,3 +26,4 @@ key.json
 emulatorstate/
 vite.config.ts.timestamp-*
 dev-dist/
+.eslintcache

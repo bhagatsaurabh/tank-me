@@ -1,11 +1,11 @@
-import { Vector3, type Nullable } from '@babylonjs/core';
+import { Vector3, type Nullable } from "@babylonjs/core";
 
-import { type ITrapBounds, SpawnAxis } from '@/types';
-import { mobileRegex1, mobileRegex2, spawnAxes } from './constants';
+import { type ITrapBounds, SpawnAxis } from "@/types";
+import { mobileRegex1, mobileRegex2, spawnAxes } from "./constants";
 
-export const throttle = (cb: (...argmts: any) => void, delay: number) => {
-  let timerHandle: Nullable<Number>, args: any;
-  const throttled = (...a: any) => {
+export const throttle = (cb: (...argmts: unknown[]) => void, delay: number) => {
+  let timerHandle: Nullable<number>, args: unknown[] | null;
+  const throttled = (...a: unknown[]) => {
     args = a;
     if (!timerHandle) {
       cb(...args);
@@ -45,7 +45,7 @@ export const denormalize = (norm: number, min: number, max: number) => {
 export const rand = (min: number, max: number) => {
   const buf = new Uint32Array(1);
   window.crypto.getRandomValues(buf);
-  return denormalize(buf[0] / (0xffffffff + 1), min, max);
+  return denormalize(buf[0]! / (0xffffffff + 1), min, max);
 };
 export const forwardVector = new Vector3(0, 0, 1);
 export const nzpyVector = new Vector3(0, 0.2, -0.6);
@@ -71,10 +71,10 @@ export const delay = async (ms: number, iife: (clear: () => void) => void = noop
 export const randInRange = (min: number, max: number) => {
   const buf = new Uint32Array(1);
   window.crypto.getRandomValues(buf);
-  return denormalize(buf[0] / (0xffffffff + 1), min, max);
+  return denormalize(buf[0]! / (0xffffffff + 1), min, max);
 };
 export const trapFocus = (event: KeyboardEvent, el: HTMLElement, bound: ITrapBounds) => {
-  if (event.key === 'Tab') {
+  if (event.key === "Tab") {
     if (!el.contains(document.activeElement)) {
       (bound.first as HTMLElement)?.focus();
       return;
@@ -98,7 +98,7 @@ export const trapBetween = (root: HTMLElement): ITrapBounds => {
 
   const treeWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
     acceptNode: (node) =>
-      (node as HTMLElement).tabIndex >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
+      (node as HTMLElement).tabIndex >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP,
   });
 
   let currNode = null,
@@ -113,8 +113,8 @@ export const trapBetween = (root: HTMLElement): ITrapBounds => {
 
   return { first: firstTabbableNode, last: lastTabbableNode };
 };
-export const getSlug = (title: string) => `#pop-${title.toLowerCase().replaceAll(' ', '-')}`;
-export const choose = <T>(vals: T[]): T => vals[Math.round(randInRange(0, vals.length - 1))];
+export const getSlug = (title: string) => `#pop-${title.toLowerCase().replaceAll(" ", "-")}`;
+export const choose = <T>(vals: T[]): T => vals[Math.round(randInRange(0, vals.length - 1))]!;
 export const getSpawnPoint = (): Vector3 => {
   switch (choose<SpawnAxis>(spawnAxes)) {
     case SpawnAxis.PX:
@@ -134,7 +134,10 @@ export const isInRange = (val: number, min: number, max: number) => val >= min &
 export const normalize = (val: number, max: number, min: number) => (val - min) / (max - min);
 
 export const getDeviceType = () => {
-  if (mobileRegex1.test(navigator.userAgent) || mobileRegex2.test(navigator.userAgent.substring(0, 4)))
-    return 'mobile';
-  return 'desktop';
+  if (
+    mobileRegex1.test(navigator.userAgent) ||
+    mobileRegex2.test(navigator.userAgent.substring(0, 4))
+  )
+    return "mobile";
+  return "desktop";
 };

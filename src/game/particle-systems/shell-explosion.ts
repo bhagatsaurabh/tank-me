@@ -1,10 +1,10 @@
-import { Scene } from '@babylonjs/core';
-import { Color4, Vector3 } from '@babylonjs/core/Maths';
-import { Texture } from '@babylonjs/core/Materials';
-import { GPUParticleSystem, SphereDirectedParticleEmitter } from '@babylonjs/core/Particles';
+import { Scene } from "@babylonjs/core";
+import { Color4, Vector3 } from "@babylonjs/core/Maths";
+import { Texture } from "@babylonjs/core/Materials";
+import { GPUParticleSystem, SphereDirectedParticleEmitter } from "@babylonjs/core/Particles";
 
-import { AssetLoader } from '../loader';
-import { delay, luid } from '@/utils';
+import { AssetLoader } from "../loader";
+import { delay, luid } from "@/utils";
 
 export class PSShellExplosion {
   private particleSystem!: GPUParticleSystem;
@@ -18,16 +18,20 @@ export class PSShellExplosion {
     this.particleSystem = new GPUParticleSystem(
       `PS:ShellExplosion:${luid()}`,
       { capacity: 150, randomTextureSize: 256 },
-      this.scene
+      this.scene,
     );
     this.particleSystem.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/spritesheets/smoke_dust_cloud.png'] as string,
-      this.scene
+      AssetLoader.assets["/assets/game/spritesheets/smoke_dust_cloud.png"] as string,
+      this.scene,
     );
     this.particleSystem.isBillboardBased = true;
     this.particleSystem.blendMode = GPUParticleSystem.BLENDMODE_MULTIPLYADD;
     this.particleSystem.updateSpeed = 0.025;
-    const emitter = new SphereDirectedParticleEmitter(0.5, new Vector3(-2, 0, -2), new Vector3(2, 2, 2));
+    const emitter = new SphereDirectedParticleEmitter(
+      0.5,
+      new Vector3(-2, 0, -2),
+      new Vector3(2, 2, 2),
+    );
     this.particleSystem.particleEmitterType = emitter;
     this.particleSystem.emitRate = 600;
     this.particleSystem.minEmitPower = 30;

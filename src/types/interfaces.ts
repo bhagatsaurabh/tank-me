@@ -1,12 +1,12 @@
-import { type Nullable } from '@babylonjs/core';
+import { type Nullable } from "@babylonjs/core";
 import type {
   MatchStats,
   NotificationAction,
   NotificationStatus,
   NotificationType,
   PlayerInputs,
-  ShadowGeneratorQuality
-} from './types';
+  ShadowGeneratorQuality,
+} from "./types";
 
 export interface IMessageInput {
   step: number;
@@ -32,7 +32,7 @@ export interface ITrapBounds {
 
 export interface IModalAction {
   text: string;
-  action?: () => Promise<any> | any;
+  action?: () => Promise<unknown> | unknown;
   async?: boolean;
   busy?: boolean;
 }

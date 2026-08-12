@@ -1,32 +1,32 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory } from "vue-router";
 
-import { authGuard, gameGuard, lobbyGuard, noAuthGuard } from './guards';
-import Auth from '@/views/Auth.vue';
-import Lobby from '@/views/Lobby.vue';
-import Game from '@/views/Game.vue';
+import { authGuard, gameGuard, lobbyGuard, noAuthGuard } from "./guards";
+import Auth from "@/views/Auth.vue";
+import Lobby from "@/views/Lobby.vue";
+import Game from "@/views/Game.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
+      path: "/",
       component: Auth,
       beforeEnter: noAuthGuard,
-      name: 'Auth'
+      name: "Auth",
     },
     {
-      path: '/lobby',
+      path: "/lobby",
       component: Lobby,
       beforeEnter: [authGuard, lobbyGuard],
-      name: 'Lobby'
+      name: "Lobby",
     },
     {
-      path: '/game',
+      path: "/game",
       component: Game,
       beforeEnter: [authGuard, gameGuard],
-      name: 'Game'
-    }
-  ]
+      name: "Game",
+    },
+  ],
 });
 
 export default router;

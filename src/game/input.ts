@@ -1,11 +1,11 @@
-import { Vector3, type Scene, Quaternion } from '@babylonjs/core';
-import { ActionEvent, ActionManager, ExecuteCodeAction } from '@babylonjs/core/Actions';
+import { Vector3, type Scene, Quaternion } from "@babylonjs/core";
+import { ActionEvent, ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 
-import { GameInputType, KeyInputType, type PlayerInputs, type IMessageInput } from '@/types';
-import { keyMap } from '@/utils/constants';
-import { IndexedQueue } from '@/utils/queue';
-import type { LastProcessedInput } from './state';
-import type { PlayerTank } from './models';
+import { GameInputType, KeyInputType, type PlayerInputs, type IMessageInput } from "@/types";
+import { keyMap } from "@/utils/constants";
+import { IndexedQueue } from "@/utils/queue";
+import type { LastProcessedInput } from "./state";
+import type { PlayerTank } from "./models";
 
 export interface IInputHistory {
   step: number;
@@ -23,7 +23,7 @@ export interface IHistoryInfo {
 }
 
 export class InputManager {
-  static history = new IndexedQueue<number, IInputHistory>([], 'step');
+  static history = new IndexedQueue<number, IInputHistory>([], "step");
   static input: PlayerInputs = {};
   private static maxBufferSize = 30;
 
@@ -32,19 +32,21 @@ export class InputManager {
     actionManager.registerAction(
       new ExecuteCodeAction(ActionManager.OnKeyDownTrigger, (ev: ActionEvent) => {
         const code = ev.sourceEvent.code as KeyInputType;
-        if (typeof GameInputType[keyMap[code]] !== 'undefined') InputManager.input[keyMap[code]] = true;
-      })
+        if (typeof GameInputType[keyMap[code]] !== "undefined")
+          InputManager.input[keyMap[code]] = true;
+      }),
     );
     actionManager.registerAction(
       new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (ev: ActionEvent) => {
         const code = ev.sourceEvent.code as KeyInputType;
-        if (typeof GameInputType[keyMap[code]] !== 'undefined') InputManager.input[keyMap[code]] = false;
-      })
+        if (typeof GameInputType[keyMap[code]] !== "undefined")
+          InputManager.input[keyMap[code]] = false;
+      }),
     );
     return actionManager;
   }
   static cull(lastProcessedInput: LastProcessedInput) {
-    if (typeof lastProcessedInput?.step === 'undefined') return -1;
+    if (typeof lastProcessedInput?.step === "undefined") return -1;
     InputManager.history.clearTill(lastProcessedInput.step);
     return lastProcessedInput.step + 1;
   }
@@ -59,14 +61,14 @@ export class InputManager {
         position: player.body.position.clone(),
         rotation: player.body.rotationQuaternion!.clone(),
         turretRotation: player.turret.rotationQuaternion!.clone(),
-        barrelRotation: player.barrel.rotationQuaternion!.clone()
-      }
+        barrelRotation: player.barrel.rotationQuaternion!.clone(),
+      },
     });
   }
   static getHistory(): IHistoryInfo {
     return {
       targetStep: this.history.seekLast()?.step,
-      history: this.history.getAll()
+      history: this.history.getAll(),
     };
   }
 }

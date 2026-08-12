@@ -51,39 +51,14 @@ defineExpose({
 </script>
 
 <template>
-  <button
-    @click="handleClick"
-    ref="el"
-    class="control"
-    :style="{ fontSize: `${size}rem` }"
-    :disabled="disabled || busy"
-  >
-    <Icon
-      class="mr-0p5"
-      v-if="icon && iconLeft"
-      v-hide="busy"
-      :alt="`${icon} icon`"
-      :name="icon"
-      :size="size"
-    />
-    <Icon
-      v-if="icon && !iconLeft && !iconRight"
-      v-hide="busy"
-      :alt="`${icon} icon`"
-      :name="icon"
-      :size="size"
-    />
+  <button @click="handleClick" ref="el" class="control" :style="{ fontSize: `${size}rem` }"
+    :disabled="disabled || busy">
+    <Icon class="mr-0p5" v-if="icon && iconLeft" v-hide="busy" :alt="`${icon} icon`" :name="icon" :size="size" />
+    <Icon v-if="icon && !iconLeft && !iconRight" v-hide="busy" :alt="`${icon} icon`" :name="icon" :size="size" />
     <div class="content" tabindex="-1" v-hide="busy">
       <slot></slot>
     </div>
-    <Icon
-      class="ml-0p5"
-      v-if="icon && iconRight"
-      v-hide="busy"
-      :alt="`${icon} icon`"
-      :name="icon"
-      :size="size"
-    />
+    <Icon class="ml-0p5" v-if="icon && iconRight" v-hide="busy" :alt="`${icon} icon`" :name="icon" :size="size" />
     <Spinner v-if="async && busy" :size="0.75 * size" />
   </button>
 </template>
@@ -117,6 +92,7 @@ defineExpose({
   display: inline-flex;
   transition: opacity 0.2s linear;
 }
+
 .control div {
   display: inline-flex;
   align-items: center;
@@ -145,6 +121,7 @@ defineExpose({
       2px 2px 4px 0 #000,
       0 0 0 0 #000 inset;
   }
+
   .control:active:hover {
     box-shadow:
       0px 0px 0px 0 #000,

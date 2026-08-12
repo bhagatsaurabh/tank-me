@@ -1,5 +1,5 @@
-import { ref } from 'vue';
-import { defineStore } from 'pinia';
+import { ref } from "vue";
+import { defineStore } from "pinia";
 import {
   collection,
   doc,
@@ -10,17 +10,17 @@ import {
   query,
   setDoc,
   updateDoc,
-  where
-} from 'firebase/firestore';
+  where,
+} from "firebase/firestore";
 
-import { remoteDB } from '@/config/firebase';
-import { useAuthStore } from './auth';
-import * as local from '@/database/driver';
-import type { Profile } from '@/types';
-import { useNotificationStore } from './notification';
-import { Notifications } from '@/utils/constants';
+import { remoteDB } from "@/config/firebase";
+import { useAuthStore } from "./auth";
+import * as local from "@/database/driver";
+import type { Profile } from "@/types";
+import { useNotificationStore } from "./notification";
+import { Notifications } from "@/utils/constants";
 
-export const useRemoteDBStore = defineStore('remote', () => {
+export const useRemoteDBStore = defineStore("remote", () => {
   const auth = useAuthStore();
   const notify = useNotificationStore();
 
@@ -29,7 +29,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
   async function storeProfile(profile: Profile): Promise<boolean> {
     if (!auth.user) return false;
     try {
-      await setDoc(doc(remoteDB, 'users', auth.user.uid), profile);
+      await setDoc(doc(remoteDB, "users", auth.user.uid), profile);
       await local.updateProfile(profile);
       return true;
     } catch (error) {
@@ -40,7 +40,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
   async function updateProfile(profile: Profile): Promise<boolean> {
     if (!auth.user) return false;
     try {
-      await updateDoc(doc(remoteDB, 'users', auth.user.uid), profile);
+      await updateDoc(doc(remoteDB, "users", auth.user.uid), profile);
       auth.profile = { ...auth.profile, ...profile };
       if (auth.profile.stats) {
         await local.updateProfile({ ...auth.profile, stats: { ...auth.profile.stats! } });
@@ -56,7 +56,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
   async function usersCountByName(username: string) {
     try {
       const snap = await getCountFromServer(
-        query(collection(remoteDB, 'users'), where('username', '==', username))
+        query(collection(remoteDB, "users"), where("username", "==", username)),
       );
       return snap.data().count;
     } catch (error) {
@@ -67,7 +67,11 @@ export const useRemoteDBStore = defineStore('remote', () => {
   async function fetchLeaderboard() {
     try {
       leaderboard.value = [];
-      const top25 = query(collection(remoteDB, 'users'), orderBy('stats.points', 'desc'), limit(25));
+      const top25 = query(
+        collection(remoteDB, "users"),
+        orderBy("stats.points", "desc"),
+        limit(25),
+      );
       const docsSnap = await getDocs(top25);
       docsSnap.forEach((snap) => snap.exists() && leaderboard.value.push(snap.data()));
     } catch (error) {
@@ -80,6 +84,6 @@ export const useRemoteDBStore = defineStore('remote', () => {
     storeProfile,
     updateProfile,
     usersCountByName,
-    fetchLeaderboard
+    fetchLeaderboard,
   };
 });

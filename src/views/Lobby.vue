@@ -49,7 +49,9 @@ const handleStartAI = () => {
   router.push({ path: '/game', hash: '#ai' });
 };
 const handleReset = (disconnect = false) => {
-  disconnect && GameClient.disconnect();
+  if (disconnect) {
+    GameClient.disconnect();
+  }
   startTS.value = -1;
   clearInterval(handle);
   isSuggestionRejected.value = false;
@@ -93,11 +95,8 @@ onMounted(async () => {
     </template>
     <template #right>
       <div class="header-controls">
-        <Button
-          :icon="presentation.media === 'mobile' ? 'leaderboard' : undefined"
-          @click="isLeaderboardOpen = true"
-          :size="1.5"
-        >
+        <Button :icon="presentation.media === 'mobile' ? 'leaderboard' : undefined" @click="isLeaderboardOpen = true"
+          :size="1.5">
           {{ presentation.media === 'desktop' ? 'Leaderboard' : '' }}
         </Button>
         <Button class="profile-control" :class="{ float: showProfile }" @click="showProfile = !showProfile">
@@ -106,12 +105,8 @@ onMounted(async () => {
         <Button v-if="showProfile" class="profile-control filler">
           <img alt="avatar icon" src="/assets/icons/avatar.png" />
         </Button>
-        <Profile
-          v-if="showProfile"
-          :is-guest-upgrading="isGuestUpgrading"
-          @dismiss="showProfile = false"
-          @guest-upgrade="(val) => (isGuestUpgrading = val)"
-        />
+        <Profile v-if="showProfile" :is-guest-upgrading="isGuestUpgrading" @dismiss="showProfile = false"
+          @guest-upgrade="(val) => (isGuestUpgrading = val)" />
       </div>
     </template>
   </Header>
@@ -119,30 +114,21 @@ onMounted(async () => {
     <div class="wait">
       <span class="progress">
         {{
-          `Fetching Game Assets (${loader.noOfFilesDownloaded}/${loader.noOfFiles})\n${Math.round(loader.progress * 100)}%`
+          `Fetching Game Assets (${loader.noOfFilesDownloaded}/${loader.noOfFiles})\n${Math.round(loader.progress *
+            100)}%`
         }}
       </span>
       <Spinner :progress="loader.progress" trackable />
     </div>
   </Backdrop>
   <main class="lobby">
-    <Modal
-      v-if="suggestAI"
-      title="Play vs. AI ?"
-      :controls="[{ text: 'Yes' }, { text: 'No' }]"
-      @dismiss="() => handleAction({ text: 'No' })"
-      @action="handleAction"
-    >
+    <Modal v-if="suggestAI" title="Play vs. AI ?" :controls="[{ text: 'Yes' }, { text: 'No' }]"
+      @dismiss="() => handleAction({ text: 'No' })" @action="handleAction">
       Match-making is slow and taking longer than expected.
     </Modal>
     <div class="background">
-      <video
-        :src="`/assets/videos/dynamic-background.mp4#t=${randomStartPoint}`"
-        autoplay
-        loop
-        playsinline
-        muted
-      ></video>
+      <video :src="`/assets/videos/dynamic-background.mp4#t=${randomStartPoint}`" autoplay loop playsinline
+        muted></video>
     </div>
     <div class="match">
       <Button class="match-control" @click="handleStart">
@@ -164,22 +150,27 @@ onMounted(async () => {
 .header {
   opacity: 0.8;
 }
+
 .hero {
   max-height: 80%;
 }
+
 .header-hero {
   padding: 0 1rem;
   display: flex;
   align-items: center;
   height: 100%;
 }
+
 .header-hero img {
   filter: drop-shadow(0px 0px 4px #000);
 }
+
 .header-hero span {
   color: #000;
   text-shadow: 0px 0px 10px #656565;
 }
+
 .header-controls {
   display: flex;
 }
@@ -197,6 +188,7 @@ onMounted(async () => {
   width: 100vw;
   height: calc(100vh - var(--header-height));
 }
+
 .lobby .match {
   position: absolute;
   bottom: 0;
@@ -210,10 +202,12 @@ onMounted(async () => {
   background: url('/assets/images/dirt-overlay.png');
   mask-image: linear-gradient(to top, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0));
 }
+
 .match-control {
   padding: 1rem 2rem;
   font-size: 1.5rem !important;
 }
+
 .match-control:deep(.content) {
   flex-direction: column !important;
 }
@@ -225,6 +219,7 @@ onMounted(async () => {
   z-index: 101;
   box-shadow: 0px -10px 10px 0px;
 }
+
 .profile-control.float:active {
   box-shadow:
     0px -10px 10px 0px,
@@ -240,6 +235,7 @@ onMounted(async () => {
   left: 0;
   filter: blur(1px);
 }
+
 .background video {
   position: absolute;
   left: 50%;

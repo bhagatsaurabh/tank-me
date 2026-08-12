@@ -8,19 +8,20 @@ import {
   PhysicsBody,
   PhysicsMotionType,
   Quaternion,
-  type Nullable
-} from '@babylonjs/core';
+  type Nullable,
+  Observer,
+} from "@babylonjs/core";
 
-import { World } from '../main';
-import type { Player } from '../state';
-import { Tank, Shell } from '../models';
+import { World } from "../main";
+import type { Player } from "../state";
+import { Tank, Shell } from "../models";
 
 export class EnemyTank extends Tank {
   private nextState = {
     position: Vector3.Zero(),
     rotation: Quaternion.Identity(),
     turretRotation: Quaternion.Identity(),
-    barrelRotation: Quaternion.Identity()
+    barrelRotation: Quaternion.Identity(),
   };
 
   constructor(world: World, state: Player, rootMesh: AbstractMesh, spawn: Vector3) {
@@ -30,10 +31,17 @@ export class EnemyTank extends Tank {
     this.setPhysics(rootMesh as Mesh);
     this.nextState.position = spawn.clone();
 
-    this.observers.push(this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
+    this.observers.push(
+      this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)) as Observer<unknown>,
+    );
   }
-  static async create(world: World, state: Nullable<Player>, rootMesh: AbstractMesh, spawn: Vector3) {
-    const cloned = rootMesh.clone(`${rootMesh.name.replace(':Ref', '')}:${state!.sid}`, null)!;
+  static async create(
+    world: World,
+    state: Nullable<Player>,
+    rootMesh: AbstractMesh,
+    spawn: Vector3,
+  ) {
+    const cloned = rootMesh.clone(`${rootMesh.name.replace(":Ref", "")}:${state!.sid}`, null)!;
     const newTank = new EnemyTank(world, state!, cloned, spawn);
     await newTank.init();
     newTank.setTrackMaterial(state!);
@@ -44,20 +52,24 @@ export class EnemyTank extends Tank {
     // Because it's independently animated
     const leftTrackMaterialName = this.leftTrack.material!.name;
     const rightTrackMaterialName = this.rightTrack.material!.name;
-    this.leftTrack.material = this.leftTrack.material!.clone(`${leftTrackMaterialName}:${state.sid}`);
-    this.rightTrack.material = this.rightTrack.material!.clone(`${rightTrackMaterialName}:${state.sid}`);
+    this.leftTrack.material = this.leftTrack.material!.clone(
+      `${leftTrackMaterialName}:${state.sid}`,
+    );
+    this.rightTrack.material = this.rightTrack.material!.clone(
+      `${rightTrackMaterialName}:${state.sid}`,
+    );
   }
   private setTransform(rootMesh: AbstractMesh, spawn: Vector3) {
     this.mesh = rootMesh;
     const body = new TransformNode(`Root:${rootMesh.name}`, this.world.scene);
     rootMesh.position = Vector3.Zero();
     const childMeshes = rootMesh.getChildMeshes();
-    this.barrel = childMeshes[0];
-    this.rightExhaust = childMeshes[1];
-    this.leftExhaust = childMeshes[2];
-    this.leftTrack = childMeshes[4];
-    this.rightTrack = childMeshes[5];
-    this.turret = childMeshes[6];
+    this.barrel = childMeshes[0]!;
+    this.rightExhaust = childMeshes[1]!;
+    this.leftExhaust = childMeshes[2]!;
+    this.leftTrack = childMeshes[4]!;
+    this.rightTrack = childMeshes[5]!;
+    this.turret = childMeshes[6]!;
     this.barrel.position.y = -0.51;
     this.barrel.position.z = 1.79;
     this.barrel.parent = this.turret;
@@ -73,8 +85,8 @@ export class EnemyTank extends Tank {
       this.leftWheels.length < 7;
       l -= 1, r -= 1
     ) {
-      this.leftWheels.push(childMeshes[l]);
-      this.rightWheels.push(childMeshes[r]);
+      this.leftWheels.push(childMeshes[l]!);
+      this.rightWheels.push(childMeshes[r]!);
     }
 
     rootMesh.isVisible = true;
@@ -89,12 +101,22 @@ export class EnemyTank extends Tank {
     bodyPB.setMassProperties({ mass: 0 });
 
     const turretShape = new PhysicsShapeConvexHull(this.turret as Mesh, this.world.scene);
-    const turretPB = new PhysicsBody(this.turret, PhysicsMotionType.STATIC, false, this.world.scene);
+    const turretPB = new PhysicsBody(
+      this.turret,
+      PhysicsMotionType.STATIC,
+      false,
+      this.world.scene,
+    );
     turretPB.shape = turretShape;
     turretPB.setMassProperties({ mass: 0 });
 
     const barrelShape = new PhysicsShapeConvexHull(this.barrel as Mesh, this.world.scene);
-    const barrelPB = new PhysicsBody(this.barrel, PhysicsMotionType.STATIC, false, this.world.scene);
+    const barrelPB = new PhysicsBody(
+      this.barrel,
+      PhysicsMotionType.STATIC,
+      false,
+      this.world.scene,
+    );
     barrelPB.shape = barrelShape;
     barrelPB.setMassProperties({ mass: 0 });
 
@@ -108,21 +130,25 @@ export class EnemyTank extends Tank {
     if (this.world.client.isMatchEnded) return;
 
     // Entity interpolation (bufferless, pretty basic for now)
-    this.body.position = Vector3.Lerp(this.body.position.clone(), this.nextState.position, World.deltaTime);
+    this.body.position = Vector3.Lerp(
+      this.body.position.clone(),
+      this.nextState.position,
+      World.deltaTime,
+    );
     this.body.rotationQuaternion = Quaternion.Slerp(
       this.body.rotationQuaternion!.clone(),
       this.nextState.rotation,
-      World.deltaTime
+      World.deltaTime,
     );
     this.turret.rotationQuaternion = Quaternion.Slerp(
       this.turret.rotationQuaternion!.clone(),
       this.nextState.turretRotation,
-      World.deltaTime
+      World.deltaTime,
     );
     this.barrel.rotationQuaternion = Quaternion.Slerp(
       this.barrel.rotationQuaternion!.clone(),
       this.nextState.barrelRotation,
-      World.deltaTime
+      World.deltaTime,
     );
   }
 
@@ -131,33 +157,33 @@ export class EnemyTank extends Tank {
     this.nextState.position = new Vector3(
       this.state!.position.x,
       this.state!.position.y,
-      this.state!.position.z
+      this.state!.position.z,
     );
     this.nextState.rotation = new Quaternion(
       this.state!.rotation.x,
       this.state!.rotation.y,
       this.state!.rotation.z,
-      this.state!.rotation.w
+      this.state!.rotation.w,
     );
     this.nextState.turretRotation = new Quaternion(
       this.state!.turretRotation.x,
       this.state!.turretRotation.y,
       this.state!.turretRotation.z,
-      this.state!.turretRotation.w
+      this.state!.turretRotation.w,
     );
     this.nextState.barrelRotation = new Quaternion(
       this.state!.barrelRotation.x,
       this.state!.barrelRotation.y,
       this.state!.barrelRotation.z,
-      this.state!.barrelRotation.w
+      this.state!.barrelRotation.w,
     );
   }
 
   fire() {
     this.loadedShell.fire();
     this.simulateRecoil();
-    this.particleSystems['muzzle']?.start();
-    this.sounds['cannon']?.play();
+    this.particleSystems["muzzle"]?.start();
+    this.sounds["cannon"]?.play();
     Shell.create(this).then((shell) => (this.loadedShell = shell));
   }
 }

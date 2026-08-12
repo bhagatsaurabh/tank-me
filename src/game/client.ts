@@ -1,24 +1,23 @@
-import { Client, Room } from 'colyseus.js';
-
-import type { RoomState } from './state';
-import { World } from './main';
+import type { RoomState } from "./state";
+import { World } from "./main";
 import {
   MessageType,
   type PlayerStats,
   type IMessageEnd,
   type IMessageFire,
-  type GraphicsPresetType
-} from '@/types';
-import { useLobbyStore } from '@/stores';
-import type { EnemyTank } from './models';
-import { Monitor } from './monitor';
-import { GraphicsPreset } from '@/utils/constants';
+  type GraphicsPresetType,
+} from "@/types";
+import { useLobbyStore } from "@/stores";
+import type { EnemyTank } from "./models";
+import { Monitor } from "./monitor";
+import { GraphicsPreset } from "@/utils/constants";
+import { Callbacks, Client, type Room } from "@colyseus/sdk";
 
 export class GameClient {
   private static instance: GameClient;
   private client!: Client;
   world?: World;
-  private rooms: { lobby?: Room<any>; desert?: Room<RoomState> } = {};
+  rooms: { lobby?: Room<RoomState>; desert?: Room<RoomState> } = {};
   matchDuration = 600000;
   isMatchEnded = false;
   didWin = false;
@@ -48,27 +47,29 @@ export class GameClient {
     instance.rooms.desert?.removeAllListeners();
     instance.rooms.desert?.leave(true);
 
-    lobby.status = 'idle';
+    lobby.status = "idle";
   }
 
-  async joinRoom(name: 'lobby' | 'desert', accessToken: string) {
+  async joinRoom(name: "lobby" | "desert", accessToken: string) {
     const room = await this.client.joinOrCreate<RoomState>(name, { accessToken });
     this.rooms[name] = room;
 
-    if (name === 'desert') {
-      this.setListeners();
+    if (name === "desert") {
+      this.setListeners(room);
     }
 
     return room;
   }
-  private setListeners() {
+  private setListeners(room: Room<RoomState>) {
     const lobby = useLobbyStore();
 
-    this.rooms.desert!.state.listen('status', (newVal) => newVal === 'ready' && (lobby.status = 'playing'));
-    this.rooms.desert!.state.players.onRemove((_player, sessionId) => this.world?.removePlayer(sessionId));
+    const callbacks = Callbacks.get(room);
+
+    callbacks.listen("status", (newVal) => newVal === "ready" && (lobby.status = "playing"));
+    callbacks.onRemove("players", (_player, sessionId) => this.world?.removePlayer(sessionId));
     this.rooms.desert!.onMessage(MessageType.ENEMY_FIRE, (message: IMessageFire) => {
       if (this.isMatchEnded) return;
-      (this.world?.players[message.id] as EnemyTank).fire();
+      (this.world?.players[message.id] as EnemyTank)?.fire();
     });
     this.rooms.desert!.onMessage<IMessageEnd>(MessageType.MATCH_END, (message) => {
       this.world!.matchEnd(message);
@@ -87,7 +88,7 @@ export class GameClient {
     return this.rooms.desert?.sessionId;
   }
   isReady() {
-    return this.rooms.desert?.state?.status === 'ready';
+    return this.rooms.desert?.state?.status === "ready";
   }
   getPlayers() {
     return this.rooms.desert!.state.players;

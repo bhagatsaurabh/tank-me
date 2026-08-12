@@ -1,9 +1,9 @@
-import { ref } from 'vue';
-import { defineStore } from 'pinia';
-import type { Nullable } from '@babylonjs/core';
-import { clamp } from '@/utils';
+import { ref } from "vue";
+import { defineStore } from "pinia";
+import type { Nullable } from "@babylonjs/core";
+import { clamp } from "@/utils";
 
-export const useLoaderStore = defineStore('loader', () => {
+export const useLoaderStore = defineStore("loader", () => {
   const progress = ref(0.0);
   const noOfFiles = ref(0);
   const noOfFilesDownloaded = ref(0);
@@ -32,7 +32,7 @@ export const useLoaderStore = defineStore('loader', () => {
     return false;
   }
   function get(path: string): Nullable<string> {
-    return cache.value[path];
+    return cache.value[path]!;
   }
 
   return {
@@ -45,6 +45,6 @@ export const useLoaderStore = defineStore('loader', () => {
     updateProgress,
     updateFileCount,
     prefetch,
-    get
+    get,
   };
 });

@@ -1,8 +1,8 @@
-import { TextBlock } from '@babylonjs/gui';
+import { TextBlock } from "@babylonjs/gui";
 
-import { clamp } from '@/utils';
-import type { World } from './main';
-import { InputManager } from './input';
+import { clamp } from "@/utils";
+import type { World } from "./main";
+import { InputManager } from "./input";
 
 export class Monitor {
   private static handle = -1;
@@ -24,21 +24,22 @@ export class Monitor {
         return;
       }
 
+      if (!world.gui) {
+        return;
+      }
       if (world.vsAI) {
-        world.gui &&
-          ((world.gui.getControlByName('stats') as TextBlock).text = `\n
-          Config: ${world.config.id}
-          Optimize Count: ${world.optimizeCount}
-          Hardware Scaling: ${world.engine.getHardwareScalingLevel()}
-          Priority Level: ${world.optimizer.currentPriorityLevel}
-          Current FPS: ${world.optimizer.currentFrameRate}
-          Target FPS: ${world.optimizer.targetFrameRate}`);
+        (world.gui.getControlByName("stats") as TextBlock).text = `\n
+        Config: ${world.config.id}
+        Optimize Count: ${world.optimizeCount}
+        Hardware Scaling: ${world.engine.getHardwareScalingLevel()}
+        Priority Level: ${world.optimizer.currentPriorityLevel}
+        Current FPS: ${world.optimizer.currentFrameRate}
+        Target FPS: ${world.optimizer.targetFrameRate}`;
       } else {
-        world.gui &&
-          ((world.gui.getControlByName('stats') as TextBlock).text = `\n
-          History Buffer: ${InputManager.history.length}\n
-          Step: ${world.scene.getStepId()}\n
-          Health: ${world.player.state!.health}`);
+        (world.gui.getControlByName("stats") as TextBlock).text = `\n
+        History Buffer: ${InputManager.history.length}\n
+        Step: ${world.scene.getStepId()}\n
+        Health: ${world.player.state!.health}`;
       }
     }, this._interval);
   }

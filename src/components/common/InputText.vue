@@ -60,22 +60,13 @@ defineExpose({ native, validate, invalidate });
 </script>
 
 <template>
-  <span
-    :class="{
-      input: true,
-      blank: !modelValue,
-      invalid: !!errormsg
-    }"
-    :data-placeholder="placeholder"
-  >
-    <input
-      ref="native"
-      :value="modelValue"
-      @input="handleInput"
-      :type="type"
-      :placeholder="placeholder"
-      v-bind="attrs"
-    />
+  <span :class="{
+    input: true,
+    blank: !modelValue,
+    invalid: !!errormsg
+  }" :data-placeholder="placeholder">
+    <input ref="native" :value="modelValue" @input="handleInput" :type="type" :placeholder="placeholder"
+      v-bind="attrs" />
     <Transition name="slide-down">
       <div v-if="validation !== 'Off' && !!errormsg" class="errormsg">
         <span>{{ errormsg }}</span>
@@ -89,6 +80,7 @@ defineExpose({ native, validate, invalidate });
   display: inline-block;
   margin-bottom: 1.5rem;
 }
+
 .input input {
   height: 100%;
   width: 100%;
@@ -113,19 +105,23 @@ defineExpose({ native, validate, invalidate });
     background-color 0.1s linear;
   background-color: gray;
 }
+
 .input:focus-within::after {
   background-color: #c8b08a;
   height: 4px;
 }
+
 .input.invalid:focus-within::after {
   background-color: #ff4b4b;
 }
+
 .input input:focus {
   outline: none;
   background-color: #d9d9d9cc;
   color: #1f1f1f;
   box-shadow: 0px -8px 10px -6px inset;
 }
+
 .errormsg {
   position: absolute;
   width: 100%;
@@ -140,6 +136,7 @@ defineExpose({ native, validate, invalidate });
   transform-origin: top;
   background-color: #ffffff5e;
 }
+
 .errormsg::before {
   content: '';
   display: block;
@@ -148,6 +145,7 @@ defineExpose({ native, validate, invalidate });
   height: 100%;
   background-color: red;
 }
+
 .errormsg span {
   margin-left: 0.5rem;
 }

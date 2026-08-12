@@ -5,11 +5,11 @@ import {
   Scene,
   SphereDirectedParticleEmitter,
   Texture,
-  Vector3
-} from '@babylonjs/core';
+  Vector3,
+} from "@babylonjs/core";
 
-import { AssetLoader } from '../loader';
-import { luid } from '@/utils';
+import { AssetLoader } from "../loader";
+import { luid } from "@/utils";
 
 export class PSTankExplosion {
   private psExplosion!: GPUParticleSystem;
@@ -17,7 +17,7 @@ export class PSTankExplosion {
 
   private constructor(
     public emitter: AbstractMesh,
-    public scene: Scene
+    public scene: Scene,
   ) {
     this.setExplosion();
     this.setFire();
@@ -27,19 +27,19 @@ export class PSTankExplosion {
     this.psExplosion = new GPUParticleSystem(
       `PS:TankExplosion:${luid()}`,
       { capacity: 200, randomTextureSize: 256 },
-      this.scene
+      this.scene,
     );
 
     this.psExplosion.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/spritesheets/smoke_dust_cloud.png'] as string,
-      this.scene
+      AssetLoader.assets["/assets/game/spritesheets/smoke_dust_cloud.png"] as string,
+      this.scene,
     );
     this.psExplosion.isBillboardBased = true;
     this.psExplosion.emitter = this.emitter;
     const sphereEmitter = new SphereDirectedParticleEmitter(
       0.5,
       new Vector3(-3.5, 0, -3.5),
-      new Vector3(3.5, 5, 3.5)
+      new Vector3(3.5, 5, 3.5),
     );
     this.psExplosion.particleEmitterType = sphereEmitter;
     this.psExplosion.blendMode = GPUParticleSystem.BLENDMODE_MULTIPLYADD;
@@ -78,12 +78,12 @@ export class PSTankExplosion {
     this.psFire = new GPUParticleSystem(
       `PS:TankFire:${luid()}`,
       { capacity: 100, randomTextureSize: 256 },
-      this.scene
+      this.scene,
     );
 
     this.psFire.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/spritesheets/fire.png'] as string,
-      this.scene
+      AssetLoader.assets["/assets/game/spritesheets/fire.png"] as string,
+      this.scene,
     );
     this.psFire.emitter = this.emitter;
     this.psFire.worldOffset.y = 2.5;

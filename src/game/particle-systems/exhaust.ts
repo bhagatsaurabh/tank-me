@@ -1,18 +1,18 @@
-import { Scene } from '@babylonjs/core';
-import { AbstractMesh } from '@babylonjs/core/Meshes';
-import { Color4, Vector3 } from '@babylonjs/core/Maths';
-import { Texture } from '@babylonjs/core/Materials';
-import { ConeParticleEmitter, GPUParticleSystem } from '@babylonjs/core/Particles';
+import { Scene } from "@babylonjs/core";
+import { AbstractMesh } from "@babylonjs/core/Meshes";
+import { Color4, Vector3 } from "@babylonjs/core/Maths";
+import { Texture } from "@babylonjs/core/Materials";
+import { ConeParticleEmitter, GPUParticleSystem } from "@babylonjs/core/Particles";
 
-import { AssetLoader } from '../loader';
-import { luid } from '@/utils';
+import { AssetLoader } from "../loader";
+import { luid } from "@/utils";
 
 export class PSExhaust {
   private particleSystem!: GPUParticleSystem;
 
   private constructor(
     public emitter: AbstractMesh,
-    public scene: Scene
+    public scene: Scene,
   ) {
     this.setProperties();
   }
@@ -20,12 +20,12 @@ export class PSExhaust {
     this.particleSystem = new GPUParticleSystem(
       `PS:Exhaust:${luid()}`,
       { capacity: 100, randomTextureSize: 128 },
-      this.scene
+      this.scene,
     );
 
     this.particleSystem.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/spritesheets/smoke_dust_cloud.png'] as string,
-      this.scene
+      AssetLoader.assets["/assets/game/spritesheets/smoke_dust_cloud.png"] as string,
+      this.scene,
     );
     this.particleSystem.isBillboardBased = true;
     this.particleSystem.emitter = this.emitter;

@@ -1,11 +1,11 @@
-import { Scene } from '@babylonjs/core';
-import { AbstractMesh, TransformNode } from '@babylonjs/core/Meshes';
-import { Color4, Vector3 } from '@babylonjs/core/Maths';
-import { Texture } from '@babylonjs/core/Materials';
-import { ParticleSystem, SphereDirectedParticleEmitter } from '@babylonjs/core/Particles';
+import { Scene } from "@babylonjs/core";
+import { AbstractMesh, TransformNode } from "@babylonjs/core/Meshes";
+import { Color4, Vector3 } from "@babylonjs/core/Maths";
+import { Texture } from "@babylonjs/core/Materials";
+import { ParticleSystem, SphereDirectedParticleEmitter } from "@babylonjs/core/Particles";
 
-import { AssetLoader } from '../loader';
-import { luid } from '@/utils';
+import { AssetLoader } from "../loader";
+import { luid } from "@/utils";
 
 export class PSMuzzle {
   private psExplosion!: ParticleSystem;
@@ -14,7 +14,7 @@ export class PSMuzzle {
 
   private constructor(
     public emitter: TransformNode,
-    public scene: Scene
+    public scene: Scene,
   ) {
     this.setExplosion();
     this.setSmoke();
@@ -24,8 +24,8 @@ export class PSMuzzle {
   private setExplosion() {
     this.psExplosion = new ParticleSystem(`PS:MuzzleExplosion:${luid()}`, 100, this.scene);
     this.psExplosion.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/spritesheets/explosion.png'] as string,
-      this.scene
+      AssetLoader.assets["/assets/game/spritesheets/explosion.png"] as string,
+      this.scene,
     );
     this.psExplosion.isBillboardBased = true;
     this.psExplosion.emitter = this.emitter as AbstractMesh;
@@ -66,8 +66,8 @@ export class PSMuzzle {
   private setSmoke() {
     this.psSmoke = new ParticleSystem(`PS:MuzzleSmoke:${luid()}`, 100, this.scene);
     this.psSmoke.particleTexture = new Texture(
-      AssetLoader.assets['/assets/game/spritesheets/smoke_dust_cloud.png'] as string,
-      this.scene
+      AssetLoader.assets["/assets/game/spritesheets/smoke_dust_cloud.png"] as string,
+      this.scene,
     );
     this.psSmoke.isBillboardBased = true;
     this.psSmoke.emitter = this.emitter as AbstractMesh;
@@ -84,7 +84,7 @@ export class PSMuzzle {
     const sphereEmitter = new SphereDirectedParticleEmitter(
       0,
       new Vector3(-2.5, -2.5, 0),
-      new Vector3(2.5, 2.5, 2.5)
+      new Vector3(2.5, 2.5, 2.5),
     );
     this.psSmoke.particleEmitterType = sphereEmitter;
     this.psSmoke.updateSpeed = 0.03;
@@ -103,8 +103,16 @@ export class PSMuzzle {
       .addSizeGradient(0, 0)
       .addSizeGradient(1, 3)
       .addColorGradient(0, Color4.FromInts(255, 255, 255, 0), Color4.FromInts(255, 255, 255, 0))
-      .addColorGradient(0.15, Color4.FromInts(224, 214, 197, 255), Color4.FromInts(224, 214, 197, 255))
-      .addColorGradient(0.7, Color4.FromInts(224, 214, 197, 150), Color4.FromInts(224, 214, 197, 150))
+      .addColorGradient(
+        0.15,
+        Color4.FromInts(224, 214, 197, 255),
+        Color4.FromInts(224, 214, 197, 255),
+      )
+      .addColorGradient(
+        0.7,
+        Color4.FromInts(224, 214, 197, 150),
+        Color4.FromInts(224, 214, 197, 150),
+      )
       .addColorGradient(1, Color4.FromInts(224, 214, 197, 0), Color4.FromInts(224, 214, 197, 0));
   }
 

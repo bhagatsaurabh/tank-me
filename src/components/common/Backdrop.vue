@@ -39,6 +39,7 @@ const emit = defineEmits(['dismiss']);
   justify-content: center;
   align-items: center;
 }
+
 .backdrop.clear {
   backdrop-filter: unset;
   background-color: unset;

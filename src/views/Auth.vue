@@ -40,8 +40,8 @@ const handleUsername = async () => {
 };
 const validateEmail = (val: string) => {
   if (!val) return 'Please enter an e-mail';
-  // eslint-disable-next-line no-useless-escape
-  if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return '';
+
+  if (/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return '';
   return 'Not a valid e-mail';
 };
 const validateUsername = (val: string) => {
@@ -81,14 +81,8 @@ watch(
     <Transition name="fade">
       <div class="auth-card" v-if="auth.status === 'signed-out'">
         <h3 class="mb-2 c-0">Sign In</h3>
-        <InputText
-          ref="emailEl"
-          v-model="email"
-          type="email"
-          placeholder="E-mail"
-          :attrs="{ spellCheck: false }"
-          :validator="(val: string) => validateEmail(val)"
-        />
+        <InputText ref="emailEl" v-model="email" type="email" placeholder="E-mail" :attrs="{ spellCheck: false }"
+          :validator="(val: string) => validateEmail(val)" />
         <span v-if="errorMsg">{{ errorMsg }}</span>
         <Button class="mt-1" :action="() => handleSignIn('email')" async>Verify</Button>
         <br />
@@ -105,14 +99,8 @@ watch(
       </div>
       <div class="auth-card" v-else-if="auth.status === 'signed-in' && !auth.profile?.username">
         <h3 class="mb-2 c-0">New Username</h3>
-        <InputText
-          ref="usernameEl"
-          v-model="username"
-          type="text"
-          placeholder="Username"
-          :attrs="{ spellCheck: false }"
-          :validator="(val: string) => validateUsername(val)"
-        />
+        <InputText ref="usernameEl" v-model="username" type="text" placeholder="Username" :attrs="{ spellCheck: false }"
+          :validator="(val: string) => validateUsername(val)" />
         <Button class="mt-1" :action="() => handleUsername()" async>Play</Button>
       </div>
       <div class="auth-card" v-else-if="auth.status === 'verified'">Verified successfully</div>
@@ -131,18 +119,22 @@ watch(
     background-position-x: 0%;
     background-position-y: 0%;
   }
+
   25% {
     background-position-x: -50%;
     background-position-y: -50%;
   }
+
   50% {
     background-position-x: 0%;
     background-position-y: -100%;
   }
+
   75% {
     background-position-x: 50%;
     background-position-y: -50%;
   }
+
   100% {
     background-position-x: 0%;
     background-position-y: 0%;
@@ -157,6 +149,7 @@ watch(
   height: 100vh;
   overflow: hidden;
 }
+
 .auth-container .background {
   position: absolute;
   top: 0;
@@ -191,6 +184,7 @@ watch(
   height: 2rem;
   overflow: hidden;
 }
+
 .guest-control {
   width: min-content;
   margin-left: auto;

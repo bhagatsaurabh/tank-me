@@ -4,10 +4,10 @@ export interface Profile {
   email?: string | null;
   stats?: { matches: number; wins: number; points: number };
   // To make Firestore types happy...
-  [path: `${string}.${string}`]: any;
+  [path: `${string}.${string}`]: unknown;
 }
 
 export interface BroadcastMessage {
-  type: 'auth';
-  value: any;
+  type: "auth";
+  value: unknown;
 }

@@ -1,43 +1,47 @@
-import { ref } from 'vue';
-import { defineStore } from 'pinia';
+import { ref } from "vue";
+import { defineStore } from "pinia";
 
-import type { ScreenOrientation } from '@/types';
-import { GameClient } from '@/game/client';
-import { getDeviceType } from '@/utils';
+import type { ScreenOrientation } from "@/types";
+import { GameClient } from "@/game/client";
+import { getDeviceType } from "@/utils";
 
-export const usePresentationStore = defineStore('presentation', () => {
+export const usePresentationStore = defineStore("presentation", () => {
   const isFullscreen = ref(false);
-  const orientation = ref<ScreenOrientation>('landscape');
-  const media = ref<'desktop' | 'mobile'>('desktop');
-  const device = ref<'desktop' | 'mobile'>(getDeviceType());
+  const orientation = ref<ScreenOrientation>("landscape");
+  const media = ref<"desktop" | "mobile">("desktop");
+  const device = ref<"desktop" | "mobile">(getDeviceType());
 
   const fullscreenChangeListener = () => {
     isFullscreen.value = !!document.fullscreenElement;
     if (isFullscreen.value) {
-      (screen.orientation as any).lock('landscape').catch((error: Error) => console.log(error));
+      screen.orientation.lock("landscape").catch((error: Error) => console.log(error));
     }
     GameClient.get()?.world?.engine?.resize(true);
   };
   const orientationChangeListener = () => {
-    if (screen.orientation.type.includes('landscape')) orientation.value = 'landscape';
-    else orientation.value = 'portrait';
+    if (screen.orientation.type.includes("landscape")) orientation.value = "landscape";
+    else orientation.value = "portrait";
     GameClient.get()?.world?.engine?.resize(true);
   };
   const desktopMediaListener = (event: MediaQueryListEvent) => {
-    media.value = event.matches ? 'desktop' : 'mobile';
+    media.value = event.matches ? "desktop" : "mobile";
   };
   let mQueryDesktop: MediaQueryList;
   function registerListeners() {
-    document.documentElement.addEventListener('fullscreenchange', fullscreenChangeListener);
-    (screen as any).addEventListener('orientationchange', orientationChangeListener);
-    mQueryDesktop = matchMedia('(min-width: 1024px');
-    mQueryDesktop.addEventListener('change', desktopMediaListener);
-    media.value = mQueryDesktop.matches ? 'desktop' : 'mobile';
+    document.documentElement.addEventListener("fullscreenchange", fullscreenChangeListener);
+    (
+      screen as unknown as { addEventListener: (key: string, cb: () => void) => void }
+    ).addEventListener("orientationchange", orientationChangeListener);
+    mQueryDesktop = matchMedia("(min-width: 1024px");
+    mQueryDesktop.addEventListener("change", desktopMediaListener);
+    media.value = mQueryDesktop.matches ? "desktop" : "mobile";
   }
   function unregister() {
-    document.documentElement.removeEventListener('fullscreenchange', fullscreenChangeListener);
-    (screen as any).removeEventListener('orientationchange', orientationChangeListener);
-    mQueryDesktop?.removeEventListener('change', desktopMediaListener);
+    document.documentElement.removeEventListener("fullscreenchange", fullscreenChangeListener);
+    (
+      screen as unknown as { removeEventListener: (key: string, cb: () => void) => void }
+    ).removeEventListener("orientationchange", orientationChangeListener);
+    mQueryDesktop?.removeEventListener("change", desktopMediaListener);
   }
   async function fullscreen() {
     if (isFullscreen.value) return true;
@@ -58,6 +62,6 @@ export const usePresentationStore = defineStore('presentation', () => {
     device,
     registerListeners,
     unregister,
-    fullscreen
+    fullscreen,
   };
 });

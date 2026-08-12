@@ -1,5 +1,12 @@
-import { TransformNode, type AbstractMesh, type Mesh, type Nullable, MeshBuilder } from '@babylonjs/core';
-import { Vector3, Axis, Space, Scalar, Quaternion } from '@babylonjs/core/Maths';
+import {
+  TransformNode,
+  type AbstractMesh,
+  type Mesh,
+  type Nullable,
+  MeshBuilder,
+  Observer,
+} from "@babylonjs/core";
+import { Vector3, Axis, Space, Scalar, Quaternion } from "@babylonjs/core/Maths";
 import {
   PhysicsShapeConvexHull,
   PhysicsShapeContainer,
@@ -11,18 +18,18 @@ import {
   LockConstraint,
   PhysicsConstraintAxis,
   PhysicsConstraintMotorType,
-  HavokPlugin
-} from '@babylonjs/core/Physics';
-import { type FreeCamera } from '@babylonjs/core/Cameras';
-import { Control, Container, Image, Rectangle } from '@babylonjs/gui';
+  HavokPlugin,
+} from "@babylonjs/core/Physics";
+import { type FreeCamera } from "@babylonjs/core/Cameras";
+import { Control, Container, Image, Rectangle } from "@babylonjs/gui";
 
-import { World } from '../main';
-import type { Player } from '../state';
-import { Tank, Shell, Ground } from '../models';
-import { avg, clamp, forwardVector, nzpyVector } from '@/utils';
-import { AssetLoader } from '../loader';
-import { GameInputType, type PlayerInputs } from '@/types';
-import { InputManager, type IInputHistory } from '../input';
+import { World } from "../main";
+import type { Player } from "../state";
+import { Tank, Shell, Ground } from "../models";
+import { avg, clamp, forwardVector, nzpyVector } from "@/utils";
+import { AssetLoader } from "../loader";
+import { GameInputType, type PlayerInputs } from "@/types";
+import { InputManager, type IInputHistory } from "../input";
 
 export class PlayerTank extends Tank {
   private static config = {
@@ -52,7 +59,7 @@ export class PlayerTank extends Tank {
     noOfWheels: 10,
     recoilForce: 7.5,
     cooldown: 5000,
-    loadCooldown: 2500
+    loadCooldown: 2500,
   };
   private axleJoints: TransformNode[] = [];
   axles: Mesh[] = [];
@@ -77,11 +84,11 @@ export class PlayerTank extends Tank {
     state: Nullable<Player>,
     rootMesh: AbstractMesh,
     spawn: Vector3,
-    public cameras: { tpp: FreeCamera; fpp: FreeCamera }
+    public cameras: { tpp: FreeCamera; fpp: FreeCamera },
   ) {
     super(world, state);
 
-    if (world.vsAI) this.lid = 'Player';
+    if (world.vsAI) this.lid = "Player";
     this.isPlayer = true;
     this.setTransform(rootMesh, spawn);
     this.setPhysics(rootMesh as Mesh);
@@ -90,18 +97,20 @@ export class PlayerTank extends Tank {
     cameras.tpp.position = this.body.getDirection(nzpyVector).normalize().scale(15).add(spawn);
     cameras.fpp.parent = this.barrel;
 
-    this.observers.push(this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)));
+    this.observers.push(
+      this.world.scene.onBeforeStepObservable.add(this.beforeStep.bind(this)) as Observer<unknown>,
+    );
   }
   static async create(
     world: World,
     state: Nullable<Player>,
     rootMesh: AbstractMesh,
     spawn: Vector3,
-    cameras: Nullable<{ tpp: FreeCamera; fpp: FreeCamera }>
+    cameras: Nullable<{ tpp: FreeCamera; fpp: FreeCamera }>,
   ) {
     const cloned = rootMesh.clone(
-      `${rootMesh.name.replace(':Ref', '')}:${world.vsAI ? 'Player' : state!.sid}`,
-      null
+      `${rootMesh.name.replace(":Ref", "")}:${world.vsAI ? "Player" : state!.sid}`,
+      null,
     )!;
     const newTank = new PlayerTank(world, state, cloned, spawn, cameras!);
     await newTank.init();
@@ -117,7 +126,7 @@ export class PlayerTank extends Tank {
       const axleMesh = MeshBuilder.CreateSphere(
         `axle${i}`,
         { diameterY: 0.6, diameterX: 0.75, diameterZ: 0.75, segments: 5 },
-        this.world.scene
+        this.world.scene,
       );
       axleMesh.rotate(Axis.Z, Math.PI / 2, Space.LOCAL);
       axleMesh.bakeCurrentTransformIntoVertices();
@@ -128,13 +137,13 @@ export class PlayerTank extends Tank {
     }
     rootMesh.position = Vector3.Zero();
     const childMeshes = rootMesh.getChildMeshes();
-    this.barrel = childMeshes[0];
-    this.rightExhaust = childMeshes[1];
-    this.leftExhaust = childMeshes[2];
-    this.innerWheels = childMeshes[3];
-    this.leftTrack = childMeshes[4];
-    this.rightTrack = childMeshes[5];
-    this.turret = childMeshes[6];
+    this.barrel = childMeshes[0]!;
+    this.rightExhaust = childMeshes[1]!;
+    this.leftExhaust = childMeshes[2]!;
+    this.innerWheels = childMeshes[3]!;
+    this.leftTrack = childMeshes[4]!;
+    this.rightTrack = childMeshes[5]!;
+    this.turret = childMeshes[6]!;
     this.barrel.position.y = -0.51;
     this.barrel.position.z = 1.79;
     this.barrel.parent = this.turret;
@@ -150,8 +159,8 @@ export class PlayerTank extends Tank {
       this.leftWheels.length < 7;
       l -= 1, r -= 1
     ) {
-      this.leftWheels.push(childMeshes[l]);
-      this.rightWheels.push(childMeshes[r]);
+      this.leftWheels.push(childMeshes[l]!);
+      this.rightWheels.push(childMeshes[r]!);
     }
 
     rootMesh.isVisible = true;
@@ -164,16 +173,24 @@ export class PlayerTank extends Tank {
     const bodyPB = new PhysicsBody(this.body, PhysicsMotionType.DYNAMIC, false, this.world.scene);
     bodyShapeContainer.material = {
       friction: PlayerTank.config.bodyFriction,
-      restitution: PlayerTank.config.bodyRestitution
+      restitution: PlayerTank.config.bodyRestitution,
     };
     bodyPB.shape = bodyShapeContainer;
     bodyPB.setMassProperties({ mass: PlayerTank.config.bodyMass, centerOfMass: Vector3.Zero() });
 
     const turretShape = new PhysicsShapeConvexHull(this.turret as Mesh, this.world.scene);
     turretShape.material = { friction: 0, restitution: 0 };
-    const turretPB = new PhysicsBody(this.turret, PhysicsMotionType.DYNAMIC, false, this.world.scene);
+    const turretPB = new PhysicsBody(
+      this.turret,
+      PhysicsMotionType.DYNAMIC,
+      false,
+      this.world.scene,
+    );
     turretPB.shape = turretShape;
-    turretPB.setMassProperties({ mass: PlayerTank.config.turretMass, centerOfMass: Vector3.Zero() });
+    turretPB.setMassProperties({
+      mass: PlayerTank.config.turretMass,
+      centerOfMass: Vector3.Zero(),
+    });
     this.turretMotor = this.createTurretConstraint(
       this.turret.position,
       Vector3.Zero(),
@@ -182,14 +199,22 @@ export class PlayerTank extends Tank {
       new Vector3(0, 1, 0),
       new Vector3(0, 1, 0),
       bodyPB,
-      turretPB
+      turretPB,
     );
 
     const barrelShape = new PhysicsShapeConvexHull(this.barrel as Mesh, this.world.scene);
     barrelShape.material = { friction: 0, restitution: 0 };
-    const barrelPB = new PhysicsBody(this.barrel, PhysicsMotionType.DYNAMIC, false, this.world.scene);
+    const barrelPB = new PhysicsBody(
+      this.barrel,
+      PhysicsMotionType.DYNAMIC,
+      false,
+      this.world.scene,
+    );
     barrelPB.shape = barrelShape;
-    barrelPB.setMassProperties({ mass: PlayerTank.config.barrelMass, centerOfMass: Vector3.Zero() });
+    barrelPB.setMassProperties({
+      mass: PlayerTank.config.barrelMass,
+      centerOfMass: Vector3.Zero(),
+    });
     this.barrelMotor = this.createBarrelConstraint(
       this.barrel.position,
       Vector3.Zero(),
@@ -198,7 +223,7 @@ export class PlayerTank extends Tank {
       new Vector3(0, 1, 0),
       new Vector3(0, 1, 0),
       turretPB,
-      barrelPB
+      barrelPB,
     );
 
     const wheelPositions: Vector3[] = [
@@ -211,17 +236,17 @@ export class PlayerTank extends Tank {
       new Vector3(1.475, 0.2, 1),
       new Vector3(1.475, 0.2, 0),
       new Vector3(1.475, 0.2, -1),
-      new Vector3(1.475, 0.2, -2)
+      new Vector3(1.475, 0.2, -2),
     ];
 
     const axleShape = new PhysicsShapeSphere(Vector3.Zero(), 0.375, this.world.scene);
     for (let i = 0; i < PlayerTank.config.noOfWheels; i += 1) {
-      const axleJoint = this.axleJoints[i];
-      const axle = this.axles[i];
+      const axleJoint = this.axleJoints[i]!;
+      const axle = this.axles[i]!;
 
       axle.position = Vector3.Zero();
       axleJoint.parent = this.body;
-      axleJoint.position = wheelPositions[i];
+      axleJoint.position = wheelPositions[i]!;
 
       const axleAgg = new PhysicsAggregate(
         axle,
@@ -229,32 +254,48 @@ export class PlayerTank extends Tank {
         {
           mass: PlayerTank.config.wheelMass,
           friction: PlayerTank.config.wheelFriction,
-          restitution: PlayerTank.config.wheelRestitution
+          restitution: PlayerTank.config.wheelRestitution,
         },
-        this.world.scene
+        this.world.scene,
       );
       (axle as Mesh).collisionRetryCount = 5;
 
       this.axleMotors.push(
-        this.createWheelConstraint(wheelPositions[i], axle.position, bodyPB, axleAgg.body)
+        this.createWheelConstraint(wheelPositions[i]!, axle.position, bodyPB, axleAgg.body),
       );
       this.axles.push(axle);
     }
 
     const triggerShape = new PhysicsShapeSphere(Vector3.Zero(), 5, this.world.scene);
     triggerShape.isTrigger = true;
-    const refPB = new PhysicsBody(this.innerWheels, PhysicsMotionType.DYNAMIC, false, this.world.scene);
+    const refPB = new PhysicsBody(
+      this.innerWheels,
+      PhysicsMotionType.DYNAMIC,
+      false,
+      this.world.scene,
+    );
     this.innerWheels.physicsBody!.setMassProperties({ mass: 0.1 });
     this.body.physicsBody!.addConstraint(
       this.innerWheels.physicsBody!,
-      new LockConstraint(Vector3.Zero(), Vector3.Zero(), forwardVector, forwardVector, this.world.scene)
+      new LockConstraint(
+        Vector3.Zero(),
+        Vector3.Zero(),
+        forwardVector,
+        forwardVector,
+        this.world.scene,
+      ),
     );
     this.innerWheels.physicsBody!.shape = triggerShape;
-    this.observers.push(
-      (
-        this.world.scene.getPhysicsEngine()?.getPhysicsPlugin() as HavokPlugin
-      ).onTriggerCollisionObservable.add((event) => this.trigger(event))
-    );
+    const havokPlugin = this.world.scene.getPhysicsEngine()?.getPhysicsPlugin() as
+      | HavokPlugin
+      | undefined;
+    if (havokPlugin) {
+      this.observers.push(
+        havokPlugin.onTriggerCollisionObservable.add((event) =>
+          this.trigger(event),
+        ) as Observer<unknown>,
+      );
+    }
 
     this.physicsBodies.push(
       bodyPB,
@@ -262,14 +303,14 @@ export class PlayerTank extends Tank {
       barrelPB,
       refPB,
       ...this.axles.map((axle) => axle.physicsBody!),
-      Ground.mesh.physicsBody!
+      Ground.mesh.physicsBody!,
     );
   }
   private createWheelConstraint(
     pivotA: Vector3,
     pivotB: Vector3,
     parent: PhysicsBody,
-    child: PhysicsBody
+    child: PhysicsBody,
   ): Physics6DoFConstraint {
     const _6dofConstraint = new Physics6DoFConstraint(
       {
@@ -278,7 +319,7 @@ export class PlayerTank extends Tank {
         axisA: new Vector3(1, 0, 0),
         axisB: new Vector3(1, 0, 0),
         perpAxisA: new Vector3(0, 1, 0),
-        perpAxisB: new Vector3(0, 1, 0)
+        perpAxisB: new Vector3(0, 1, 0),
       },
       [
         { axis: PhysicsConstraintAxis.LINEAR_X, minLimit: 0, maxLimit: 0 },
@@ -287,19 +328,28 @@ export class PlayerTank extends Tank {
           minLimit: PlayerTank.config.suspensionMinLimit,
           maxLimit: PlayerTank.config.suspensionMaxLimit,
           stiffness: PlayerTank.config.suspensionStiffness,
-          damping: PlayerTank.config.suspensionDamping
+          damping: PlayerTank.config.suspensionDamping,
         },
         { axis: PhysicsConstraintAxis.LINEAR_Z, minLimit: 0, maxLimit: 0 },
         { axis: PhysicsConstraintAxis.ANGULAR_Y, minLimit: 0, maxLimit: 0 },
-        { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 }
+        { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 },
       ],
-      this.world.scene
+      this.world.scene,
     );
 
     parent.addConstraint(child, _6dofConstraint);
-    _6dofConstraint.setAxisFriction(PhysicsConstraintAxis.ANGULAR_X, PlayerTank.config.axleFriction);
-    _6dofConstraint.setAxisMotorType(PhysicsConstraintAxis.ANGULAR_X, PhysicsConstraintMotorType.VELOCITY);
-    _6dofConstraint.setAxisMotorMaxForce(PhysicsConstraintAxis.ANGULAR_X, PlayerTank.config.maxEnginePower);
+    _6dofConstraint.setAxisFriction(
+      PhysicsConstraintAxis.ANGULAR_X,
+      PlayerTank.config.axleFriction,
+    );
+    _6dofConstraint.setAxisMotorType(
+      PhysicsConstraintAxis.ANGULAR_X,
+      PhysicsConstraintMotorType.VELOCITY,
+    );
+    _6dofConstraint.setAxisMotorMaxForce(
+      PhysicsConstraintAxis.ANGULAR_X,
+      PlayerTank.config.maxEnginePower,
+    );
 
     return _6dofConstraint;
   }
@@ -311,7 +361,7 @@ export class PlayerTank extends Tank {
     perpAxisA: Vector3,
     perpAxisB: Vector3,
     parent: PhysicsBody,
-    child: PhysicsBody
+    child: PhysicsBody,
   ): Physics6DoFConstraint {
     const _6dofConstraint = new Physics6DoFConstraint(
       {
@@ -320,7 +370,7 @@ export class PlayerTank extends Tank {
         axisA,
         axisB,
         perpAxisA,
-        perpAxisB
+        perpAxisB,
       },
       [
         { axis: PhysicsConstraintAxis.LINEAR_X, minLimit: 0, maxLimit: 0 },
@@ -329,17 +379,20 @@ export class PlayerTank extends Tank {
         {
           axis: PhysicsConstraintAxis.ANGULAR_X,
           minLimit: -PlayerTank.config.maxBarrelAngleUp,
-          maxLimit: PlayerTank.config.maxBarrelAngleDown
+          maxLimit: PlayerTank.config.maxBarrelAngleDown,
         },
         { axis: PhysicsConstraintAxis.ANGULAR_Y, minLimit: 0, maxLimit: 0 },
-        { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 }
+        { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 },
       ],
-      this.world.scene
+      this.world.scene,
     );
 
     parent.addConstraint(child, _6dofConstraint);
     _6dofConstraint.setAxisFriction(PhysicsConstraintAxis.ANGULAR_X, 1);
-    _6dofConstraint.setAxisMotorType(PhysicsConstraintAxis.ANGULAR_X, PhysicsConstraintMotorType.VELOCITY);
+    _6dofConstraint.setAxisMotorType(
+      PhysicsConstraintAxis.ANGULAR_X,
+      PhysicsConstraintMotorType.VELOCITY,
+    );
     _6dofConstraint.setAxisMotorMaxForce(PhysicsConstraintAxis.ANGULAR_X, 100);
 
     return _6dofConstraint;
@@ -352,7 +405,7 @@ export class PlayerTank extends Tank {
     perpAxisA: Vector3,
     perpAxisB: Vector3,
     parent: PhysicsBody,
-    child: PhysicsBody
+    child: PhysicsBody,
   ): Physics6DoFConstraint {
     const _6dofConstraint = new Physics6DoFConstraint(
       {
@@ -361,7 +414,7 @@ export class PlayerTank extends Tank {
         axisA,
         axisB,
         perpAxisA,
-        perpAxisB
+        perpAxisB,
       },
       [
         { axis: PhysicsConstraintAxis.LINEAR_X, minLimit: 0, maxLimit: 0 },
@@ -371,16 +424,19 @@ export class PlayerTank extends Tank {
         {
           axis: PhysicsConstraintAxis.ANGULAR_Y,
           minLimit: -PlayerTank.config.maxTurretAngle,
-          maxLimit: PlayerTank.config.maxTurretAngle
+          maxLimit: PlayerTank.config.maxTurretAngle,
         },
-        { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 }
+        { axis: PhysicsConstraintAxis.ANGULAR_Z, minLimit: 0, maxLimit: 0 },
       ],
-      this.world.scene
+      this.world.scene,
     );
 
     parent.addConstraint(child, _6dofConstraint);
     _6dofConstraint.setAxisFriction(PhysicsConstraintAxis.ANGULAR_Y, 1);
-    _6dofConstraint.setAxisMotorType(PhysicsConstraintAxis.ANGULAR_Y, PhysicsConstraintMotorType.VELOCITY);
+    _6dofConstraint.setAxisMotorType(
+      PhysicsConstraintAxis.ANGULAR_Y,
+      PhysicsConstraintMotorType.VELOCITY,
+    );
     _6dofConstraint.setAxisMotorMaxForce(PhysicsConstraintAxis.ANGULAR_Y, 100);
 
     return _6dofConstraint;
@@ -388,15 +444,15 @@ export class PlayerTank extends Tank {
   private setGUI() {
     const scale = this.world.engine.getHardwareScalingLevel();
 
-    const scope = new Image('ads', AssetLoader.assets['/assets/game/gui/ads.png'] as string);
+    const scope = new Image("ads", AssetLoader.assets["/assets/game/gui/ads.png"] as string);
     scope.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     scope.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
     scope.autoScale = true;
-    scope.width = '50%';
+    scope.width = "50%";
     scope.fixedRatio = 1;
     scope.stretch = Image.STRETCH_FILL;
     scope.shadowBlur = 3 * scale;
-    scope.shadowColor = '#AFE1AF';
+    scope.shadowColor = "#AFE1AF";
     scope.alpha = 0.8;
     scope.isVisible = false;
     scope.scaleX = 1.5;
@@ -404,29 +460,33 @@ export class PlayerTank extends Tank {
     scope.zIndex = -1;
     this.world.gui.addControl(scope);
 
-    const overlay = new Image('overlay', AssetLoader.assets['/assets/game/gui/overlay.png'] as string);
+    const overlay = new Image(
+      "overlay",
+      AssetLoader.assets["/assets/game/gui/overlay.png"] as string,
+    );
     overlay.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
     overlay.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    overlay.height = '100%';
+    overlay.height = "100%";
     overlay.fixedRatio = 1;
     overlay.isVisible = false;
     overlay.zIndex = -1;
     this.world.gui.addControl(overlay);
 
-    const padWidth = (this.world.engine.getRenderWidth(true) - this.world.engine.getRenderHeight(true)) / 2;
-    const padLeft = new Rectangle('left-pad');
+    const padWidth =
+      (this.world.engine.getRenderWidth(true) - this.world.engine.getRenderHeight(true)) / 2;
+    const padLeft = new Rectangle("left-pad");
     padLeft.width = `${padWidth * scale}px`;
     padLeft.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    padLeft.color = '#000';
-    padLeft.background = '#000';
+    padLeft.color = "#000";
+    padLeft.background = "#000";
     padLeft.isVisible = false;
     padLeft.zIndex = -1;
     this.world.gui.addControl(padLeft);
-    const padRight = new Rectangle('right-pad');
+    const padRight = new Rectangle("right-pad");
     padRight.width = `${padWidth * scale}px`;
     padRight.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    padRight.color = '#000';
-    padRight.background = '#000';
+    padRight.color = "#000";
+    padRight.background = "#000";
     padRight.isVisible = false;
     padRight.zIndex = -1;
     this.world.gui.addControl(padRight);
@@ -435,16 +495,18 @@ export class PlayerTank extends Tank {
   }
   adjustGUI(scale: number, width: number, height: number) {
     const padWidth = (width - height) / 2;
-    this.sights[0].shadowBlur = 3 * scale;
-    this.sights[2].width = `${padWidth * scale}px`;
-    this.sights[3].width = `${padWidth * scale}px`;
+    this.sights[0]!.shadowBlur = 3 * scale;
+    this.sights[2]!.width = `${padWidth * scale}px`;
+    this.sights[3]!.width = `${padWidth * scale}px`;
   }
   private setPreStep(value: boolean) {
     this.body.physicsBody!.disablePreStep = value;
     this.turret.physicsBody!.disablePreStep = value;
     this.barrel.physicsBody!.disablePreStep = value;
     (this as unknown as PlayerTank).innerWheels.physicsBody!.disablePreStep = value;
-    (this as unknown as PlayerTank).axles.forEach((axle) => (axle.physicsBody!.disablePreStep = value));
+    (this as unknown as PlayerTank).axles.forEach(
+      (axle) => (axle.physicsBody!.disablePreStep = value),
+    );
   }
   private beforeStep() {
     if (this.world.client.isMatchEnded) return;
@@ -455,8 +517,12 @@ export class PlayerTank extends Tank {
       // Reset
       this.loadSoundPlayed = false;
     }
-    if (now - this.lastFiredTS > PlayerTank.config.loadCooldown && !this.canFire && !this.loadSoundPlayed) {
-      this.playSound('load');
+    if (
+      now - this.lastFiredTS > PlayerTank.config.loadCooldown &&
+      !this.canFire &&
+      !this.loadSoundPlayed
+    ) {
+      this.playSound("load");
       this.loadSoundPlayed = true;
     }
 
@@ -467,7 +533,9 @@ export class PlayerTank extends Tank {
     }
     if (InputManager.input[GameInputType.CHANGE_PERSPECTIVE]) {
       this.toggleCamera();
-      this.sights.forEach((ui) => (ui.isVisible = this.world.scene.activeCamera === this.cameras?.fpp));
+      this.sights.forEach(
+        (ui) => (ui.isVisible = this.world.scene.activeCamera === this.cameras?.fpp),
+      );
     }
   }
 
@@ -476,19 +544,22 @@ export class PlayerTank extends Tank {
       this.leftSpeed = clamp(
         this.leftSpeed + dt * PlayerTank.config.speedModifier,
         -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        PlayerTank.config.maxSpeed,
       );
     }
     if (turningDirection !== 1) {
       this.rightSpeed = clamp(
         this.rightSpeed + dt * PlayerTank.config.speedModifier,
         -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        PlayerTank.config.maxSpeed,
       );
     }
 
     this.axleMotors.forEach((motor, idx) => {
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed);
+      motor.setAxisMotorTarget(
+        PhysicsConstraintAxis.ANGULAR_X,
+        idx < 5 ? this.leftSpeed : this.rightSpeed,
+      );
     });
   }
   private reverse(dt: number, turningDirection: -1 | 0 | 1) {
@@ -496,19 +567,22 @@ export class PlayerTank extends Tank {
       this.leftSpeed = clamp(
         this.leftSpeed - dt * PlayerTank.config.speedModifier,
         -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        PlayerTank.config.maxSpeed,
       );
     }
     if (turningDirection !== 1) {
       this.rightSpeed = clamp(
         this.rightSpeed - dt * PlayerTank.config.speedModifier,
         -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        PlayerTank.config.maxSpeed,
       );
     }
 
     this.axleMotors.forEach((motor, idx) => {
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed);
+      motor.setAxisMotorTarget(
+        PhysicsConstraintAxis.ANGULAR_X,
+        idx < 5 ? this.leftSpeed : this.rightSpeed,
+      );
     });
   }
   private left(dt: number, isAccelerating: boolean) {
@@ -520,7 +594,7 @@ export class PlayerTank extends Tank {
             dt *
             PlayerTank.config.speedModifier,
         -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        PlayerTank.config.maxSpeed,
       );
       this.rightSpeed = clamp(
         this.rightSpeed +
@@ -528,15 +602,22 @@ export class PlayerTank extends Tank {
             dt *
             PlayerTank.config.decelerationModifier,
         -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        PlayerTank.config.maxSpeed,
       );
     } else {
       // Reduce power of left axle to half of right axle
-      this.leftSpeed = Scalar.Lerp(this.leftSpeed, this.rightSpeed / 2, dt * PlayerTank.config.speedModifier);
+      this.leftSpeed = Scalar.Lerp(
+        this.leftSpeed,
+        this.rightSpeed / 2,
+        dt * PlayerTank.config.speedModifier,
+      );
     }
 
     this.axleMotors.forEach((motor, idx) => {
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed);
+      motor.setAxisMotorTarget(
+        PhysicsConstraintAxis.ANGULAR_X,
+        idx < 5 ? this.leftSpeed : this.rightSpeed,
+      );
     });
   }
   private right(dt: number, isAccelerating: boolean) {
@@ -548,7 +629,7 @@ export class PlayerTank extends Tank {
             dt *
             PlayerTank.config.decelerationModifier,
         -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        PlayerTank.config.maxSpeed,
       );
       this.rightSpeed = clamp(
         this.rightSpeed +
@@ -556,19 +637,22 @@ export class PlayerTank extends Tank {
             dt *
             PlayerTank.config.speedModifier,
         -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        PlayerTank.config.maxSpeed,
       );
     } else {
       // Reduce power of right axle to half of left axle
       this.rightSpeed = Scalar.Lerp(
         this.rightSpeed,
         this.leftSpeed / 2,
-        dt * PlayerTank.config.speedModifier
+        dt * PlayerTank.config.speedModifier,
       );
     }
 
     this.axleMotors.forEach((motor, idx) =>
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed)
+      motor.setAxisMotorTarget(
+        PhysicsConstraintAxis.ANGULAR_X,
+        idx < 5 ? this.leftSpeed : this.rightSpeed,
+      ),
     );
   }
   private brake(dt: number) {
@@ -583,29 +667,31 @@ export class PlayerTank extends Tank {
       this.leftSpeed = clamp(
         this.leftSpeed + Math.sign(this.leftSpeed) * -1 * dt * modifier,
         -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        PlayerTank.config.maxSpeed,
       );
       this.rightSpeed = clamp(
         this.rightSpeed + Math.sign(this.rightSpeed) * -1 * dt * modifier,
         -PlayerTank.config.maxSpeed,
-        PlayerTank.config.maxSpeed
+        PlayerTank.config.maxSpeed,
       );
       // Even out while decelerating
       speed = avg([this.leftSpeed, this.rightSpeed]);
     }
 
-    this.axleMotors.forEach((motor) => motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, speed));
+    this.axleMotors.forEach((motor) =>
+      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, speed),
+    );
   }
   private turretLeft(dt: number) {
     this.turretMotor.setAxisMotorTarget(
       PhysicsConstraintAxis.ANGULAR_Y,
-      -dt * PlayerTank.config.maxTurretSpeed
+      -dt * PlayerTank.config.maxTurretSpeed,
     );
   }
   private turretRight(dt: number) {
     this.turretMotor.setAxisMotorTarget(
       PhysicsConstraintAxis.ANGULAR_Y,
-      dt * PlayerTank.config.maxTurretSpeed
+      dt * PlayerTank.config.maxTurretSpeed,
     );
   }
   private stopTurret() {
@@ -614,13 +700,13 @@ export class PlayerTank extends Tank {
   private barrelUp(dt: number) {
     this.barrelMotor.setAxisMotorTarget(
       PhysicsConstraintAxis.ANGULAR_X,
-      -dt * PlayerTank.config.maxBarrelSpeed
+      -dt * PlayerTank.config.maxBarrelSpeed,
     );
   }
   private barrelDown(dt: number) {
     this.barrelMotor.setAxisMotorTarget(
       PhysicsConstraintAxis.ANGULAR_X,
-      dt * PlayerTank.config.maxBarrelSpeed
+      dt * PlayerTank.config.maxBarrelSpeed,
     );
   }
   private stopBarrel() {
@@ -631,15 +717,17 @@ export class PlayerTank extends Tank {
     const barrelEuler = this.barrel.rotationQuaternion!.toEulerAngles();
 
     if (Math.abs(turretEuler.y) > 0.01) {
-      turretEuler.y < 0 ? this.turretRight(dt) : this.turretLeft(dt);
+      const action = turretEuler.y < 0 ? this.turretRight : this.turretLeft;
+      action(dt);
     }
     if (Math.abs(barrelEuler.x) > 0.01) {
-      barrelEuler.x < 0 ? this.barrelDown(dt) : this.barrelUp(dt);
+      const action = barrelEuler.x < 0 ? this.barrelDown : this.barrelUp;
+      action(dt);
     }
   }
   private toggleCamera() {
     if (performance.now() - this.lastCameraToggle > this.cameraToggleDelay) {
-      if (this.world.scene.activeCamera?.name === 'tpp-cam') {
+      if (this.world.scene.activeCamera?.name === "tpp-cam") {
         this.world.scene.activeCamera = this.cameras.fpp;
       } else {
         this.world.scene.activeCamera = this.cameras.tpp;
@@ -652,8 +740,8 @@ export class PlayerTank extends Tank {
 
     this.loadedShell.fire();
     this.simulateRecoil();
-    this.particleSystems['muzzle']?.start();
-    this.sounds['cannon']?.play();
+    this.particleSystems["muzzle"]?.start();
+    this.sounds["cannon"]?.play();
     Shell.create(this).then((shell) => (this.loadedShell = shell));
 
     this.lastFiredTS = now;
@@ -678,7 +766,10 @@ export class PlayerTank extends Tank {
     this.world.scene.setStepId(lastProcessedInput.step);
     this.updateTransform();
     this.axleMotors.forEach((motor, idx) =>
-      motor.setAxisMotorTarget(PhysicsConstraintAxis.ANGULAR_X, idx < 5 ? this.leftSpeed : this.rightSpeed)
+      motor.setAxisMotorTarget(
+        PhysicsConstraintAxis.ANGULAR_X,
+        idx < 5 ? this.leftSpeed : this.rightSpeed,
+      ),
     );
 
     // 2. Discard all historical messages upto last-processed-message
@@ -686,7 +777,7 @@ export class PlayerTank extends Tank {
 
     // 3. Replay all messages till present (Prediction)
     const historyInfo = InputManager.getHistory();
-    if (typeof historyInfo.targetStep !== 'undefined') {
+    if (typeof historyInfo.targetStep !== "undefined") {
       this.replay(historyInfo.history, startStepId, historyInfo.targetStep);
     }
 
@@ -694,7 +785,7 @@ export class PlayerTank extends Tank {
   }
   private replay(history: Record<number, IInputHistory>, currStepId: number, targetStepId: number) {
     while (currStepId <= targetStepId) {
-      this.applyInputs(history[currStepId].message.input);
+      this.applyInputs(history[currStepId]!.message.input);
       this.world.scene._advancePhysicsEngineStep(World.deltaTime);
       if (currStepId !== targetStepId) {
         this.world.scene.setStepId(currStepId);
@@ -730,13 +821,13 @@ export class PlayerTank extends Tank {
         this.state!.rotation.x,
         this.state!.rotation.y,
         this.state!.rotation.z,
-        this.state!.rotation.w
+        this.state!.rotation.w,
       ) ??
       new Quaternion(
         this.state!.rotation.x,
         this.state!.rotation.y,
         this.state!.rotation.z,
-        this.state!.rotation.w
+        this.state!.rotation.w,
       );
 
     this.turret.rotationQuaternion =
@@ -744,26 +835,26 @@ export class PlayerTank extends Tank {
         this.state!.turretRotation.x,
         this.state!.turretRotation.y,
         this.state!.turretRotation.z,
-        this.state!.turretRotation.w
+        this.state!.turretRotation.w,
       ) ??
       new Quaternion(
         this.state!.turretRotation.x,
         this.state!.turretRotation.y,
         this.state!.turretRotation.z,
-        this.state!.turretRotation.w
+        this.state!.turretRotation.w,
       );
     this.barrel.rotationQuaternion =
       this.barrel.rotationQuaternion?.set(
         this.state!.barrelRotation.x,
         this.state!.barrelRotation.y,
         this.state!.barrelRotation.z,
-        this.state!.barrelRotation.w
+        this.state!.barrelRotation.w,
       ) ??
       new Quaternion(
         this.state!.barrelRotation.x,
         this.state!.barrelRotation.y,
         this.state!.barrelRotation.z,
-        this.state!.barrelRotation.w
+        this.state!.barrelRotation.w,
       );
   }
 

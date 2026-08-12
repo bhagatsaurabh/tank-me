@@ -1,4 +1,4 @@
-import { List, ListNode } from './list';
+import { List, ListNode } from "./list";
 
 export class IndexedQueue<I extends string | number | symbol, T> {
   private list = new List<T>();
@@ -84,7 +84,7 @@ export class IndexedQueue<I extends string | number | symbol, T> {
   getAll(): Record<I, T> {
     const map: Record<I, T> = {} as Record<I, T>;
     Object.entries(this.index as ArrayLike<ListNode<T>>).forEach(
-      ([key, node]) => (map[key as I] = node.value)
+      ([key, node]) => (map[key as I] = node.value),
     );
     return map;
   }

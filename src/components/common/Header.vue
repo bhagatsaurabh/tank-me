@@ -20,6 +20,7 @@
   top: 0;
   z-index: 10;
 }
+
 .header .background {
   position: absolute;
   top: 0;
@@ -38,9 +39,11 @@ header.header .right {
   align-items: center;
   overflow: hidden;
 }
+
 header.header .left {
   justify-content: start;
 }
+
 header.header .right {
   justify-content: end;
 }

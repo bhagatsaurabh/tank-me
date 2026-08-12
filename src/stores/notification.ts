@@ -1,10 +1,10 @@
-import { ref } from 'vue';
-import { defineStore } from 'pinia';
-import type { Nullable } from '@babylonjs/core';
+import { ref } from "vue";
+import { defineStore } from "pinia";
+import type { Nullable } from "@babylonjs/core";
 
-import type { INotification } from '@/types';
+import type { INotification } from "@/types";
 
-export const useNotificationStore = defineStore('notification', () => {
+export const useNotificationStore = defineStore("notification", () => {
   const active = ref<Nullable<INotification>>(null);
 
   function push(notification: INotification) {
@@ -20,6 +20,6 @@ export const useNotificationStore = defineStore('notification', () => {
   return {
     active,
     push,
-    clear
+    clear,
   };
 });

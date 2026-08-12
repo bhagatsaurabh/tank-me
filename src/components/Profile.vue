@@ -27,8 +27,8 @@ const isVerified = computed(() => !!auth.profile?.email);
 
 const validateEmail = (val: string) => {
   if (!val) return 'Please enter an e-mail';
-  // eslint-disable-next-line no-useless-escape
-  if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return '';
+
+  if (/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/g.test(val)) return '';
   return 'Not a valid e-mail';
 };
 let oldStatus: AuthStatus;
@@ -37,7 +37,7 @@ const handleUpgrade = async () => {
     return;
   }
 
-  let oStatus = auth.status;
+  const oStatus = auth.status;
   if (await auth.signIn('email', email.value, '', true)) {
     emit('guest-upgrade', true);
     oldStatus = oStatus;
@@ -66,15 +66,8 @@ onMounted(() => (show.value = true));
         </section>
         <section class="status">{{ !isVerified ? 'Not verified' : 'Verified' }}</section>
         <section v-if="!isVerified && !isGuestUpgrading" class="verify">
-          <InputText
-            class="mt-1 mb-2p5"
-            ref="emailEl"
-            v-model="email"
-            type="email"
-            placeholder="E-mail"
-            :attrs="{ spellCheck: false }"
-            :validator="(val: string) => validateEmail(val)"
-          />
+          <InputText class="mt-1 mb-2p5" ref="emailEl" v-model="email" type="email" placeholder="E-mail"
+            :attrs="{ spellCheck: false }" :validator="(val: string) => validateEmail(val)" />
           <Button :action="handleUpgrade" :size="0.75" async>Verify</Button>
         </section>
         <section v-if="!isVerified && isGuestUpgrading" class="guest-upgrade">
@@ -118,9 +111,11 @@ onMounted(() => (show.value = true));
   background-position: bottom;
   padding: 1rem;
 }
+
 .profile .info {
   display: flex;
 }
+
 .profile .info .name {
   color: #000;
 }
@@ -129,6 +124,7 @@ onMounted(() => (show.value = true));
   color: #585858;
   font-size: 0.75rem;
 }
+
 .profile .controls {
   display: flex;
   justify-content: flex-end;
@@ -140,6 +136,7 @@ onMounted(() => (show.value = true));
   margin-bottom: 0.5rem;
   color: #303030;
 }
+
 .upgrade-email {
   color: #ffffff;
   background-color: #00000066;
@@ -151,9 +148,11 @@ onMounted(() => (show.value = true));
   display: flex;
   font-size: 0.75rem;
 }
+
 .profile .stats .keys {
   margin-right: 1rem;
 }
+
 .profile .stats .values {
   margin: 0 1rem;
 }

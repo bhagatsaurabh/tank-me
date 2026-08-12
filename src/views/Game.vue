@@ -76,10 +76,10 @@ onMounted(async () => {
     handle = setInterval(() => {
       const mark = new Date(
         (gameClient.value?.matchDuration ?? 0) -
-          (Date.now() -
-            ((isVsAI.value
-              ? gameClient.value?.world?.startTimestamp
-              : gameClient.value?.state?.startTimestamp) ?? 0))
+        (Date.now() -
+          ((isVsAI.value
+            ? gameClient.value?.world?.startTimestamp
+            : gameClient.value?.state?.startTimestamp) ?? 0))
       );
       currTime.value = `${mark.toISOString().substring(14, 19)}`;
       if (currTime.value === '00:00') clearInterval(handle);
@@ -94,11 +94,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="game-container" ref="containerEl">
-    <Modal
-      ref="fullscreenConsent"
-      title="Fullscreen: Permission required"
-      :controls="[{ text: 'Deny' }, { text: 'Allow', async: true, action: handleAllowFullscreen }]"
-    >
+    <Modal ref="fullscreenConsent" title="Fullscreen: Permission required"
+      :controls="[{ text: 'Deny' }, { text: 'Allow', async: true, action: handleAllowFullscreen }]">
       <h5>
         {{
           presentation.device === 'desktop'
@@ -146,6 +143,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
 }
+
 .game-container canvas {
   width: 100%;
   height: 100%;
@@ -193,10 +191,12 @@ onBeforeUnmount(() => {
   align-items: center;
   background-color: #00000029;
 }
+
 .matchend .title {
   font-size: 4rem;
   margin-left: 2rem;
 }
+
 .matchend .title .background {
   position: absolute;
   top: 0;
@@ -206,11 +206,13 @@ onBeforeUnmount(() => {
   background: url('/assets/images/background.jpg');
   mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
 }
+
 .matchend .stats {
   display: flex;
   margin-right: 2rem;
   column-gap: 1rem;
 }
+
 .matchend .controls {
   position: absolute;
   left: 2rem;

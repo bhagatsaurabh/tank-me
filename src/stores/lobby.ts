@@ -1,6 +1,5 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
-import * as Colyseus from "colyseus.js";
 import type { Nullable } from "@babylonjs/core";
 
 import { useAuthStore } from "./auth";
@@ -9,15 +8,16 @@ import type { RoomState } from "@/game/state";
 import { GameClient } from "@/game/client";
 import { useNotificationStore } from "./notification";
 import { Notifications } from "@/utils/constants";
+import type { Room, RoomAvailable } from "@colyseus/sdk";
 
 export const useLobbyStore = defineStore("lobby", () => {
   const auth = useAuthStore();
 
   const status = ref<LobbyStatus>("connecting");
   const client = ref<GameClient | undefined>(undefined);
-  const lobbyRoom = ref<Nullable<Colyseus.Room>>(null);
-  const gameRoom = ref<Nullable<Colyseus.Room<RoomState>>>(null);
-  const allRooms = ref<Colyseus.RoomAvailable[]>([]);
+  const lobbyRoom = ref<Nullable<Room>>(null);
+  const gameRoom = ref<Nullable<Room<RoomState>>>(null);
+  const allRooms = ref<RoomAvailable[]>([]);
 
   async function connect() {
     const notify = useNotificationStore();
@@ -29,8 +29,8 @@ export const useLobbyStore = defineStore("lobby", () => {
         "lobby",
         (auth.user as unknown as { accessToken: string }).accessToken,
       );
-      lobbyRoom.value.onMessage("rooms", (rooms) => (allRooms.value = rooms));
-      lobbyRoom.value.onMessage("+", ([roomId, room]) => {
+      lobbyRoom.value?.onMessage("rooms", (rooms) => (allRooms.value = rooms));
+      lobbyRoom.value?.onMessage("+", ([roomId, room]) => {
         const roomIndex = allRooms.value.findIndex((room) => room.roomId === roomId);
         if (roomIndex !== -1) {
           allRooms.value[roomIndex] = room;
@@ -38,7 +38,7 @@ export const useLobbyStore = defineStore("lobby", () => {
           allRooms.value.push(room);
         }
       });
-      lobbyRoom.value.onMessage(
+      lobbyRoom.value?.onMessage(
         "-",
         (roomId) => (allRooms.value = allRooms.value.filter((room) => room.roomId !== roomId)),
       );
@@ -69,9 +69,5 @@ export const useLobbyStore = defineStore("lobby", () => {
     return false;
   }
 
-  return {
-    status,
-    connect,
-    match,
-  };
+  return { status, connect, match };
 });

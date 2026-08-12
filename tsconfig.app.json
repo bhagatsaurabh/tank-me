@@ -8,6 +8,8 @@
     "lib": ["ESNext", "DOM"],
     "allowJs": true,
     "noUncheckedIndexedAccess": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
     "paths": {
       "@/*": ["./src/*"]
     },

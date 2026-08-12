@@ -35,7 +35,7 @@ const getMedalIcon = (pos: number) => {
   else return 'bronze-medal';
 };
 
-let unregisterGuard = () => {};
+let unregisterGuard = () => { };
 watch(
   show,
   async (newVal, oldVal) => {
@@ -93,7 +93,9 @@ onBeforeUnmount(unregisterGuard);
             <th>Wins</th>
           </tr>
           <tr v-for="(profile, idx) in remoteDB.leaderboard" :key="profile.id">
-            <td class="medal-cell"><Icon v-if="idx < 3" alt="medal-icon" :name="getMedalIcon(idx)" /></td>
+            <td class="medal-cell">
+              <Icon v-if="idx < 3" alt="medal-icon" :name="getMedalIcon(idx)" />
+            </td>
             <td>{{ profile.username }}</td>
             <td>{{ profile.stats?.points }}</td>
             <td>{{ profile.stats?.matches }}</td>
@@ -126,10 +128,12 @@ onBeforeUnmount(unregisterGuard);
   align-items: center;
   display: flex;
 }
+
 .leaderboard .title h1 {
   color: #fedeab;
   margin-left: 2rem;
 }
+
 .leaderboard .title .bg {
   position: absolute;
   width: 50%;
@@ -148,24 +152,29 @@ onBeforeUnmount(unregisterGuard);
   max-height: calc(100% - 9.75rem);
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 75%, rgba(0, 0, 0, 0));
 }
+
 .leaderboard .content .wait {
   width: 100%;
   display: flex;
   justify-content: center;
 }
+
 .leaderboard .content .wait:deep(.spinner) {
   width: 15rem;
   height: 2.2rem;
 }
+
 .leaderboard .content table {
   color: #000;
   border-collapse: collapse;
   width: 100%;
   margin-bottom: 4rem;
 }
+
 .content table tr {
   border-bottom: 1px solid #5c5c5c73;
 }
+
 .content table tr:first-child {
   position: sticky;
   top: 0;
@@ -174,13 +183,16 @@ onBeforeUnmount(unregisterGuard);
   z-index: 5;
   box-shadow: 0 0 10px 0px #000;
 }
+
 .content table th {
   text-align: left;
   padding: 0.5rem;
 }
+
 .content table td {
   padding: 0.5rem;
 }
+
 .medal-cell {
   display: flex;
   justify-content: center;

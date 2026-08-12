@@ -180,7 +180,8 @@ export class World {
     this.observers.push(this.scene.onAfterStepObservable.add(() => this.update()));
     this.observers.push(this.scene.onBeforeRenderObservable.add(() => this.beforeRender()));
     if (!this.vsAI) {
-      this.client.state.onChange(() => this.update());
+      this.client.rooms.desert?.onStateChange(() => this.update());
+      // this.client.state.onChange(() => this.update());
     }
 
     this.setOptimizer();

@@ -1,21 +1,21 @@
-import { ref } from 'vue';
-import { defineStore } from 'pinia';
-import type { Nullable } from '@babylonjs/core';
+import { ref } from "vue";
+import { defineStore } from "pinia";
+import type { Nullable } from "@babylonjs/core";
 
-import { useAuthStore } from './auth';
-import type { BroadcastMessage } from '@/types';
+import { useAuthStore } from "./auth";
+import type { BroadcastMessage } from "@/types";
 
 // For cross-tab communication
-export const useBroadcastStore = defineStore('broadcast', () => {
+export const useBroadcastStore = defineStore("broadcast", () => {
   const auth = useAuthStore();
   const channel = ref<Nullable<BroadcastChannel>>(null);
 
   function registerBroadcastListener(name: string) {
     channel.value = new BroadcastChannel(name);
     channel.value.onmessage = async (ev: MessageEvent<BroadcastMessage>) => {
-      if (ev.data.type === 'auth' && ev.data.value === 'guest-verified' && auth.user?.uid) {
+      if (ev.data.type === "auth" && ev.data.value === "guest-verified" && auth.user?.uid) {
         await auth.loadUserProfile(auth.user.uid);
-        auth.status = 'signed-in';
+        auth.status = "signed-in";
       }
     };
   }
@@ -29,6 +29,6 @@ export const useBroadcastStore = defineStore('broadcast', () => {
   return {
     registerBroadcastListener,
     sendBroadcast,
-    close
+    close,
   };
 });

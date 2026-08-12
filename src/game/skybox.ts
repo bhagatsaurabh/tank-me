@@ -1,5 +1,5 @@
-import { Scene } from '@babylonjs/core';
-import { CubeTexture } from '@babylonjs/core/Materials';
+import { Scene } from "@babylonjs/core";
+import { CubeTexture } from "@babylonjs/core/Materials";
 
 export class Skybox {
   private static instance: Skybox;
@@ -14,7 +14,13 @@ export class Skybox {
       await instance.loadEnv();
       await instance.load();
 
-      const skybox = instance.scene.createDefaultSkybox(instance.cubeTexture, false, 1000, undefined, false);
+      const skybox = instance.scene.createDefaultSkybox(
+        instance.cubeTexture,
+        false,
+        1000,
+        undefined,
+        false,
+      );
       skybox!.infiniteDistance = true;
       // skybox!.applyFog = false;
     }
@@ -24,24 +30,24 @@ export class Skybox {
   loadEnv() {
     return new Promise<boolean>((resolve) => {
       this.scene.environmentTexture = new CubeTexture(
-        '/assets/game/skybox/environment.env',
+        "/assets/game/skybox/environment.env",
         this.scene,
         null,
         undefined,
         null,
-        () => resolve(true)
+        () => resolve(true),
       );
     });
   }
   load() {
     return new Promise<boolean>((resolve) => {
       this.cubeTexture = new CubeTexture(
-        '/assets/game/skybox/bluecloud',
+        "/assets/game/skybox/bluecloud",
         this.scene,
         null,
         undefined,
         null,
-        () => resolve(true)
+        () => resolve(true),
       );
     });
   }

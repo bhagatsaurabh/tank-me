@@ -1,49 +1,49 @@
-import { MapSchema, Schema } from '@colyseus/schema';
+import { MapSchema, Schema, type } from "@colyseus/schema";
 
 export class Position extends Schema {
-  x!: number;
-  y!: number;
-  z!: number;
+  @type("number") x!: number;
+  @type("number") y!: number;
+  @type("number") z!: number;
 }
 export class Rotation extends Schema {
-  x!: number;
-  y!: number;
-  z!: number;
-  w!: number;
+  @type("number") x!: number;
+  @type("number") y!: number;
+  @type("number") z!: number;
+  @type("number") w!: number;
 }
 export class BarrelRotation extends Schema {
-  x!: number;
-  y!: number;
-  z!: number;
-  w!: number;
+  @type("number") x!: number;
+  @type("number") y!: number;
+  @type("number") z!: number;
+  @type("number") w!: number;
 }
 export class TurretRotation extends Schema {
-  x!: number;
-  y!: number;
-  z!: number;
-  w!: number;
+  @type("number") x!: number;
+  @type("number") y!: number;
+  @type("number") z!: number;
+  @type("number") w!: number;
 }
 export class LastProcessedInput extends Schema {
-  step!: number;
-  timestamp!: number;
+  @type("number") step!: number;
+  @type("number") timestamp!: number;
 }
 
 export class Player extends Schema {
-  sid!: string;
-  uid!: string;
-  canFire!: boolean;
-  leftSpeed!: number;
-  rightSpeed!: number;
-  health!: number;
-  position!: Position;
-  rotation!: Rotation;
-  barrelRotation!: BarrelRotation;
-  turretRotation!: TurretRotation;
-  lastProcessedInput!: LastProcessedInput;
+  @type("string") sid!: string;
+  @type("string") uid!: string;
+  @type("boolean") canFire!: boolean;
+  @type("number") leftSpeed!: number;
+  @type("number") rightSpeed!: number;
+  @type("number") health!: number;
+  @type(Position) position!: Position;
+  @type(Rotation) rotation!: Rotation;
+  @type(BarrelRotation) barrelRotation!: BarrelRotation;
+  @type(TurretRotation) turretRotation!: TurretRotation;
+  @type(LastProcessedInput) lastProcessedInput!: LastProcessedInput;
 }
 
 export class RoomState extends Schema {
-  status: 'matching' | 'ready' = 'matching';
-  startTimestamp: number = -1;
-  players = new MapSchema<Player>();
+  @type("string") status: "matching" | "ready" = "matching";
+  @type("number") startTimestamp: number = -1;
+  @type({ map: Player }) players = new MapSchema<Player>();
 }

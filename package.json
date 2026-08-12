@@ -19,7 +19,8 @@
     "node": "^22.18.0 || >=24.12.0"
   },
   "dependencies": {
-    "colyseus.js": "^0.16.22",
+    "@colyseus/schema": "^4.0.30",
+    "@colyseus/sdk": "^0.17.43",
     "firebase": "^12.17.1",
     "pinia": "^4.0.2",
     "showdown": "^2.1.0",

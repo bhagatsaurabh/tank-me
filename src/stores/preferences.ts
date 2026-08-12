@@ -1,11 +1,11 @@
-import { ref, toRaw } from 'vue';
-import { defineStore } from 'pinia';
-import type { Nullable } from '@babylonjs/core';
+import { ref, toRaw } from "vue";
+import { defineStore } from "pinia";
+import type { Nullable } from "@babylonjs/core";
 
-import type { UserPreferences } from '@/types';
-import { getPreferences, storePreferences } from '@/database/driver';
+import type { UserPreferences } from "@/types";
+import { getPreferences, storePreferences } from "@/database/driver";
 
-export const usePreferencesStore = defineStore('preferences', () => {
+export const usePreferencesStore = defineStore("preferences", () => {
   const data = ref<Nullable<Partial<UserPreferences>>>(null);
 
   async function load() {
@@ -19,6 +19,6 @@ export const usePreferencesStore = defineStore('preferences', () => {
   return {
     data,
     load,
-    update
+    update,
   };
 });

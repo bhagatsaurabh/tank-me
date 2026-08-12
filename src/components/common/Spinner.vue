@@ -30,6 +30,7 @@ const overlayWidth = computed(() => `${Math.round(props.progress * 100)}%`);
   0% {
     background-position-x: 0%;
   }
+
   100% {
     background-position-x: 100%;
   }
@@ -48,13 +49,11 @@ const overlayWidth = computed(() => `${Math.round(props.progress * 100)}%`);
   animation-fill-mode: forwards;
   animation-iteration-count: infinite;
   filter: invert(1);
-  mask-image: linear-gradient(
-    to left,
-    rgba(0, 0, 0, 0),
-    rgba(0, 0, 0, 1) 15%,
-    rgba(0, 0, 0, 1) 85%,
-    rgba(0, 0, 0, 0)
-  );
+  mask-image: linear-gradient(to left,
+      rgba(0, 0, 0, 0),
+      rgba(0, 0, 0, 1) 15%,
+      rgba(0, 0, 0, 1) 85%,
+      rgba(0, 0, 0, 0));
 }
 
 .tank-icon {
@@ -73,6 +72,7 @@ const overlayWidth = computed(() => `${Math.round(props.progress * 100)}%`);
   justify-content: center;
   align-items: center;
 }
+
 .trackable .overlay {
   z-index: 1;
   background-color: #ffffff83;

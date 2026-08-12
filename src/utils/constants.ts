@@ -1,4 +1,4 @@
-import { Converter } from 'showdown';
+import { Converter } from "showdown";
 
 import {
   GameInputType,
@@ -8,8 +8,8 @@ import {
   type INotification,
   type GraphicsPresetType,
   type GraphicsConfig,
-  TouchInputType
-} from '@/types';
+  TouchInputType,
+} from "@/types";
 
 const converter = new Converter();
 
@@ -26,7 +26,7 @@ export const keyMap: Record<KeyInputType, GameInputType> = {
   ArrowRight: GameInputType.TURRET_RIGHT,
   Space: GameInputType.BRAKE,
   ControlLeft: GameInputType.FIRE,
-  ControlRight: GameInputType.FIRE
+  ControlRight: GameInputType.FIRE,
 };
 export const touchMap: Record<TouchInputType, GameInputType> = {
   Joystick1Up: GameInputType.FORWARD,
@@ -40,7 +40,7 @@ export const touchMap: Record<TouchInputType, GameInputType> = {
   Joystick2Left: GameInputType.TURRET_LEFT,
   Joystick2Right: GameInputType.TURRET_RIGHT,
   Brake: GameInputType.BRAKE,
-  Fire: GameInputType.FIRE
+  Fire: GameInputType.FIRE,
 };
 
 export const userNameRegex = /^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/;
@@ -49,86 +49,86 @@ export const Notifications = Object.freeze({
   GENERIC: (meta: ErrorInfo): INotification =>
     meta.isCritical
       ? {
-          type: 'popup',
-          title: 'Something went wrong',
-          status: 'error',
+          type: "popup",
+          title: "Something went wrong",
+          status: "error",
           message: converter.makeHtml(
-            'Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)'
+            "Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)",
           ),
-          action: 'reload',
-          error: meta.error
+          action: "reload",
+          error: meta.error,
         }
       : {
-          type: 'popup',
-          title: 'Something went wrong',
-          status: 'error',
+          type: "popup",
+          title: "Something went wrong",
+          status: "error",
           message: converter.makeHtml(
-            'Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)'
+            "Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)",
           ),
-          error: meta.error
+          error: meta.error,
         },
   ASSET_LOAD_FAILED: (meta: ErrorInfo): INotification => ({
-    type: 'popup',
-    title: 'Failed to load assets',
-    status: 'error',
+    type: "popup",
+    title: "Failed to load assets",
+    status: "error",
     message: converter.makeHtml(
-      'Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)'
+      "Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)",
     ),
-    error: meta.error
+    error: meta.error,
   }),
   SIGN_IN_FAILED: (meta: ErrorInfo): INotification => ({
-    type: 'popup',
-    title: 'Sign-in failed',
-    status: 'error',
+    type: "popup",
+    title: "Sign-in failed",
+    status: "error",
     message: converter.makeHtml(
-      'Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)'
+      "Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)",
     ),
-    error: meta.error
+    error: meta.error,
   }),
   ROOM_JOIN_FAILED: (meta: ErrorInfo): INotification => ({
-    type: 'popup',
-    title: 'Could not connect to server',
-    status: 'error',
+    type: "popup",
+    title: "Could not connect to server",
+    status: "error",
     message: converter.makeHtml(
-      'Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)'
+      "Please try again or report [here](https://github.com/bhagatsaurabh/tank-me/issues)",
     ),
-    error: meta.error
-  })
+    error: meta.error,
+  }),
 });
 
 export const spawnAxes: SpawnAxis[] = [SpawnAxis.PX, SpawnAxis.NX, SpawnAxis.PZ, SpawnAxis.NZ];
 
 export const GraphicsPreset: Record<GraphicsPresetType, GraphicsConfig> = Object.freeze({
   high: {
-    id: 'high',
+    id: "high",
     ground: {
-      subdivisions: 256
+      subdivisions: 256,
     },
     shadows: {
       quality: 0,
-      mapSize: 512
+      mapSize: 512,
     },
     optimizations: {
       targetFps: 45,
       maxTextureSize: 512,
-      maxHardwareScale: 2
-    }
+      maxHardwareScale: 2,
+    },
   },
   low: {
-    id: 'low',
+    id: "low",
     ground: {
-      subdivisions: 256
+      subdivisions: 256,
     },
     shadows: {
       quality: 2,
-      mapSize: 128
+      mapSize: 128,
     },
     optimizations: {
       targetFps: 45,
       maxTextureSize: 128,
-      maxHardwareScale: 4
-    }
-  }
+      maxHardwareScale: 4,
+    },
+  },
 });
 
 export const mobileRegex1 =

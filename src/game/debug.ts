@@ -1,5 +1,5 @@
-import { type Vector3 } from '@babylonjs/core/Maths';
-import { LinesMesh, Mesh, MeshBuilder } from '@babylonjs/core/Meshes';
+import { type Vector3 } from "@babylonjs/core/Maths";
+import { LinesMesh, Mesh, MeshBuilder } from "@babylonjs/core/Meshes";
 
 export class Debug {
   static meshes: Record<string, Mesh> = {};
@@ -10,6 +10,9 @@ export class Debug {
     return mesh;
   }
   static updateLine(id: string, points: Vector3[]) {
-    Debug.meshes[id] = MeshBuilder.CreateLines(id, { points, instance: Debug.meshes[id] as LinesMesh });
+    Debug.meshes[id] = MeshBuilder.CreateLines(id, {
+      points,
+      instance: Debug.meshes[id] as LinesMesh,
+    });
   }
 }

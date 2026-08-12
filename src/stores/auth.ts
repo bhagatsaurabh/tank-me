@@ -1,5 +1,5 @@
-import { ref } from 'vue';
-import { defineStore } from 'pinia';
+import { ref } from "vue";
+import { defineStore } from "pinia";
 import {
   getAuth,
   onAuthStateChanged,
@@ -10,30 +10,30 @@ import {
   isSignInWithEmailLink,
   signInWithEmailLink,
   type UserCredential,
-  EmailAuthProvider
-} from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { sendSignInLinkToEmail, linkWithCredential } from 'firebase/auth';
-import type { Nullable } from '@babylonjs/core';
+  EmailAuthProvider,
+} from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { sendSignInLinkToEmail, linkWithCredential } from "firebase/auth";
+import type { Nullable } from "@babylonjs/core";
 
-import { useRemoteDBStore } from './remote';
-import { useBroadcastStore } from './broadcast';
-import * as local from '@/database/driver';
-import { app, remoteDB } from '@/config/firebase';
-import { type Profile, type AuthStatus, type AuthType } from '@/types';
-import { useNotificationStore } from './notification';
-import { Notifications } from '@/utils/constants';
+import { useRemoteDBStore } from "./remote";
+import { useBroadcastStore } from "./broadcast";
+import * as local from "@/database/driver";
+import { app, remoteDB } from "@/config/firebase";
+import { type Profile, type AuthStatus, type AuthType } from "@/types";
+import { useNotificationStore } from "./notification";
+import { Notifications } from "@/utils/constants";
 
 const auth = getAuth(app);
 auth.useDeviceLanguage();
 
-export const useAuthStore = defineStore('auth', () => {
+export const useAuthStore = defineStore("auth", () => {
   const remote = useRemoteDBStore();
   const broadcast = useBroadcastStore();
   const notify = useNotificationStore();
   const user = ref<Nullable<User>>(null);
   const profile = ref<Nullable<Profile>>(null);
-  const status = ref<AuthStatus>('pending');
+  const status = ref<AuthStatus>("pending");
   const unsubFn = ref<Nullable<Unsubscribe>>(null);
   const stateCheck = ref(false);
 
@@ -43,14 +43,14 @@ export const useAuthStore = defineStore('auth', () => {
     const unsubscribe = onAuthStateChanged(auth, async (usr) => {
       if (usr) {
         user.value = usr;
-        if (status.value !== 'signed-in') {
+        if (status.value !== "signed-in") {
           await handleExistingUser(user.value);
-          if (!window.location.href.includes('tankSignIntype=upgrade')) {
-            status.value = 'signed-in';
+          if (!window.location.href.includes("tankSignIntype=upgrade")) {
+            status.value = "signed-in";
           }
         }
       } else {
-        if (status.value !== 'blocked') status.value = 'signed-out';
+        if (status.value !== "blocked") status.value = "signed-out";
       }
       stateCheck.value = true;
     });
@@ -63,7 +63,7 @@ export const useAuthStore = defineStore('auth', () => {
     await remote.updateProfile(prfl);
   }
   async function loadUserProfile(uid: string) {
-    const snap = await getDoc(doc(remoteDB, 'users', uid));
+    const snap = await getDoc(doc(remoteDB, "users", uid));
     profile.value = snap.data() as Profile;
   }
   async function handleNewUser(usr: User, username: string | null = null, isUpgrade = false) {
@@ -72,14 +72,14 @@ export const useAuthStore = defineStore('auth', () => {
       prfl = {
         id: usr.uid,
         username,
-        email: usr.email
+        email: usr.email,
       };
     } else {
       prfl = {
         id: usr.uid,
         username,
         email: usr.email,
-        stats: { matches: 0, wins: 0, points: 0 }
+        stats: { matches: 0, wins: 0, points: 0 },
       };
     }
 
@@ -94,40 +94,40 @@ export const useAuthStore = defineStore('auth', () => {
     type: AuthType,
     email: string | null,
     link?: string,
-    isUpgrade: boolean = false
+    isUpgrade: boolean = false,
   ): Promise<boolean> {
-    status.value = 'pending';
+    status.value = "pending";
     try {
-      if (type === 'email' && email) {
-        window.localStorage.setItem('email', email);
+      if (type === "email" && email) {
+        window.localStorage.setItem("email", email);
         await sendSignInLinkToEmail(auth, email, {
-          url: `${window.location.protocol}//${window.location.host}?tankSignIntype=${isUpgrade ? 'upgrade' : 'init'}`,
-          handleCodeInApp: true
+          url: `${window.location.protocol}//${window.location.host}?tankSignIntype=${isUpgrade ? "upgrade" : "init"}`,
+          handleCodeInApp: true,
         });
-      } else if (type === 'verify') {
+      } else if (type === "verify") {
         if (link && isSignInWithEmailLink(auth, link)) {
           if (!email) {
-            status.value = 'blocked';
+            status.value = "blocked";
             return false;
           } else {
             await handleSignInWithEmailLink(email, link);
-            status.value = 'verified';
+            status.value = "verified";
           }
         } else return false;
-      } else if (type === 'guest') {
+      } else if (type === "guest") {
         await handleSignInWithAnonymous();
-      } else if (type === 'guest-verify') {
+      } else if (type === "guest-verify") {
         if (link && isSignInWithEmailLink(auth, link)) {
           if (!email || !user.value) {
-            status.value = 'blocked';
+            status.value = "blocked";
             return false;
           } else {
             const credential = EmailAuthProvider.credentialWithLink(email, link);
             const { user: usr } = await linkWithCredential(user.value, credential);
             user.value = usr;
             await handleNewUser(usr, profile.value?.username, true);
-            status.value = 'verified';
-            broadcast.sendBroadcast({ type: 'auth', value: 'guest-verified' });
+            status.value = "verified";
+            broadcast.sendBroadcast({ type: "auth", value: "guest-verified" });
           }
         } else return false;
       }
@@ -138,7 +138,7 @@ export const useAuthStore = defineStore('auth', () => {
     return false;
   }
   async function handleSignInWithEmailLink(email: string, link: string) {
-    window.localStorage.removeItem('email');
+    window.localStorage.removeItem("email");
     const result = await signInWithEmailLink(auth, email, link);
     await handleSignInSuccess(result);
   }
@@ -153,9 +153,9 @@ export const useAuthStore = defineStore('auth', () => {
       } else {
         await handleExistingUser(result.user);
       }
-      status.value = 'signed-in';
+      status.value = "signed-in";
     } else {
-      throw new Error('Failed to sign-in');
+      throw new Error("Failed to sign-in");
     }
   }
   async function signOut() {
@@ -184,6 +184,6 @@ export const useAuthStore = defineStore('auth', () => {
     signOut,
     updateUserProfile,
     isVerificationLink,
-    loadUserProfile
+    loadUserProfile,
   };
 });

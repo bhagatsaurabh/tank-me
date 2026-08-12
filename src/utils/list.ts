@@ -1,4 +1,4 @@
-import type { Nullable } from '@babylonjs/core';
+import type { Nullable } from "@babylonjs/core";
 
 export class ListNode<T> {
   value: T;

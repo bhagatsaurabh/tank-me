@@ -81,13 +81,9 @@ onUnmounted(() => {
   <Modal v-if="modal" :title="modal.title" :controls="modal.controls" @dismiss="handleModalDismiss">
     <template v-html="modal.message"></template>
   </Modal>
-  <Modal
-    ref="fullscreenConsent"
-    title="Fullscreen: Permission required"
+  <Modal ref="fullscreenConsent" title="Fullscreen: Permission required"
     :controls="[{ text: 'Deny' }, { text: 'Allow', async: true, action: handleAllowFullscreen }]"
-    @dismiss="handleDismiss"
-    hidden
-  >
+    @dismiss="handleDismiss" hidden>
     <h5>Playing on fullscreen is recommended for best experience !</h5>
   </Modal>
   <RouterView />

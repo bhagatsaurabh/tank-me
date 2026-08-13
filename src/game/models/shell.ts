@@ -1,4 +1,4 @@
-import { Scene } from "@babylonjs/core";
+import { CreateSoundAsync, Scene, StaticSound } from "@babylonjs/core";
 import { StandardMaterial, Texture } from "@babylonjs/core/Materials";
 import { Axis, Color3, Space, Vector3 } from "@babylonjs/core/Maths";
 import { MeshBuilder, Mesh, LinesMesh, AbstractMesh } from "@babylonjs/core/Meshes";
@@ -7,7 +7,6 @@ import {
   type IPhysicsCollisionEvent,
   PhysicsShapeSphere,
 } from "@babylonjs/core/Physics";
-import { Sound } from "@babylonjs/core/Audio";
 import { Observer } from "@babylonjs/core/Misc";
 
 import { AssetLoader } from "../loader";
@@ -29,7 +28,7 @@ export class Shell {
   private static refPhysicsShape: PhysicsShapeSphere;
   private playerId: string;
   private mesh!: AbstractMesh;
-  private explosionSound!: Sound;
+  private explosionSound!: StaticSound;
   private isSpent: boolean = false;
   private debugTrajectory: Vector3[] = [];
   private debug = false;
@@ -122,19 +121,11 @@ export class Shell {
     this.particleSystem = PSShellExplosion.create(this.tank.world.scene);
   }
   private async loadSound() {
-    return new Promise<boolean>((resolve) => {
-      this.explosionSound = new Sound(
-        "explosion",
-        "/assets/game/audio/explosion.mp3",
-        this.tank.world.scene,
-        () => resolve(true),
-        {
-          loop: false,
-          autoplay: false,
-          spatialSound: true,
-          maxDistance: 150,
-        },
-      );
+    this.explosionSound = await CreateSoundAsync("explosion", "/assets/game/audio/explosion.mp3", {
+      spatialDistanceModel: "linear",
+      spatialPanningModel: "HRTF",
+      spatialEnabled: true,
+      spatialMaxDistance: 200,
     });
   }
   private setPhysics() {
@@ -191,10 +182,11 @@ export class Shell {
 
     const explosionOrigin = this.mesh.absolutePosition.clone();
     this.particleSystem.start(explosionOrigin);
-    this.explosionSound.setPosition(explosionOrigin);
+    this.explosionSound.spatial.position = explosionOrigin;
     this.explosionSound.onEndedObservable.add(() =>
       this.explosionSound.dispose(),
     ).unregisterOnNextCall = true;
+    this.explosionSound!.pitch = Math.floor(Math.random() * 100) - 50;
     this.explosionSound.play();
 
     this.dispose();

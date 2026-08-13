@@ -183,6 +183,7 @@ export class EnemyTank extends Tank {
     this.loadedShell.fire();
     this.simulateRecoil();
     this.particleSystems["muzzle"]?.start();
+    this.sounds.cannon!.pitch = Math.floor(Math.random() * 100) - 50;
     this.sounds["cannon"]?.play();
     Shell.create(this).then((shell) => (this.loadedShell = shell));
   }

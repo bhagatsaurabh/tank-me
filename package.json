@@ -13,7 +13,7 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "oxfmt src/",
-    "emulators": "firebase emulators:start --import ./emulatorstate --export-on-exit ./emulatorstate"
+    "emulators": "firebase emulators:start --project demo-project --import ./emulatorstate --export-on-exit ./emulatorstate"
   },
   "engines": {
     "node": "^22.18.0 || >=24.12.0"

@@ -15,7 +15,6 @@ const lobby = useLobbyStore();
 const presentation = usePresentationStore();
 const loader = useLoaderStore();
 
-const containerEl = ref<Nullable<HTMLDivElement>>(null);
 const canvasEl = ref<Nullable<HTMLCanvasElement>>(null);
 const isLoading = ref(false);
 const gameClient = ref<Nullable<GameClient>>(null);
@@ -77,7 +76,7 @@ onMounted(async () => {
       const mark = new Date(
         (gameClient.value?.matchDuration ?? 0) -
         (Date.now() -
-          ((isVsAI.value
+          ((isVsAI.value && gameClient.value?.state
             ? gameClient.value?.world?.startTimestamp
             : gameClient.value?.state?.startTimestamp) ?? 0))
       );

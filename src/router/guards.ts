@@ -2,35 +2,35 @@ import type { NavigationGuard } from "vue-router";
 
 import { useAuthStore, useLobbyStore } from "@/stores";
 
-export const authGuard: NavigationGuard = async (_to, _from, next) => {
+export const authGuard: NavigationGuard = async (_to, _from) => {
   const auth = useAuthStore();
 
   if (auth.user) {
-    next();
+    return;
   } else {
-    next("/");
+    return "/";
   }
 };
 
-export const lobbyGuard: NavigationGuard = async (_to, _from, next) => {
+export const lobbyGuard: NavigationGuard = async (_to, _from) => {
   const auth = useAuthStore();
   const lobby = useLobbyStore();
-  if (lobby.status === "playing") return next(false);
+  if (lobby.status === "playing") return false;
   if (auth.profile?.username && !window.location.href.includes("tankSignIntype=upgrade")) {
-    next();
+    return;
   } else {
-    next("/");
+    return "/";
   }
 };
 
-export const gameGuard: NavigationGuard = async (to, _from, next) => {
+export const gameGuard: NavigationGuard = async (to, _from) => {
   const auth = useAuthStore();
   const lobby = useLobbyStore();
 
   if (auth.profile?.username && (lobby.status === "playing" || to.hash === "#ai")) {
-    next();
+    return;
   } else {
-    next(auth.profile?.username ? "/lobby" : "/");
+    return auth.profile?.username ? "/lobby" : "/";
   }
 };
 

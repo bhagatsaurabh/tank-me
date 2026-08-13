@@ -25,7 +25,7 @@ export class GameClient {
   stats!: PlayerStats;
 
   get state() {
-    return this.rooms.desert!.state;
+    return this.rooms.desert?.state;
   }
 
   private constructor() {

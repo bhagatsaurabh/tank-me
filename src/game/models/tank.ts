@@ -1,5 +1,11 @@
-import { Observer, Ray, type Nullable } from "@babylonjs/core";
-import { Sound } from "@babylonjs/core/Audio";
+import {
+  CreateSoundAsync,
+  Observer,
+  Ray,
+  SoundState,
+  StaticSound,
+  type Nullable,
+} from "@babylonjs/core";
 import { Space, Axis, Vector3 } from "@babylonjs/core/Maths";
 import { AbstractMesh, TransformNode } from "@babylonjs/core/Meshes";
 import { PBRMaterial, Texture } from "@babylonjs/core/Materials";
@@ -49,11 +55,15 @@ export class Tank {
   ) {}
 
   protected async init() {
-    [[], this.loadedShell] = await Promise.all([this.setSoundSources(), Shell.create(this)]);
+    await this.setSoundSources();
+    this.loadedShell = await Shell.create(this);
+    // [[], this.loadedShell] = await Promise.all([this.setSoundSources(), Shell.create(this)]);
 
     this.setParticleSystems();
     this.particleSystems["exhaust-left"]?.start();
     this.particleSystems["exhaust-right"]?.start();
+
+    this.sounds.idle!.pitch = Math.floor(Math.random() * 200) - 100;
     this.sounds["idle"]?.play();
   }
 
@@ -76,7 +86,10 @@ export class Tank {
             ? !info.pickedMesh.name.includes(this.state!.sid)
             : !info.pickedMesh.name.includes("Player")))
       ) {
-        this.sounds[`whizz${Math.round(randInRange(1, 2))}` as TankSoundType]?.play();
+        const name = `whizz${Math.round(randInRange(1, 2))}` as TankSoundType;
+        this.sounds[name]!.pitch = Math.floor(Math.random() * 300) - 150;
+        this.sounds[name]!.playbackRate = Math.floor(Math.random() * 2.2) - 1.1;
+        this.sounds[name]?.play();
       }
     }
   }
@@ -104,140 +117,74 @@ export class Tank {
     );
   }
   private async setSoundSources() {
-    const promises: Promise<boolean>[] = [];
-    promises.push(
-      new Promise((resolve) => {
-        this.sounds["cannon"] = new Sound(
-          "cannon",
-          "/assets/game/audio/cannon.mp3",
-          this.world.scene,
-          () => resolve(true),
-          {
-            loop: false,
-            autoplay: false,
-            spatialSound: true,
-            maxDistance: 250,
-            volume: 1,
-          },
-        );
+    const promises: Promise<StaticSound>[] = [
+      CreateSoundAsync("cannon", "/assets/game/audio/cannon.mp3", {
+        spatialDistanceModel: "linear",
+        spatialPanningModel: "HRTF",
+        spatialEnabled: true,
+        spatialMaxDistance: 250,
       }),
-    );
-    promises.push(
-      new Promise((resolve) => {
-        this.sounds["idle"] = new Sound(
-          "idle",
-          "/assets/game/audio/idle.mp3",
-          this.world.scene,
-          () => resolve(true),
-          {
-            loop: true,
-            autoplay: false,
-            spatialSound: true,
-            maxDistance: 50,
-          },
-        );
+      CreateSoundAsync("idle", "/assets/game/audio/idle.mp3", {
+        loop: true,
+        spatialDistanceModel: "linear",
+        spatialPanningModel: "HRTF",
+        spatialEnabled: true,
+        spatialMaxDistance: 50,
       }),
-    );
-    promises.push(
-      new Promise((resolve) => {
-        this.sounds["move"] = new Sound(
-          "move",
-          "/assets/game/audio/run.mp3",
-          this.world.scene,
-          () => resolve(true),
-          {
-            loop: true,
-            autoplay: false,
-            spatialSound: true,
-            maxDistance: 70,
-          },
-        );
+      CreateSoundAsync("move", "/assets/game/audio/run.mp3", {
+        loop: true,
+        spatialDistanceModel: "linear",
+        spatialPanningModel: "HRTF",
+        spatialEnabled: true,
+        spatialMaxDistance: 70,
       }),
-    );
-    promises.push(
-      new Promise((resolve) => {
-        this.sounds["explode"] = new Sound(
-          "explode",
-          "/assets/game/audio/explosion.mp3",
-          this.world.scene,
-          () => resolve(true),
-          {
-            loop: false,
-            autoplay: false,
-            spatialSound: true,
-            maxDistance: 160,
-          },
-        );
+      CreateSoundAsync("explode", "/assets/game/audio/explosion.mp3", {
+        spatialDistanceModel: "linear",
+        spatialPanningModel: "HRTF",
+        spatialEnabled: true,
+        spatialMaxDistance: 160,
       }),
-    );
-    promises.push(
-      new Promise((resolve) => {
-        this.sounds["load"] = new Sound(
-          "load",
-          "/assets/game/audio/load.mp3",
-          this.world.scene,
-          () => resolve(true),
-          {
-            loop: false,
-            autoplay: false,
-            spatialSound: false,
-            maxDistance: 30,
-          },
-        );
+      CreateSoundAsync("load", "/assets/game/audio/load.mp3", {
+        spatialEnabled: false,
       }),
-    );
-    promises.push(
-      new Promise((resolve) => {
-        this.sounds["turret"] = new Sound(
-          "turret",
-          "/assets/game/audio/turret.mp3",
-          this.world.scene,
-          () => resolve(true),
-          {
-            loop: true,
-            autoplay: false,
-            spatialSound: false,
-            maxDistance: 20,
-          },
-        );
+      CreateSoundAsync("turret", "/assets/game/audio/turret.mp3", {
+        loop: true,
+        spatialDistanceModel: "linear",
+        spatialPanningModel: "HRTF",
+        spatialEnabled: true,
+        spatialMaxDistance: 15,
       }),
-    );
-    promises.push(
-      new Promise((resolve) => {
-        this.sounds["whizz1"] = new Sound(
-          "whizz1",
-          "/assets/game/audio/whizz1.mp3",
-          this.world.scene,
-          () => resolve(true),
-          {
-            loop: false,
-            autoplay: false,
-            spatialSound: false,
-            maxDistance: 10,
-          },
-        );
+      CreateSoundAsync("whizz1", "/assets/game/audio/whizz1.mp3", {
+        spatialEnabled: false,
       }),
-    );
-    promises.push(
-      new Promise((resolve) => {
-        this.sounds["whizz2"] = new Sound(
-          "whizz2",
-          "/assets/game/audio/whizz2.mp3",
-          this.world.scene,
-          () => resolve(true),
-          {
-            loop: false,
-            autoplay: false,
-            spatialSound: false,
-            maxDistance: 10,
-          },
-        );
+      CreateSoundAsync("whizz2", "/assets/game/audio/whizz2.mp3", {
+        spatialEnabled: false,
       }),
-    );
+    ];
+    const sounds = await Promise.all(promises);
+    this.sounds["cannon"] = sounds[0];
+    this.sounds["idle"] = sounds[1];
+    this.sounds["move"] = sounds[2];
+    this.sounds["explode"] = sounds[3];
+    this.sounds["load"] = sounds[4];
+    this.sounds["turret"] = sounds[5];
+    this.sounds["whizz1"] = sounds[6];
+    this.sounds["whizz2"] = sounds[7];
 
-    Object.values(this.sounds).forEach((sound) => sound.attachToMesh(this.body));
+    Object.values(this.sounds).forEach((sound) => {
+      if (sound._isSpatial) {
+        console.log(sound.name);
+        sound.spatial.attach(this.body, true);
+      }
+    });
 
-    return Promise.all(promises);
+    let res;
+    try {
+      res = await Promise.all(promises);
+    } catch (error) {
+      console.log(error);
+    }
+    return res;
   }
   protected animate(leftTrackSpeed?: number, rightTrackSpeed?: number) {
     const leftSpeed = leftTrackSpeed ?? this.state!.leftSpeed;
@@ -271,21 +218,24 @@ export class Tank {
   }
   protected playSounds(isMoving: boolean, isTurretMoving: boolean) {
     if (isMoving) {
-      if (!this.sounds["move"]?.isPlaying) this.sounds["move"]?.play();
-      if (this.sounds["idle"]?.isPlaying) this.sounds["idle"]?.pause();
+      this.sounds.move!.pitch = Math.floor(Math.random() * 200) - 100;
+      if (this.sounds["move"]?.state !== SoundState.Started) this.sounds["move"]?.play();
+      if (this.sounds["idle"]?.state === SoundState.Started) this.sounds["idle"]?.pause();
     } else {
-      if (this.sounds["move"]?.isPlaying) this.sounds["move"]?.pause();
-      if (!this.sounds["idle"]?.isPlaying) this.sounds["idle"]?.play();
+      if (this.sounds["move"]?.state === SoundState.Started) this.sounds["move"]?.pause();
+      this.sounds.idle!.pitch = Math.floor(Math.random() * 200) - 100;
+      if (this.sounds["idle"]?.state !== SoundState.Started) this.sounds["idle"]?.play();
     }
 
     if (isTurretMoving) {
-      if (!this.sounds["turret"]?.isPlaying) this.sounds["turret"]?.play();
+      this.sounds.turret!.pitch = Math.floor(Math.random() * 100) - 100;
+      if (this.sounds["turret"]?.state !== SoundState.Started) this.sounds["turret"]?.play();
     } else {
-      if (this.sounds["turret"]?.isPlaying) this.sounds["turret"]?.pause();
+      if (this.sounds["turret"]?.state === SoundState.Started) this.sounds["turret"]?.pause();
     }
   }
   playSound(type: TankSoundType) {
-    if (!this.sounds[type]?.isPlaying) this.sounds[type]?.play();
+    if (this.sounds[type]?.state !== SoundState.Started) this.sounds[type]?.play();
   }
 
   sync() {

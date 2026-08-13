@@ -42,13 +42,13 @@ watch(
     if (oldVal !== newVal && newVal) {
       await router.push({ hash: '#leaderboard' });
 
-      unregisterGuard = router.beforeEach((_to, from, next) => {
+      unregisterGuard = router.beforeEach((_to, from) => {
         if (from.hash === '#leaderboard') {
           window.removeEventListener('keydown', keyListener);
           show.value = false;
         }
         unregisterGuard();
-        next();
+        return
       });
     }
   },

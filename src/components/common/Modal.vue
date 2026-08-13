@@ -74,13 +74,13 @@ watch(
     if (oldVal !== newVal && newVal) {
       await router.push({ hash: getSlug(props.title) });
 
-      unregisterGuard = router.beforeEach((_to, from, next) => {
+      unregisterGuard = router.beforeEach((_to, from) => {
         if (from.hash.startsWith('#pop')) {
           window.removeEventListener('keydown', keyListener);
           show.value = false;
         }
         unregisterGuard();
-        next();
+        return
       });
     }
   },

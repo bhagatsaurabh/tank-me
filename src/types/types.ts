@@ -1,4 +1,4 @@
-import { type Sound } from "@babylonjs/core";
+import { type StaticSound } from "@babylonjs/core";
 
 export type AuthStatus = "pending" | "blocked" | "verified" | "signed-in" | "signed-out";
 export type AuthType = "email" | "verify" | "guest" | "guest-verify";
@@ -66,7 +66,7 @@ export type TankSoundType =
   | "whizz1"
   | "whizz2";
 export type TankSounds = {
-  [id in TankSoundType]?: Sound;
+  [id in TankSoundType]?: StaticSound;
 };
 
 export type PlayerInputs = Partial<Record<GameInputType, boolean>>;

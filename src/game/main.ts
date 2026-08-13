@@ -1,9 +1,11 @@
 import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
+import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_draco_mesh_compression";
 import { GlowLayer } from "@babylonjs/core/Layers";
 import { PhysicsViewer } from "@babylonjs/core/Debug";
 import {
+  CreateAudioEngineAsync,
   Engine,
   HardwareScalingOptimization,
   Observer,
@@ -15,7 +17,7 @@ import {
   ShadowsOptimization,
   TextureOptimization,
 } from "@babylonjs/core";
-import { SceneLoader } from "@babylonjs/core/Loading";
+import { ImportMeshAsync } from "@babylonjs/core/Loading";
 import { Axis, Color3, Space, Vector3 } from "@babylonjs/core/Maths";
 import { AbstractMesh, MeshBuilder, TransformNode } from "@babylonjs/core/Meshes";
 import { PBRMaterial, StandardMaterial, Texture } from "@babylonjs/core/Materials";
@@ -129,12 +131,16 @@ export class World {
     }
   }
   private async importPlayerMesh(world: World) {
-    const { meshes } = await SceneLoader.ImportMeshAsync(
+    /* const { meshes } = await SceneLoader.ImportMeshAsync(
       null,
       "/assets/game/models/",
       "Panzer_I.glb",
       world.scene,
-    );
+    ); */
+    const { meshes } = await ImportMeshAsync("Panzer_I.glb", world.scene, {
+      meshNames: null,
+      rootUrl: "/assets/game/models/",
+    });
 
     if (!meshes[0]) {
       throw Error("Import Error: Player mesh root transform missing");
@@ -162,6 +168,7 @@ export class World {
     // The classic :)
     this.setLights();
     this.setCameras();
+    await this.setAudio();
     this.scene.actionManager = InputManager.create(this.scene);
 
     this.scene.fogMode = Scene.FOGMODE_LINEAR;
@@ -246,6 +253,14 @@ export class World {
 
     // Set Spec Camera
     this.specCamera = new FollowCamera("spec-cam", new Vector3(0, 10, -10), this.scene);
+  }
+  private async setAudio() {
+    const audioEngine = await CreateAudioEngineAsync({
+      listenerEnabled: true,
+      listenerAutoUpdate: true,
+    });
+    audioEngine.listener.attach(this.scene.activeCamera, true);
+    await audioEngine.unlockAsync();
   }
   private setGUI() {
     const scale = this.engine.getHardwareScalingLevel();
@@ -515,19 +530,33 @@ export class World {
     }
     if (this.vsAI) {
       const spawn = getSpawnPoint();
-      const tanks = await Promise.all([
+      /* const tanks = await Promise.all([
         PlayerTank.create(this, null, this.playerMeshes[0], spawn, {
           tpp: this.tppCamera,
           fpp: this.fppCamera,
         }),
         EnemyAITank.create(this, this.playerMeshes[0], new Vector3(-1 * spawn.x, 14, -1 * spawn.z)),
-      ]);
+      ]); */
+      const tanks = [];
+      tanks.push(
+        await PlayerTank.create(this, null, this.playerMeshes[0], spawn, {
+          tpp: this.tppCamera,
+          fpp: this.fppCamera,
+        }),
+      );
+      tanks.push(
+        await EnemyAITank.create(
+          this,
+          this.playerMeshes[0],
+          new Vector3(-1 * spawn.x, 14, -1 * spawn.z),
+        ),
+      );
 
       this.players = {
-        Player: tanks[0],
-        Enemy: tanks[1],
+        Player: tanks[0] as PlayerTank,
+        Enemy: tanks[1] as EnemyAITank,
       };
-      this.player = tanks[0];
+      this.player = tanks[0] as PlayerTank;
       tanks.forEach((tank) => this.shadowGenerator?.addShadowCaster(tank.mesh));
     } else {
       const players: Player[] = [];
